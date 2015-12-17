@@ -101,7 +101,7 @@ integer :: n_base = 0
 !-             Rotation
 !------------------------------------
 real(8) :: Ma(3),Ka(3),Kj(3)
-real(8) :: omega(3),theta,psi,fai,alpha,beta,dY(4),dZ(4)
+real(8) :: omega(3),omega_pre(3),theta,psi,fai,alpha,beta,dY(4),dZ(4)
 real(8) :: theta_0,psi_0
 
 !------------------------------------
