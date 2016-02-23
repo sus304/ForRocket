@@ -94,11 +94,12 @@ end subroutine Velocity_Integral
 !-      Parachute Aerodynamics
 !------------------------------------
 
-subroutine Parachute_Aerodynamics(rho,CdS,m,g,Vw,acc,Ve,dt)
+subroutine Parachute_Aerodynamics(rho,CdS,m,g,Vw,acc,Ve,Ve_pre,dt)
   real(8),intent(in) :: rho,CdS,m,g,Vw(:),dt
   real(8),intent(out) :: acc(:)
-  real(8),intent(inout) :: Ve(:)
+  real(8),intent(inout) :: Ve(:),Ve_pre(:)
   
+  Ve_pre = Ve
   acc(3) = (0.5d0*rho*Ve(3)**2*CdS - m*g) / m
   
   Ve(1) = Vw(1)

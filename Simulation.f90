@@ -10,7 +10,7 @@
 !to deal in the Software without restriction, including without limitation
 !the rights to use, copy, modify, merge, publish, distribute, sublicense,
 !and/or sell copies of the Software, and to permit persons to whom
-!the Software is furnished to do so, subject to the following conditions:!
+!the Software is furnished to do so, subject to the following conditions:
 !
 !The above copyright notice and this permission notice shall be included
 !in all copies or substantial portions of the Software.
@@ -433,10 +433,10 @@ end if
     t_sepa2 = t
   end if  
 
-  call Parachute_Aerodynamics(rho,CdS,m,g,Vw,acc,Ve,dt)
+  call Parachute_Aerodynamics(rho,CdS,m,g,Vw,acc,Ve,Ve_pre,dt)
   
   if (nose%m > 0.0d0) then
-    call Parachute_Aerodynamics(rho,nose%CdS,nose%m,g,Vw,nose%acc,nose%Ve,dt)
+    call Parachute_Aerodynamics(rho,nose%CdS,nose%m,g,Vw,nose%acc,nose%Ve,nose%Ve_pre,dt)
   end if
   
 end if
