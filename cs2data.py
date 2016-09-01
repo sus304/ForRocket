@@ -9,7 +9,7 @@ sheet1 = book.sheet_by_index(0)
 
 rocket_data = []
 
-for row in range(0,43):
+for row in range(0,41):
     rocket_data.append(sheet1.cell(row,1).value)
     
 

@@ -7,12 +7,12 @@
 1	落下分散用表
 1	ランチクリア速度表
 1	最大対気速度表
-0	頂点対気速度表
-0	頂点到達/着地時間表
+1	頂点対気速度表
+1	頂点到達/着地時間表
 1	到達高度表
+0	Log 0/1 Ballitic/Decent
 0	Time[sec]
 0	Position[m]
 0	Attitude[deg]
 0	Airspeed[m/s]
 0	Acceleration
-

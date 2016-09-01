@@ -1,9 +1,10 @@
 module Standard_Collection
 implicit none
 
-real(8),parameter :: PI = 4.0d0*atan(1.0d0) , R = 287.1d0 , ganma = 1.4d0
+real(8),parameter :: PI = 3.141592d0 , R = 287.1d0 , gamma = 1.4d0
 
-real(8),parameter :: Re = 6356766.0d0 , GT = 0.0065d0 !-------気温減衰率K/m--------
+real(8),parameter :: Re = 6356766.0d0 !---地球半径--
+real(8),parameter :: GT = 0.0065d0 !-------気温減衰率K/m--------
 
 contains
 
@@ -22,6 +23,22 @@ function deg2kelvin (x)
   deg2kelvin = x + 273.15
 end function
 
+subroutine sign_check(x,sign)
+  real(8),intent(inout) :: x
+  integer,intent(in) :: sign
+  
+  select case (sign)
+    case(1:)
+      if (x < 0.0d0) then
+        x = -1.0d0 * x
+      end if
+    case(:-1)
+      if (x > 0.0d0) then
+        x = -1.0d0 * x
+      end if
+  end select
+end subroutine sign_check
+
 subroutine maxcheck(array,max)
   real(8),intent(in) :: array(:)
   integer,intent(out) :: max
@@ -37,8 +54,13 @@ subroutine maxcheck(array,max)
       max = i
     end if
   end do
-  
 end subroutine maxcheck
+
+function Abs_Vector(Vector)
+  real(8),intent(in) :: Vector(3)
+  real(8) :: Abs_Vector
+  Abs_Vector = sqrt(Vector(1) * Vector(1) + Vector(2) * Vector(2) + Vector(3) * Vector(3))
+end function Abs_Vector
 
 function Integral_3D(x,x_pre,dt)
   real(8) :: Integral_3D(3)
@@ -47,7 +69,6 @@ function Integral_3D(x,x_pre,dt)
   Integral_3D(1) = 0.5d0*(x(1) + x_pre(1))*dt
   Integral_3D(2) = 0.5d0*(x(2) + x_pre(2))*dt
   Integral_3D(3) = 0.5d0*(x(3) + x_pre(3))*dt
-  
 end function Integral_3D
 
 !-----------------------------------------------------------------------------!
@@ -64,7 +85,6 @@ end function Integral_3D
 !mode == 0: initial setting
 !mode == 1: spline interpolation
 !-----------------------------------------------------------------------------!
-
 subroutine spline(xp,yp,np,x,y,mode)
   integer,intent(in) :: np !data number
   integer :: mode,i,i1,i2
@@ -75,7 +95,6 @@ subroutine spline(xp,yp,np,x,y,mode)
   
   ! Coefficient determination
   ! mode == 0
-  
   if (mode == 0) then
     allocate(h(0:np),a_mat(0:np),b_mat(0:np),c_mat(0:np),d_mat(0:np))
     allocate(a(0:np-1),b(0:np-1),c(0:np))
@@ -109,7 +128,6 @@ subroutine spline(xp,yp,np,x,y,mode)
   
   ! spline interpolation
   ! mode == 0
-  
   if (x <= xp(1)) then ! outside of the domain - lower
     i1 = 0
   else
@@ -134,8 +152,6 @@ end subroutine spline
 
 !------------------------------------------------------------------!
 !Tridiagonal matrix algorithm (TDMA)
-!Thomas algorithm
-!solution tridiagonal systems
 !a: lower diagonal
 !b: main diagonal
 !c: upper diagonal
@@ -143,7 +159,6 @@ end subroutine spline
 !x: solution vector
 !
 !------------------------------------------------------------------!
-
 subroutine tdma(a,b,c,d,n,x)
   real(8),intent(in) :: a(:),b(:),c(:),d(:)
   real(8),intent(out) :: x(:)
@@ -158,17 +173,16 @@ subroutine tdma(a,b,c,d,n,x)
   G(1) = -c(1) / b(1)
   H(1) = d(1) / b(1)
   do i = 2,n
-    temp = b(i) + a(i)*G(i-1)
+    temp = b(i) + a(i) * G(i-1)
     G(i) = -c(i) / temp
-    H(i) = (d(i) - a(i)*H(i-1)) / temp
+    H(i) = (d(i) - a(i) * H(i-1)) / temp
   end do
   
   !backward substitution
   x(n) = H(n)
   do i = n-1,1,-1
-    x(i) = G(i)*x(i+1) + H(i)
+    x(i) = G(i) * x(i+1) + H(i)
   end do
 end subroutine tdma
-
 
 end module Standard_Collection

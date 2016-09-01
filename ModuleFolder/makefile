@@ -1,6 +1,6 @@
 FF=gfortran
-SRCS=Standard_Collection.f90 atmos76.f90 Environment.f90 Airframe.f90 Translation.f90 Rotation.f90
-COBJS=Standard_Collection.o atmos76.o Environment.o Airframe.o Translation.o Rotation.o
+SRCS=Standard_Collection.f90 atmos76.f90 Environment.f90 Rocket_Class.f90 Rocket_Dynamics.f90
+COBJS=Standard_Collection.o atmos76.o Environment.o Rocket_Class.o Rocket_Dynamics.o
 
 
 all:$(SRCS)
