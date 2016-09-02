@@ -2,12 +2,15 @@
 
 Rocket Flight Simulator for Fortran
 
-…•½À•W‰º‚Å‚Ì6DoFƒƒPƒbƒgƒtƒ‰ƒCƒgƒVƒ~ƒ…ƒŒ[ƒ^B
+This Program is 6DoF Rocket Flight Simulator for Fortran.
 
 % This program is released under the MIT License.
 
-### g‚¢•û ###
-E'Char_Sheet.xlsx'‚Ì”Œ³ƒV[ƒg‚ğ–„‚ß‚é  
-E'thrust.dat'‚ğì¬  
-ã‹L2“_‚ğ–‚½‚µ‚½‚Ì‚¿'ForRocket.py'‚ğÀs  
-(–‘O‚Émake‚µ‚Ä‚¨‚­‚±‚Æ)
+## How to Use ##
+
+1. 'Char_Sheet.xlsx' & 'thrust.dat'ã‚’ä½œæˆ
+2. 'ForRocket.py'ã‚’å®Ÿè¡Œ
+
+## Future Works ##
+* åœ§åŠ›ä¸­å¿ƒã®ç§»å‹•
+* åº§æ¨™ç³»è¿½åŠ 
