@@ -319,17 +319,27 @@ call Atmosphere_Setting(Ta_0,Pa_0,rho_0,g0,Rocket%Position(3),g,Cs,Ta,Pa,rho)
 
 if (code == 1) goto 500 !----------descend of Parachute ShortCut------------
 
+if (Flight_Status > 0) then
+  call Airspeed_Calc(Rocket,Vw,Cs,rho)
+  if (Va_max < Rocket%Va_abs) then
+    Va_max = Rocket%Va_abs
+  end if
+  if (Mach_max < Rocket%Mach) then
+    Mach_max = Rocket%Mach
+  end if
+  if (max_Q < Rocket%Q) then
+    max_Q = Rocket%Q
+  end if
+end if
+
 call Mass_Calc(Rocket,g0,dt)
 call MI_Calc(Rocket)
-call Airspeed_Calc(Rocket,Vw,Cs,rho)
 call spline(Mach_base,Cd_base,n_base-1,Rocket%Mach,Rocket%Cd,1)
-call Load_Calc(Rocket,Pa,Pa_0)
+call Load_Calc(Rocket,Pa,Pa_0,eof)
 call Moment_Calc(Rocket)
 
 call Acceleration_Integral(Rocket,g,dt)
-if (Flight_Status == 0) then
-  Rocket%Va = 0.0d0 ; Rocket%Va_pre = 0.0d0
-end if
+
 !-----------Parachute Descent----------
 500 if (code == 1) then
   if (Rocket%H_sepa > 0.0d0 .and. Rocket%Position(3) <= Rocket%H_sepa) then !TSSS ON and Under Altitude  
@@ -350,20 +360,6 @@ else
   call ODE_Solve(Rocket,dt)
 end if
 call Quat2Euler(Rocket%Ceb,Rocket%theta,Rocket%psi,Rocket%fai)
-
-!------------------------------------
-!-            Max Save
-!------------------------------------
-
-if (Va_max < Rocket%Va_abs) then
-  Va_max = Rocket%Va_abs
-end if
-if (Mach_max < Rocket%Mach) then
-  Mach_max = Rocket%Mach
-end if
-if (max_Q < Rocket%Q) then
-  max_Q = Rocket%Q
-end if
 
 !-----------------------------------
 !-         Flight State Check
@@ -413,7 +409,7 @@ end select
   !,',',Ve(2),',',Ve(3),',',Va(1),',',Va(2),',',Va(3),',',acc(1),',',acc(2),',',acc(3),',',Position(1),',',Position(2)&
   !,',',Position(3),',',omega(1),',',omega(2),',',omega(3),',',alpha,',',beta,',',theta,',',psi,',',fai,',',quat(1),',',quat(2)&
   !,',',quat(3),',',quat(4)
-!write (900,*) t,',',Mach,',',Cd!,',',Position(3)!,',',mf,',',Ipp,',',ms,',',m,',',lcgp,',',lcgs!,',',Kj(3)
+!write (900,*) t,',',Rocket%thrust,',',Pa_0,',',Pa!,',',mf,',',Ipp,',',ms,',',m,',',lcgp,',',lcgs!,',',Kj(3)
 
 
 !**********************************************************************
@@ -540,7 +536,9 @@ contains
 subroutine Initialize(Rocket)
   type(Rocket_Type) :: Rocket
     Rocket%mox = Rocket%mox_0 ; Rocket%mf = Rocket%mf_b
-    Rocket%Va = 0.0d0 ; Rocket%Va_pre = 0.0d0 ; Rocket%Mach_pre = 0.0d0
+    Rocket%Va = 0.0d0 ; Rocket%Va_pre = 0.0d0 ; Rocket%Va_abs = 0.0d0
+    Rocket%Mach = 0.0d0 ; Rocket%Mach_pre = 0.0d0 ; Rocket%Q = 0.0d0
+    Rocket%alpha = 0.0d0 ; Rocket%beta = 0.0d0
     Rocket%thrust = 0.0d0
     Rocket%fai = 0.0d0 ; Rocket%theta = Rocket%theta_0 ; Rocket%psi = Rocket%psi_0
     Rocket%omega = 0.0d0 ; Rocket%omega_pre = 0.0d0

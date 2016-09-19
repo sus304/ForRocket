@@ -66,15 +66,18 @@ end subroutine MI_Calc
 !-         Load Calculate
 !------------------------------------
 
-subroutine Load_Calc(Rocket,Pa,Pa_0)
+subroutine Load_Calc(Rocket,Pa,Pa_0,eof)
   type(Rocket_Type),intent(inout) :: Rocket
   real(8),intent(in) :: Pa,Pa_0
+  integer :: eof
   
   Rocket%Dx = Rocket%Q * Rocket%Cd * Rocket%S
   Rocket%Ny = Rocket%Q * Rocket%CNa * Rocket%S * Rocket%beta
   Rocket%Nz = Rocket%Q * Rocket%CNa * Rocket%S * Rocket%alpha
-
-  Rocket%thrust = Rocket%thrust + (Pa_0 - Pa) * Rocket%Ae
+  
+  if (eof >= 0) then
+    Rocket%thrust = Rocket%thrust + (Pa_0 - Pa) * Rocket%Ae
+  end if
 
   Rocket%F(1) = Rocket%thrust - Rocket%Dx
   Rocket%F(2) = Rocket%Ny
