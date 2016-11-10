@@ -1,22 +1,26 @@
-make=make --no-print-directory
+FF=ifort
+LINKER=link
+RM=del
 
-FF=gfortran
-FFLAGS=-Wall
-PROGRAM=Simulation.exe
+TARGET=ForRocket.exe
+OUTDIR=./bin
+OBJDIR=./obj
+SRCDIR=./src
 
-SRCS=Simulation.f90
-OBJS=Simulation.o 
-S_DIR=./ModuleFolder
-COBJS=$(S_DIR)/Standard_Collection.o $(S_DIR)/atmos76.o $(S_DIR)/Environment.o $(S_DIR)/Rocket_Class.o $(S_DIR)/Rocket_Dynamics.o
+SRCS=$(SRCDIR)/Rocket_Class.f90 $(SRCDIR)/Standard_Collection.f90 $(SRCDIR)/atmos76.f90 $(SRCDIR)/Environment.f90 $(SRCDIR)/Rocket_Dynamics.f90 $(SRCDIR)/Simulation.f90
+OBJS=$(OBJDIR)/Rocket_Class.obj $(OBJDIR)/Standard_Collection.obj $(OBJDIR)/atmos76.obj $(OBJDIR)/Environment.obj $(OBJDIR)/Rocket_Dynamics.obj $(OBJDIR)/Simulation.obj
 
-default:sub prime
+FFLAGS=/nologo /c /Fo"$(OBJDIR)\\" /Fd"$(OBJDIR)\\" /O2 /module:"$(OBJDIR)"
+LFLAGS=/NOLOGO /SUBSYSTEM:CONSOLE  
 
-sub:
-	$(make) -C ModuleFolder
+all:clean $(OBJDIR)\$(OBJS) $(OUTDIR)\$(TARGET)
+	
+clean:  
+	-@if not exist $(OUTDIR) md $(OUTDIR)
+	-@if not exist $(OBJDIR) md $(OBJDIR)
 
-prime:$(OBJS) $(COBJS)
-	$(FF) $(FFLAGS) -o $(PROGRAM) -I$(S_DIR) $(OBJS) $(COBJS)
-	rm -r $(OBJS)
-
-$(OBJS):$(SRCS)
-	$(FF) -c -I$(S_DIR) $<
+$(OUTDIR)\$(TARGET): $(OBJS)  
+	$(LINKER) $(LFLAGS) $(OBJS) /OUT:"$(OUTDIR)\$(TARGET)" $**  
+  
+$(OBJDIR)\$(OBJS): $(SRCS)  
+	$(FF) $(FFLAGS) $(SRCS)
