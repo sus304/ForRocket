@@ -16,8 +16,8 @@
 
 	"Name": "H-44",
 	"Start Time [sec]": 0.0,
-	"End Time [sec]": 50.0,
-	"Time Step [sec]": 1.0,
+	"End Time [sec]": 1.0,
+	"Time Step [sec]": 0.1,
 	
 	"Launch Pad": {
 		"LLH [deg, deg, m]": [40.0, 140.0, 10.0],

@@ -296,7 +296,12 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
       dx[4] = 0.0
     # 着地まで結果を出力
     if Altitude < 0.0:
-      result.value = np.vstack((result.value, np.array([t, Mf, Mox, M, Lcgp, Lcg, rocket.Lcp, Aeroforce[0], thrust[0], Altitude, Pa0, Pa, rocket.Ae])))
+      output_items = np.array([t, Mf, Mox, M, Mdot_ox, Mdot_f, Lcgp, Lcg, thrust[0], Isp, Aeroforce[0], Aeroforce[1], Aeroforce[2],
+                              Acc_ECI[0], Acc_ECI[1], Acc_ECI[2], Vel_ECI[0], Vel_ECI[1], Vel_ECI[2], Pos_ECI[0], Pos_ECI[1], Pos_ECI[2], 
+                              Pos_ECEF[0], Pos_ECEF[1], Pos_ECEF[2], Pos_LLH[0], Pos_LLH[1], Pos_LLH[2], Azimuth, Elevation,
+                              Wind_NED[0], Wind_NED[1], Wind_NED[2], Vel_Air_Boodyframe[0], Vel_Air_Boodyframe[1], Vel_Air_Boodyframe[2], alpha, beta, Mach, DynamicPressure, g, Pa, rho,
+                              Ij[0], Ij[1], Ij[2], Moment[0], Moment[1], Moment[2], Omega[0], Omega[1], Omega[2]])
+      result.value = np.vstack((result.value, output_items))
       
 
     # odeintの時間長くすると動作が見えないのでプログレスバーを表示
