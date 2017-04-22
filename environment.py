@@ -59,7 +59,17 @@ def Wind_NED(WindSpeed, WindDirection, Altitude, refAltitude, power_exp):
   Wind_NED[2] = 0.0
   return Wind_NED
 
-# if __name__ == '__main__':
-#   T, P, rho, Cs = std_atmo(1000.0)
-#   g = gravity(100000.0)
-#   print (T, P, rho, Cs, g)
+if __name__ == '__main__':
+  import matplotlib.pyplot as plt
+  altitude = np.empty(0)
+  Pressure = np.empty(0)
+  for alt in range(-1000, 80000, 100):
+    T, P, rho, Cs = std_atmo(alt)
+    g = gravity(100000.0)
+    print (T, P, rho, Cs, g)
+    altitude = np.append(altitude,alt)
+    Pressure = np.append(Pressure, P)
+
+  plt.figure(0)
+  plt.plot(altitude, Pressure)
+  plt.show()

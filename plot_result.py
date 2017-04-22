@@ -1,21 +1,50 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+import matplotlib.pyplot as plt
 # import simplekml
 
 class ResultBox:
   def __init__(self):
     self.items = []
 
+    # Output Items
     self.items.append('Time [s]')
     self.items.append('Mf [kg]')
     self.items.append('Mox [kg]')
     self.items.append('M [kg]')
-    self.items.append('Lcgox [m]')
+    self.items.append('Lcgp [m]')
     self.items.append('Lcg [m]')
     self.items.append('Lcp [m]')
+    self.items.append('Drag [N]')
+    self.items.append('Thrust [N]')
+    self.items.append('Altitude [m]')
+    self.items.append('Pa0 [Pa]')
+    self.items.append('Pa [Pa]')
+    self.items.append('Ae [m^2]')
 
- 
+    self.value = np.zeros(len(self.items))
 
+  def debug():
+    self.value = np.delete(self.value, 0, 0)
+
+    plt.close('all')
+    plt.figure(0)
+    plt.plot(self.value[:,0], self.value[:,1], label='Mf')
+    plt.plot(self.value[:,0], self.value[:,2], label='Mox')
+    plt.plot(self.value[:,0], self.value[:,3], label='M')
+    plt.plot(self.value[:,0], self.value[:,4], label='Lcgp')
+    plt.plot(self.value[:,0], self.value[:,5], label='Lcg')
+    plt.plot(self.value[:,0], self.value[:,6], label='Lcp')
+    plt.legend(loc='best')
+    plt.grid()
+    
+    plt.figure(1)
+    plt.plot(self.value[:,0], self.value[:,7], label='Drag')
+    plt.plot(self.value[:,0], self.value[:,8], label='Thrust')
+    plt.legend(loc='best')    
+    plt.grid()
+
+    plt.show()
 
 # def kml_make(name,Launch_LLH):
 #   Log = np.loadtxt('Position_log.csv',delimiter=",",skiprows=1)

@@ -4,8 +4,10 @@ import json
 import numpy as np
 from scipy import interpolate
 from scipy.integrate import odeint
+
 import coordinate as coord
 import environment as env
+
 ##################################
 # Config Class
 # Hold constant value of Rocket
@@ -57,15 +59,15 @@ class Config:
    
 
     self.Mox0 = json.get('Propellant').get('Oxidizer Mass [kg]')
-    self.Mox_dot = json.get('Propellant').get('Oxidizer Mass Flow Rate [kg/s]')
+    self.Mdot_ox = json.get('Propellant').get('Oxidizer Mass Flow Rate [kg/s]')
     self.Mf_before = json.get('Propellant').get('Fuel Mass Before Burn [kg]')
     self.Mf_after = json.get('Propellant').get('Fuel Mass After Burn [kg]')
-    self.Mf_dot = json.get('Propellant').get('Fuel Mass Flow Rate [kg/s]')
+    self.Mdot_f = json.get('Propellant').get('Fuel Mass Flow Rate [kg/s]')
     self.Df_out = json.get('Propellant').get('Fuel Outside Diameter [m]')
     self.Df_port = json.get('Propellant').get('Fuel Inside Diameter [m]')
     self.Lf = json.get('Propellant').get('Fuel Length [m]')
     self.TEKtank = json.get('Propellant').get('Use HyperTEK Tank')
-    self.refMp_dot = self.Mox_dot + self.Mf_dot # Use Isp change
+    self.refMdot_p = self.Mdot_ox + self.Mdot_f # Use Isp change
 
     # Thrust, SL
     # 1st column : time [s]
@@ -74,16 +76,16 @@ class Config:
     ThrustFile_exist = json.get('Engine').get('File Exist')
     if ThrustFile_exist:
       Thrust_Base = np.loadtxt(ThrustFile, delimiter=",", skiprows=1)
-
-      def ThrustCut(Thrust_Base):
-        Time = Thrust_Base[:,0]
-        Thrust = Thrust_Base[:,1]
-        i = 0
-        while Thrust
-
-
-
-      self.thrust = interpolate.interp1d(Thrust_Base[:,0], Thrust_Base[:,1], bounds_error=False, fill_value=(0.0, 0.0))
+      def ThrustCut(Thrust_Original, M):
+        Time = Thrust_Original[:,0]
+        Thrust = Thrust_Original[:,1]
+        th = M * 9.80665
+        index = (Thrust < th).argmin()
+        Thrust = Thrust[index:]
+        Time = Time[:len(Thrust)]
+        return Time, Thrust
+      Time_Base, Thrust_Base = ThrustCut(Thrust_Base, self.Ms + self.Mf_before + self.Mox0)
+      self.thrust = interpolate.interp1d(Time_Base, Thrust_Base, bounds_error=False, fill_value=(0.0, 0.0))
     else:    
       Time_Base = np.arange(0.0, json.get('Engine').get('Burn Time [sec]') + 0.1, 0.1)
       Thrust_Base = np.array([[json.get('Engine').get('Constant Thrust [N]')] * Time_Base.size])
@@ -126,7 +128,7 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
 
     Ij = np.array([roll, pitchf + pitchs, pitchf + pitchs])
 
-    # Use Dumping Moment : param Mf => Mf_dot 
+    # Use Dumping Moment : param Mf => Mdot_f 
     Ijf_dot = np.array([roll - rocket.Ijs[0], pitchf, pitchf])
 
     return Ij, Ijf_dot
@@ -155,12 +157,12 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
     Ka[1] = DynamicPressure * rocket.Cmq * rocket.A * rocket.L * rocket.L * 0.5 / Vel_Air_abs * Omega_Body[1]
     Ka[2] = DynamicPressure * rocket.Cnr * rocket.A * rocket.L * rocket.L * 0.5 / Vel_Air_abs * Omega_Body[2]
     return np.array([Ka[0], Ka[1], Ka[2]])
-  def JetDumpingMoment(rocket, Lcg, Lcgp, Mp_dot, Omega_Body):
-    _, Ijf_dot = inertia_moment(rocket, rocket.Mf_dot, Lcg)
+  def JetDumpingMoment(rocket, Lcg, Lcgp, Mdot_p, Omega_Body):
+    _, Ijf_dot = inertia_moment(rocket, rocket.Mdot_f, Lcg)
     Kj = np.zeros(3)
-    Kj[0] = -(Ijf_dot[0] - rocket.Mf_dot * 0.5 * (0.25 * rocket.de * rocket.de)) * Omega_Body[0]
-    Kj[1] = -(Ijf_dot[1] + Mp_dot * ((Lcg - Lcgp) ** 2 - (rocket.L - Lcgp) ** 2)) * Omega_Body[1]
-    Kj[1] = -(Ijf_dot[2] + Mp_dot * ((Lcg - Lcgp) ** 2 - (rocket.L - Lcgp) ** 2)) * Omega_Body[2]
+    Kj[0] = -(Ijf_dot[0] - rocket.Mdot_f * 0.5 * (0.25 * rocket.de * rocket.de)) * Omega_Body[0]
+    Kj[1] = -(Ijf_dot[1] + Mdot_p * ((Lcg - Lcgp) ** 2 - (rocket.L - Lcgp) ** 2)) * Omega_Body[1]
+    Kj[1] = -(Ijf_dot[2] + Mdot_p * ((Lcg - Lcgp) ** 2 - (rocket.L - Lcgp) ** 2)) * Omega_Body[2]
     return np.array([Kj[0], Kj[1], Kj[2]])
 
   def EulerEquation(Ij, Omega_Body, Moment):
@@ -239,19 +241,19 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
     M = rocket.Ms + Mp
     if rocket.thrust(t) > 0.0:
       thrust = np.array([rocket.thrust(t) + (Pa0 - Pa) * rocket.Ae, 0.0, 0.0])      
-      Isp = rocket.Isp + (Pa0 - Pa) * rocket.Ae / (rocket.refMp_dot * g0)      
-      Mp_dot = thrust[0] / (Isp * g0)
-      Mf_dot = rocket.Mf_dot
-      Mox_dot = Mp_dot - Mf_dot
+      Isp = rocket.Isp + (Pa0 - Pa) * rocket.Ae / (rocket.refMdot_p * g0)      
+      Mdot_p = thrust[0] / (Isp * g0)
+      Mdot_f = rocket.Mdot_f
+      Mdot_ox = Mdot_p - Mdot_f
       # Limit Increase and Empty Oxidizers
-      if Mox_dot < 0.0 or Mox <= 0.0:
-        Mox_dot = 0.0
+      if Mdot_ox < 0.0 or Mox <= 0.0:
+        Mdot_ox = 0.0
     else:
       thrust = np.zeros(3)      
       Isp = 0.0
-      Mp_dot = 0.0
-      Mf_dot = 0.0
-      Mox_dot = 0.0
+      Mdot_p = 0.0
+      Mdot_f = 0.0
+      Mdot_ox = 0.0
     Aeroforce = AeroForce(rocket, DynamicPressure, alpha, beta, Mach)
     # Newton Equation
     Acc_ECI = DCM_Body2ECI.dot(thrust + DCM_Air2Body.dot(Aeroforce)) / M + DCM_NED2ECI.dot(g)
@@ -265,14 +267,14 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
     Ij, _ = inertia_moment(rocket, Mf, Lcg)
     Aero_moment = AeroMoment(rocket, Aeroforce, Lcg)    
     Aero_dumping_moment = AeroDumpingMoment(rocket, DynamicPressure, np.linalg.norm(Vel_Air_Bodyframe), Omega_Body)
-    Jet_dumping_moment = JetDumpingMoment(rocket, Lcg, Lcgp, Mp_dot, Omega_Body)
+    Jet_dumping_moment = JetDumpingMoment(rocket, Lcg, Lcgp, Mdot_p, Omega_Body)
     Moment = DCM_Air2Body.dot(Aero_moment + Aero_dumping_moment + Jet_dumping_moment)
     dOmega_Body = EulerEquation(Ij, Omega_Body, Moment)
     dQuat = KinematicEquation(Quat, Omega_Body)
 
     dx = np.zeros(15)
-    dx[0] = -rocket.Mf_dot # dMf/dt
-    dx[1] = -Mox_dot # dMox/dt
+    dx[0] = -rocket.Mdot_f # dMf/dt
+    dx[1] = -Mdot_ox # dMox/dt
     dx[2] = Acc_ECI[0] # dVx_ECI/dt
     dx[3] = Acc_ECI[1] # dVy_ECI/dt
     dx[4] = Acc_ECI[2] # dVz_ECI/dt
@@ -293,6 +295,9 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
       dx[3] = 0.0
       dx[4] = 0.0
     # 着地まで結果を出力
+    if Altitude < 0.0:
+      result.value = np.vstack((result.value, np.array([t, Mf, Mox, M, Lcgp, Lcg, rocket.Lcp, Aeroforce[0], thrust[0], Altitude, Pa0, Pa, rocket.Ae])))
+      
 
     # odeintの時間長くすると動作が見えないのでプログレスバーを表示
     sys.stderr.write ('\r\033[K' + '[' + '=' * int((t / rocket.EndTime) * 50) + '>' + ' ' * (50 - int((t / rocket.EndTime) * 50)) + ']' + ' ' + '%0.1f/%0.1f sec %0.2f' %(t, rocket.EndTime, Altitude))
@@ -341,6 +346,7 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
   x = odeint(dynamics, x0, t, args=(params, rocket, result, ), mxstep=100000)
 
   return t, x
+
 # TODO
 # @ parachute
 # @ Wind Log

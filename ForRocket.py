@@ -42,4 +42,5 @@ print ('Result Directory : %s' % ResultDir)
 rocket = Rocket.Config(json_obj)
 result = Result.ResultBox()
 TimeLog, Log = Rocket.Simulation(rocket, 2.0, 45.0, ResultDir, result)
+result.debug()
 
