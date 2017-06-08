@@ -118,6 +118,6 @@ def Euler2Quat(Azimuth, Elevation, Roll=0.0):
 def Quat2Euler(DCM_NED2Body_Quat):
   Azimuth = np.arctan2(DCM_NED2Body_Quat[0,1], DCM_NED2Body_Quat[0,0])
   Elevation = np.arcsin(-DCM_NED2Body_Quat[0,2])
-  Roll = np.arctan2(DCM_NED2Body_Quat[2,1], DCM_NED2Body_Quat[2,2])
+  Roll = np.arctan2(DCM_NED2Body_Quat[1,2], DCM_NED2Body_Quat[2,2])
 
   return Azimuth, Elevation, Roll
