@@ -1,5 +1,4 @@
 module Standard_Collection
-use Rocket_Class
 implicit none
 
 real(8),parameter :: PI = 3.1415926535898d0 , R = 287.1d0 , gamma = 1.4d0
@@ -9,31 +8,123 @@ real(8),parameter :: GT = 0.0065d0 !-------気温減衰率K/m--------
 !**********************************************************************
 !                        Program Variable
 !**********************************************************************
-real :: t1,t2                 ! 計算時間測定用
+integer :: t1,t2,t2_rate,t2_max,t2_diff !- 計算時間測定用
 real(8) :: t
 real(8) :: dt
-real(8) :: freq               ! 推力履歴のサンプリング周波数[Hz]
+real(8) :: freq                !- 推力履歴のサンプリング周波数[Hz]
 integer :: i,j
-integer :: Flight_Status = 0  ! 飛翔フェーズ
+integer :: Flight_Status = 0   !- 飛翔フェーズ
 integer :: index_wind,index_wangle
-integer :: index_burn         ! 推力履歴のサイズ
-integer :: eof = 0            ! 推力履歴読み込み用
+integer :: index_burn          !- 推力履歴のサイズ
+integer :: fileNum_input = 100 !- 入力ファイル装置番号
+integer :: fileNum_output = 200!- 出力ファイル装置番号
+character :: filename*128
+integer :: eof = 0
 
-! Mach-Cdスプライン用
+!- Mach-Cdスプライン用
 real(8),allocatable :: Mach_base(:),Cd_base(:)
 integer :: n_base = 0
 
-type(Rocket_Type) :: Rocket
+real(8) :: temp !- 一時変数
+
+!------------------------------------
+!-    All loading (subscript:none)
+!------------------------------------
+real(8) :: l            !- 機体全長 :: length
+real(8) :: m            !- 全機質量 :: mass
+real(8) :: d,S          !- 機体直径,機体断面積
+real(8) :: lcg          !- 全機重心位置(from nose) :: length center of gravity
+real(8) :: lcg_0        !- 初期全機重心位置(from nose)
+real(8) :: lcp          !- 圧力中心位置(from nose) :: length center of pressure
+real(8) :: Ib(3)        !- 全機3軸慣性モーメント(xb,yb,zb) :: Inartia moment of body
+real(8) :: Clp,Cmq,Cnr  !- 減衰モーメント係数(Clp:ロール,ピッチ,ヨー)
+real(8) :: CNa,M_fin    !- 法線力係数,フィン取り付け角(機軸に対する)
+real(8) :: Cd           !- 抗力係数
+
+!------------------------------------
+!-      Structure (subscript:s)
+!------------------------------------
+real(8) :: ms     !- 空虚質量
+real(8) :: lcgs   !- 空虚重心位置(from nose)
+real(8) :: Is,Ir  !- 空虚ピッチ慣性モーメント,ロール慣性モーメント(Iroll)
+
+!------------------------------------
+!-            Recovery
+!------------------------------------
+real(8) :: CdS1,CdS2       !- 1段目,2段目パラシュート抗力特性 :: Cd * S
+real(8) :: CdS             !- 計算時に代入するパラシュート抗力特性
+real(8) :: T_sepa,H_sepa   !- 1段目分離時刻(X+t[sec]),2段目開傘高度[m]
+
+
+!------------------------------------
+!-             Engine
+!- (Oxidizer   subscript:ox)
+!- (Fuel       subscript:f )
+!- (Propellant subscript:p )
+!------------------------------------
+real(8) :: mox,mox_dot        !- 酸化剤質量,酸化剤質量流量
+real(8) :: mox_0              !- 初期酸化剤質量
+real(8) :: lcgox              !- 酸化剤重心位置(from nose)
+real(8) :: lcgox_0
+real(8) :: ltank              !- 酸化剤タンク長さ
+real(8) :: mf                 !- 燃料質量
+real(8) :: mf_b,mf_a,mf_dot   !- mf_before,mf_after
+real(8) :: lcgf               !- 燃料重心位置(from nose)
+real(8) :: Ifp,Ifr            !- 燃料ピッチ慣性モーメント,ロール慣性モーメント
+real(8) :: lf,df1,df2         !- 燃料長さ,燃料外径,内径
+real(8) :: mp,mp_dot          !- 推進剤質量
+real(8) :: lcgp               !- 推進剤重心位置(from nose)
+real(8) :: lcgp_0
+
+real(8) :: Isp,It             !- 比推力,全力積
+real(8),allocatable :: thrust(:)
+real(8) :: de,Ae              !- ノズル出口 :: diameter exit
+
+!------------------------------------
+!-           Translation
+!- (earth plane  subscript:e)
+!- (body         subscript:b)
+!- (Air          subscript:a)
+!------------------------------------
+real(8) :: Q              !- 動圧
+real(8) :: Q_pre          !- 保存/比較用1step前
+real(8) :: Dx,Ny,Nz       !- 各機体軸に対する空気力
+real(8) :: F(3)           !- 機体座標系における外力
+real(8) :: Position(3)    !- 座標(xe,ye,ze)
+real(8) :: Position_pre(3)
+real(8) :: Ve(3),Va(3)    !- 対地速度,対気速度
+real(8) :: Ve_abs,Va_abs  !- ベクトル合成値
+real(8) :: Ve_pre(3),Va_pre(3)
+real(8) :: acce(3)        !- 対地加速度
+real(8) :: acce_abs
+real(8) :: acce_pre(3)
+real(8) :: Mach           !- Mach Number
+real(8) :: Mach_pre
+
+!------------------------------------
+!-             Rotation
+!------------------------------------
+real(8) :: Ma(3),Ka(3),Kj(3)      !- 空力モーメント,空力減衰モーメント,ジェットダンピングモーメント
+real(8) :: omega(3),omega_pre(3)  !- 角速度
+real(8) :: theta,psi,fai          !- ピッチ角,ヨー角,ロール角
+real(8) :: alpha,beta             !- 迎角,横滑り角
+real(8) :: theta_0,psi_0          !- 打ち上げ射角,打ち上げ方位角
+
+!------------------------------------
+!-            Quaternion
+!------------------------------------
+real(8) :: quat(4),quat_pre(4)    !- quaternion
+real(8),dimension(3,3) :: Cbe,Ceb !- DCM body-->earth , earth-->body
 
 !------------------------------------
 !-            Condition
 !------------------------------------
-real(8) :: Vw_abs,Vw_angle        ! 風速,風向
-real(8) :: Vw(3)                  ! (xe,ye,ze)の風速
-real(8) :: Hw,Wh                  ! 風速測定高度,高度係数
-real(8) :: Pa,Ta,rho,g,Cs         ! Air Pressure,Air Temperature,Air Dencity,Gravity,Speed of Sonic 
+real(8) :: Vw_abs,Vw_angle        !- 風速,風向
+real(8) :: Vw(3)                  !- (xe,ye,ze)の風速
+real(8) :: Hw,Wh                  !- 風速測定高度,高度係数
+real(8) :: Pa,Ta,rho,g,Cs         !- Air Pressure,Air Temperature,Air Dencity,Gravity,Speed of Sonic 
 real(8) :: Pa_0,Ta_0,rho_0,g0
-real(8) :: LL                     ! ランチャレール長[m]
+real(8) :: LL                     !- ランチャレール長[m]
 
 !------------------------------------
 !-              Save
@@ -45,95 +136,19 @@ real(8) :: t_sepa2
 !**********************************************************************
 !                        Switch Variable
 !**********************************************************************
-integer :: LogTable_sw ! 0:Log/1:Table
+integer :: LogTable_sw !- 0:Log/1:Table
 real(8) :: Vw_min,Vw_max,Vw_delta
 real(8) :: Vw_angle_min,Vw_angle_max,Vw_angle_delta
-integer :: Decent_sw ! 0:Ballistic/1:Decent
 
 real(8) :: LandingRange(56,4)
-real(8),dimension(7,8) :: AltitudeTable,MachTable,VaMaxTable,VaApogeeTable
+real(8),dimension(7,8) :: AltitudeTable,MachTable,VaMaxTable,VaApogeeTable,VlcTable,AcclcTable
 real(8),dimension(7,8) :: TimeApogeeTable,TimeHardTable,TimeDecentTable,TimeTSSSTable
 
 contains
 
 !**********************************************************************
-!                       Personal Subroutine
-!**********************************************************************
-!------------------------------------
-!-           Mach-Cd Read
-!-使う前にsplineの最後の引数を0で呼び出し
-!-save属性でスプラインに必要な変数が保持される
-!-
-!------------------------------------
-
-subroutine setMachCd ()
-  real(8) :: Mach,Cd
-  open (103,file='Mach_Cd.dat',status='old')
-  read (103,*) !１行目のスキップ
-  do
-    read (103,'()',end=80)
-    n_base = n_base + 1
-  end do
-  80 close(103)
-  allocate(Mach_base(n_base),Cd_base(n_base))
-  open (103,file='Mach_Cd.dat',status='old')
-  read (103,*) !1行目のスキップ
-  do i = 1,n_base
-    read (103,*) Mach_base(i),Cd_base(i)
-  end do
-  close(103)
-  call spline(Mach_base,Cd_base,n_base-1,Mach,Cd,0)
-end subroutine setMachCd
-
-function getMachCd (Mach)
-  real(8) :: getMachCd
-  real(8),intent(in) :: Mach
-  real(8) :: Cd
-  call spline(Mach_base,Cd_base,n_base-1,Mach,Cd,1)
-  getMachCd = Cd
-end function getMachCd
-
-
-!------------------------------------
-!-           Thrust Read
-!-推力履歴は必ず作動開始からのデータであること
-!-質量減少はthrustがあれば発生するようになっている
-!------------------------------------
-
-subroutine setThrust(Rocket)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8) :: temp
-  real(8),allocatable :: temp_array(:)
-  allocate(Rocket%thrust(1))
-  Rocket%thrust = 0.0d0
-  open (62,file='thrust.dat',status='old')
-  i = 1
-  do while(eof >= 0)
-    read (62,*,iostat = eof) temp
-    
-    allocate(temp_array(i))
-    !temp_array = Rocket%thrust
-    do j = 1,i
-      temp_array(j) = Rocket%thrust(j)
-    end do
-    deallocate(Rocket%thrust)
-    allocate(Rocket%thrust(i+1))
-    do j = 1,i
-      Rocket%thrust(j) = temp_array(j)
-    end do
-    Rocket%thrust(i+1) = temp
-    deallocate(temp_array)
-    i = i + 1
-  end do
-  index_burn = i - 1 
-  close(62)
-end subroutine setThrust
-
-
-!**********************************************************************
 !                       Universal Subroutine
 !**********************************************************************
-
 function deg2rad (x)
   real(8) :: deg2rad,x
   deg2rad = x*PI / 180.0d0
@@ -149,101 +164,51 @@ function deg2kelvin (x)
   deg2kelvin = x + 273.15
 end function
 
-!------------------------------------
-!-           符号チェック
-!-第2引数が1か-1で符号第1引数の符号チェック
-!-第2引数に合わせた符号になる
-!-射角や減衰モーメント係数のエラーチェック
-!------------------------------------
-
-subroutine sign_check(x,sign)
-  real(8),intent(inout) :: x
-  integer,intent(in) :: sign
-  
-  select case (sign)
-    case(1:)
-      if (x < 0.0d0) then
-        x = -1.0d0 * x
-      end if
-    case(:-1)
-      if (x > 0.0d0) then
-        x = -1.0d0 * x
-      end if
-  end select
-end subroutine sign_check
-
-!------------------------------------
-!-      配列の最大要素index取得
-!-quatarnionの生成時に最大要素のindexが必要
-!-
-!------------------------------------
-
-subroutine maxcheck(array,max)
-  real(8),intent(in) :: array(:)
-  integer,intent(out) :: max
-  integer :: i,arraysize
-  real(8) :: max_temp
-  
-  arraysize = size(array)
-  max_temp = 0.0d0
-  
-  do i = 1,arraysize
-    if (array(i) > max_temp) then
-      max_temp = array(i)
-      max = i
-    end if
-  end do
-end subroutine maxcheck
+function getMachCd(Mach)
+  real(8) :: getMachCd
+  real(8),intent(in) :: Mach
+  real(8) :: Cd
+  call spline(Mach_base,Cd_base,n_base-1,Mach,Cd,1)
+  getMachCd = Cd
+end function getMachCd
 
 !------------------------------------
 !-        配列への要素追加
 !-pythonのappendに近いもの
-!-
+!-遅い
 !------------------------------------
-
-subroutine append(toarray,fromarray)
-  real(8),allocatable,intent(inout) :: toarray(:,:)
-  real(8),intent(in) :: fromarray(:)
-  real(8),allocatable :: temp(:,:)
-  integer line_size,row_size ! 行,列
+subroutine append(toarray,value)
+  real(8),allocatable,intent(inout) :: toarray(:) !- 追加先の配列
+  real(8),intent(in) :: value !- 追加する値
+  real(8),allocatable :: temp(:)
+  integer row_size
   integer :: i
-    
+  
+  !- 追加先の配列が割付されていない場合,1行で割り付けて追加
   if (.not. allocated(toarray)) then
-    row_size = size(fromarray)
-    allocate(toarray(1,row_size))
-    toarray(1,:) = fromarray
-  else
-    if (size(toarray(1,:)) == size(fromarray)) then
-      line_size = size(toarray(:,1))
-      row_size = size(toarray(1,:))
-      allocate(temp(line_size,row_size))
-      temp = toarray
-      deallocate(toarray)
-      allocate(toarray(line_size+1,row_size))
-      do i = 1,line_size
-        toarray(i,:) = temp(i,:)
-      end do
-      toarray(line_size+1,:) = fromarray
-    else
-      print *,"Error : Array Size"
-    end if
+    allocate(toarray(1))
+    toarray(1) = value
+    return
+  else !- 末尾に追加
+    row_size = size(toarray)
+    allocate(temp(row_size))
+    temp = toarray
+    deallocate(toarray)
+    allocate(toarray(row_size+1))
+    do i = 1,row_size
+      toarray(i) = temp(i)
+    end do
+    toarray(row_size+1) = value
+    return
   end if
 end subroutine append
 
-function Abs_Vector(Vector)
+function abs_3axis(Vector)
   real(8),intent(in) :: Vector(3)
-  real(8) :: Abs_Vector
-  Abs_Vector = sqrt(Vector(1) * Vector(1) + Vector(2) * Vector(2) + Vector(3) * Vector(3))
-end function Abs_Vector
+  real(8) :: abs_3axis
+  abs_3axis = sqrt(Vector(1) * Vector(1) + Vector(2) * Vector(2) + Vector(3) * Vector(3))
+end function abs_3axis
 
-function Integral_3D(x,x_pre,dt)
-  real(8) :: Integral_3D(3)
-  real(8),intent(in) :: x(:),x_pre(:),dt
-  
-  Integral_3D(1) = 0.5d0*(x(1) + x_pre(1))*dt
-  Integral_3D(2) = 0.5d0*(x(2) + x_pre(2))*dt
-  Integral_3D(3) = 0.5d0*(x(3) + x_pre(3))*dt
-end function Integral_3D
 
 !-----------------------------------------------------------------------------!
 !Construct cubic spline interpolation from a given data set yp(xp) 

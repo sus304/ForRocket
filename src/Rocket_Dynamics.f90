@@ -1,49 +1,8 @@
 module Rocket_Dynamics
 use standard_collection
-use Rocket_Class
 implicit none
 
 contains
-
-subroutine Initialize(Rocket)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8) :: length
-    
-  t = 0.0d0
-  Ta = Ta_0 ; Pa = Pa_0 ; rho = rho_0
-  Rocket%mox = Rocket%mox_0 ; Rocket%mf = Rocket%mf_b
-  Rocket%Va = 0.0d0 ; Rocket%Va_pre = 0.0d0 ; Rocket%Va_abs = 0.0d0
-  Rocket%Mach = 0.0d0 ; Rocket%Mach_pre = 0.0d0 ; Rocket%Q = 0.0d0
-  Rocket%alpha = 0.0d0 ; Rocket%beta = 0.0d0
-  Rocket%fai = 0.0d0 ; Rocket%theta = Rocket%theta_0 ; Rocket%psi = Rocket%psi_0
-  Rocket%omega = 0.0d0 ; Rocket%omega_pre = 0.0d0
-  call Euler2Quat(Rocket%theta,Rocket%psi,Rocket%fai,Rocket%Ceb,Rocket%Cbe,Rocket%quat)
-  
-  Rocket%acce = 0.0d0 ; Rocket%acce_pre = 0.0d0
-  Rocket%Ve = 0.0d0 ; Rocket%Ve_pre = 0.0d0
-  Rocket%Position = 0.0d0 ; Rocket%Position_pre = 0.0d0
-  Rocket%Position(3) = (Rocket%l - Rocket%lcg_0) * sin(abs(Rocket%theta_0)) ! 重心と射角からの初期高度
-  length = (Rocket%l - Rocket%lcg_0) * cos(abs(Rocket%theta_0))
-  if (rad2deg(Rocket%psi_0) >= 0.0d0 .and. rad2deg(Rocket%psi_0) < 90.0d0) then
-    Rocket%Position(1) = length * cos(Rocket%psi_0)
-    Rocket%Position(2) = length * sin(Rocket%psi_0)
-  else if (rad2deg(Rocket%psi_0) >= 90.0d0 .and. rad2deg(Rocket%psi_0) < 180.0d0) then
-    Rocket%Position(1) = length * cos(180.0d0 - Rocket%psi_0)
-    Rocket%Position(2) = length * sin(180.0d0 - Rocket%psi_0)
-  else if (rad2deg(Rocket%psi_0) >= 180.0d0 .and. rad2deg(Rocket%psi_0) < 270.0d0) then
-    Rocket%Position(1) = length * cos(180.0d0 - Rocket%psi_0)
-    Rocket%Position(2) = length * sin(180.0d0 - Rocket%psi_0)
-  else if (rad2deg(Rocket%psi_0) >= 270.0d0 .and. rad2deg(Rocket%psi_0) < 360.0d0) then
-    Rocket%Position(1) = length * cos(360.0d0 - Rocket%psi_0)
-    Rocket%Position(2) = length * sin(360.0d0 - Rocket%psi_0)
-  end if
-  
-  Position_top = 0.0d0
-  Ve_top = 0.0d0
-  t_top = 0.0d0 ; Va_top = 0.0d0 ; m_top = 0.0d0
-  V_lc = 0.0d0 ; Va_max = 0.0d0 ; Mach_max = 0.0d0
-    
-end subroutine Initialize
 
 !**********************************************************************
 !                                 Body
@@ -51,57 +10,44 @@ end subroutine Initialize
 !------------------------------------
 !-         Mass Calculate
 !------------------------------------
-
-subroutine Mass_Calc(Rocket,g0,dt)
+subroutine calc_Mass
   ! 推力履歴は必ず作動開始からのデータであること
   ! 質量減少はthrustがあれば発生するようになっている
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: g0,dt
   
-  Rocket%mp_dot = Rocket%thrust(i) / (Rocket%Isp * g0)
-  Rocket%mox_dot = Rocket%mp_dot - Rocket%mf_dot
-  if (Rocket%mox_dot < 0.0d0) Rocket%mox_dot = 0.0d0 ! thrustが負だと酸化剤が増加するので回避
+  if (i < index_burn) mp_dot = thrust(i) / (Isp * g0)
+  mox_dot = (mp_dot - mf_dot) * (0.5d0 + 0.5d0 * sign(1.0d0,mp_dot - mf_dot - 1.0d-6)) !- thrustが負だと酸化剤が増加するので回避
 
-  if (Rocket%mf > Rocket%mf_a) then
-    Rocket%mf = Rocket%mf - Rocket%mf_dot * dt
-  end if
-  if (Rocket%mox > 0.0d0) then
-    Rocket%mox = Rocket%mox - Rocket%mox_dot * dt
-  end if
+  mf = (mf - mf_dot * dt) * (0.5d0 + 0.5d0 * sign(1.0d0,mf - mf_a - 1.0d-6)) &
+     +               mf_a * (0.5d0 - 0.5d0 * sign(1.0d0,mf - mf_a - 1.0d-6))
+  mox = (mox - mox_dot * dt) * (0.5d0 + 0.5d0 * sign(1.0d0,mox - 1.0d-6))
 
-  Rocket%mp = Rocket%mf + Rocket%mox
-  Rocket%m = Rocket%ms + Rocket%mp
+  mp = mf + mox
+  m = ms + mp
 
-end subroutine Mass_Calc
+end subroutine calc_Mass
 
 !------------------------------------
 !-    Moment of Inertia Calculate
 !------------------------------------
-
-subroutine MI_Calc(Rocket)
-  type(Rocket_Type),intent(inout) :: Rocket
-  
+subroutine calc_CG_IM  
   !--- Center of Gravity---
-  Rocket%lcgox = Rocket%lcgox_0 - 0.5d0 * (1.0d0 - (Rocket%mox / Rocket%mox_0)) * Rocket%ltank
-  if (Rocket%mox <= 0.0d0) Rocket%lcgox = 0.0d0
-  Rocket%lcgp = (Rocket%mf * Rocket%lcgf + Rocket%mox * Rocket%lcgox) / Rocket%mp
-  Rocket%lcg = ((Rocket%mp * Rocket%lcgp) + (Rocket%ms * Rocket%lcgs)) / Rocket%m
+  lcgox = (lcgox_0 - 0.5d0 * (1.0d0 - (mox / mox_0)) * ltank) * (0.5d0 + 0.5d0 * sign(1.0d0,mox - 1.0d-6))
+  lcgp = (mf * lcgf + mox * lcgox) / mp
+  lcg = ((mp * lcgp) + (ms * lcgs)) / m
   
   !--- Moment of Inertia ---
   !-タンク内酸化剤,液体になるのでまた別の考えが必要
   !Ipp = (mox*((0.5*ltank - (l - lcgox))**2 / 12.0d0 + (lcgox - lcgp)**2) + mf*(lcgf - lcgp)**2) + mp*(lcg - lcgp)**2
   
-  !-燃料
-  Rocket%Ifp = Rocket%mf * Rocket%lf / 12.0d0
-  Rocket%Ifr = Rocket%mf * (((Rocket%df1 + Rocket%df2) / 4.0d0)&
-                + ((Rocket%df1 + Rocket%df2) / 4.0d0) * (1.0d0 - (Rocket%mf / Rocket%mf_b)))
+  !- Fuel
+  Ifp = mf * lf / 12.0d0
+  Ifr = mf * (((df1 + df2) / 4.0d0) + ((df1 + df2) / 4.0d0) * (1.0d0 - (mf / mf_b)))
   
-  !-全機
-  Rocket%Ib = Rocket%Ifp + Rocket%mf * (Rocket%lcg - Rocket%lcgf)**2 + Rocket%Is * ((Rocket%ms + Rocket%mox) / Rocket%ms)&
-               + (Rocket%ms + Rocket%mox) * (Rocket%lcg - Rocket%lcgs)**2
-  Rocket%Ib(1) = Rocket%Ir + Rocket%Ifr !-軸対称でピッチヨーは同じなのでロールのみ上書きで書いちゃう
+  !-Loading
+  Ib = Ifp + mf * (lcg - lcgf)**2 + Is * ((ms + mox) / ms) + (ms + mox) * (lcg - lcgs) * (lcg - lcgs)
+  Ib(1) = Ir + Ifr !-軸対称でピッチヨーは同じなのでロールのみ上書きで書いちゃう
   
-end subroutine MI_Calc
+end subroutine calc_CG_IM
 
 !**********************************************************************
 !                            Translation
@@ -109,99 +55,81 @@ end subroutine MI_Calc
 !------------------------------------
 !-         Load Calculate
 !------------------------------------
-
-subroutine Load_Calc(Rocket,Pa,Pa_0)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: Pa,Pa_0
+subroutine calc_Force
   real(8) :: thrust_correction
   
-  Rocket%Cd = getMachCd(Rocket%Mach)
-  Rocket%Dx = Rocket%Q * Rocket%Cd * Rocket%S
-  Rocket%Ny = Rocket%Q * Rocket%CNa * Rocket%S * Rocket%beta
-  Rocket%Nz = Rocket%Q * Rocket%CNa * Rocket%S * Rocket%alpha
+  Cd = getMachCd(Mach)
+  Dx = Q * Cd * S
+  Ny = Q * CNa * S * beta
+  Nz = Q * CNa * S * alpha
   
-  if (i <= index_burn) then
-    thrust_correction = Rocket%thrust(i) + (Pa_0 - Pa) * Rocket%Ae
+  if (i < index_burn) then
+    thrust_correction = (thrust(i) + (Pa_0 - Pa) * Ae)
+  else
+    thrust_correction = 0.0d0
   end if
 
-  Rocket%F(1) = thrust_correction - Rocket%Dx
-  Rocket%F(2) = Rocket%Ny
-  Rocket%F(3) = -Rocket%Nz
+  F(1) = thrust_correction - Dx
+  F(2) = Ny
+  F(3) = -Nz
   
-end subroutine Load_Calc
+end subroutine calc_Force
 
 
 !------------------------------------
 !-        Airspeed Calculate
 !------------------------------------
-
-subroutine Airspeed_Calc(Rocket,Vw,Cs,rho)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: Vw(:),Cs,rho
+subroutine calc_Airspeed
   
-  Rocket%Va_pre = Rocket%Va
-  Rocket%Va = matmul(Rocket%Ceb,(Rocket%Ve - Vw))
-  Rocket%Va_abs = Abs_Vector(Rocket%Va)
+  Va_pre = Va
+  Va = matmul(Ceb,(Ve - Vw))
+  Va_abs = abs_3axis(Va)
   
-  Rocket%alpha = atan(Rocket%Va(3) / Rocket%Va(1))
-  Rocket%beta = asin(-Rocket%Va(2) / Rocket%Va_abs)
+  alpha = atan2(Va(3),Va(1))
+  beta = asin(-Va(2) / Va_abs)
   
-  Rocket%Mach = Rocket%Va_abs / Cs
-  Rocket%Q = 0.5d0 * rho * Rocket%Va_abs**2
+  Mach = Va_abs / Cs
+  Q = 0.5d0 * rho * Va_abs * Va_abs
   
-end subroutine Airspeed_Calc
+end subroutine calc_Airspeed
 
 
 !------------------------------------
-!-         Position Integral
+!-            Integral
 !------------------------------------
+subroutine Acc2Position
+  
+  acce_pre = acce
+  Ve_pre = Ve
+  Position_pre = Position
 
-subroutine Acceleration_Integral(Rocket,g,dt)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: g,dt
+  acce = matmul(Cbe,F)
+  acce = acce / m
+  acce(3) = acce(3) - g
+  acce_abs = abs_3axis(acce)
   
-  Rocket%acce_pre = Rocket%acce
-  Rocket%acce = matmul(Rocket%Cbe,Rocket%F)
-  Rocket%acce = Rocket%acce / Rocket%m
-  Rocket%acce(3) = Rocket%acce(3) - g
-  Rocket%acce_abs = Abs_Vector(Rocket%acce)
+  Ve = Ve_pre + 0.5d0 * (acce + acce_pre) * dt
+  Ve_abs = abs_3axis(Ve)
   
-  Rocket%Ve_pre = Rocket%Ve
-  Rocket%Ve = Rocket%Ve_pre + Integral_3D(Rocket%acce,Rocket%acce_pre,dt)
+  Position = Position_pre + 0.5d0 * (Ve + Ve_pre) * dt
   
-  Rocket%Ve_abs = Abs_Vector(Rocket%Ve)
-  
-end subroutine Acceleration_Integral
-
-
-!------------------------------------
-!-        Velocity Integral
-!------------------------------------
-
-subroutine Velocity_Integral(Rocket,dt)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: dt
-  
-  Rocket%Position_pre = Rocket%Position
-  Rocket%Position = Rocket%position_pre + Integral_3D(Rocket%Ve,Rocket%Ve_pre,dt)
-  
-end subroutine Velocity_Integral
+end subroutine Acc2Position
 
 
 !------------------------------------
 !-      Parachute Aerodynamics
 !------------------------------------
-
-subroutine Parachute_Aerodynamics(Rocket,rho,g,Vw,dt)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: rho,g,Vw(:),dt
+subroutine Parachute_Aerodynamics
   
-  Rocket%Ve_pre = Rocket%Ve
-  Rocket%acce(3) = (0.5d0 * rho * Rocket%Ve(3)**2 * Rocket%CdS - Rocket%m * g) / Rocket%m
+  Ve_pre = Ve
+  acce(3) = (0.5d0 * rho * Ve(3) * Ve(3) * CdS - m * g) / m
   
-  Rocket%Ve(1) = Vw(1) !横方向は等風速
-  Rocket%Ve(2) = Vw(2)
-  Rocket%Ve(3) = Rocket%Ve(3) + Rocket%acce(3) * dt
+  Ve(1) = Vw(1) !横方向は等風速
+  Ve(2) = Vw(2)
+  Ve(3) = Ve(3) + acce(3) * dt
+  Ve_abs = abs_3axis(Ve)
+  
+  Position = Position + 0.5d0 * (Ve + Ve_pre) * dt 
   
 end subroutine Parachute_Aerodynamics
 
@@ -211,20 +139,18 @@ end subroutine Parachute_Aerodynamics
 !------------------------------------
 !-         Moment Calculate
 !------------------------------------
-
-subroutine Moment_Calc(Rocket)
-  type(Rocket_Type),intent(inout) :: Rocket
+subroutine calc_Moment
   
   !Moment of Aerodynamic これの符号は軸の回転方向に対応
-  Rocket%Ma(1) = Rocket%Q * Rocket%S * Rocket%CNa * 0.07d0 * deg2rad(Rocket%M_fin) ! 0.07[m]はフィンの圧力中心位置(径方向)。真面目に計算するならspanを諸元で呼ぶこと
-  Rocket%Ma(2) = (Rocket%lcp - Rocket%lcg) * Rocket%F(3)
-  Rocket%Ma(3) = -(Rocket%lcp - Rocket%lcg) * Rocket%F(2)
+  Ma(1) = Q * S * CNa * 0.07d0 * deg2rad(M_fin) ! 0.07[m]はフィンの圧力中心位置(径方向)。真面目に計算するならspanを諸元で呼ぶこと
+  Ma(2) = (lcp - lcg) * F(3)
+  Ma(3) = -(lcp - lcg) * F(2)
     
   !Moment of Aerodynamic Damping これの符号は角速度の方向と対応
   !omegaはあとの運動方程式内で掛ける
-  Rocket%Ka(1) = Rocket%Q * Rocket%Clp * Rocket%S * Rocket%d**2 / (2.0d0 * Rocket%Va_abs)
-  Rocket%Ka(2) = Rocket%Q * Rocket%Cmq * Rocket%S * Rocket%l**2 / (2.0d0 * Rocket%Va_abs)
-  Rocket%Ka(3) = Rocket%Q * Rocket%Cnr * Rocket%S * Rocket%l**2 / (2.0d0 * Rocket%Va_abs)
+  Ka(1) = Q * Clp * S * d**2 / (2.0d0 * Va_abs)
+  Ka(2) = Q * Cmq * S * l**2 / (2.0d0 * Va_abs)
+  Ka(3) = Q * Cnr * S * l**2 / (2.0d0 * Va_abs)
   
   !Jet Dumping Moment これの符号は角速度の方向と対応
   
@@ -234,80 +160,67 @@ subroutine Moment_Calc(Rocket)
   !k2 = (lcg - lcgp)**2
   !k2 = (k2 - k2_pre) / dt
   
-  Rocket%Kj(1) = 0.0d0 !-(Ipr_dot - mp_dot*0.5d0*(0.5d0*dno)**2) For Nozzle radius and Mass flow rate
+  Kj(1) = 0.0d0 !-(Ipr_dot - mp_dot*0.5d0*(0.5d0*dno)**2) For Nozzle radius and Mass flow rate
   !Ignore Moment of inartia rate
-  Rocket%Kj(2) = -(Rocket%mp_dot * ((Rocket%lcg - Rocket%lcgp)**2 - (Rocket%l - Rocket%lcgp)**2))
-  Rocket%Kj(3) = -(Rocket%mp_dot * ((Rocket%lcg - Rocket%lcgp)**2 - (Rocket%l - Rocket%lcgp)**2))
+  Kj(2) = -(mp_dot * ((lcg - lcgp)**2 - (l - lcgp)**2))
+  Kj(3) = -(mp_dot * ((lcg - lcgp)**2 - (l - lcgp)**2))
   
-end subroutine Moment_Calc
+end subroutine calc_Moment
   
 !------------------------------------
 !-   Rotation Momentum Equation
 !------------------------------------
-
-function RotEq(Rocket,RK_Parameter)
+function RotEq(RKs)
   real(8) :: RotEq(3)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: RK_Parameter(3)
+  real(8),intent(in) :: RKs(3)
   
-  RotEq(1) = ((Rocket%Ib(2) - Rocket%Ib(3)) * Rocket%omega(2) * Rocket%omega(3)&
-             + (Rocket%Ma(1) + (Rocket%Ka(1) + Rocket%Kj(1)) * (Rocket%omega(1) + RK_Parameter(1)))) / Rocket%Ib(1)
-  
-  RotEq(2) = ((Rocket%Ib(3) - Rocket%Ib(1)) * Rocket%omega(1) * Rocket%omega(3)&
-             + (Rocket%Ma(2) + (Rocket%Ka(2) + Rocket%Kj(2)) * (Rocket%omega(2) + RK_Parameter(2)))) / Rocket%Ib(2)
-  
-  RotEq(3) = ((Rocket%Ib(1) - Rocket%Ib(2)) * Rocket%omega(1) * Rocket%omega(2)&
-             + (Rocket%Ma(3) + (Rocket%Ka(3) + Rocket%Kj(3)) * (Rocket%omega(3) + RK_Parameter(3)))) / Rocket%Ib(3)
+  RotEq(1) = ((Ib(2) - Ib(3)) * omega(2) * omega(3) + (Ma(1) + (Ka(1) + Kj(1)) * (omega(1) + RKs(1)))) / Ib(1)
+  RotEq(2) = ((Ib(3) - Ib(1)) * omega(1) * omega(3) + (Ma(2) + (Ka(2) + Kj(2)) * (omega(2) + RKs(2)))) / Ib(2)
+  RotEq(3) = ((Ib(1) - Ib(2)) * omega(1) * omega(2) + (Ma(3) + (Ka(3) + Kj(3)) * (omega(3) + RKs(3)))) / Ib(3)
   
 end function RotEq
 
 !------------------------------------
 !- Angler Speed - ODE Solve for RK4
 !------------------------------------
-
-subroutine ODE_Solve(Rocket,dt)
-  type(Rocket_Type),intent(inout) :: Rocket
-  real(8),intent(in) :: dt
-  real(8) :: d_omega(3,4),RK_Parameter(3),norm,omega_matrix(4,4)
+subroutine ODE_Solve
+  real(8) :: dt2
+  real(8) :: RKs(3) !- RK4用のパラメータ
+  real(8) :: omega_(3)
+  real(8) :: omega_matrix(4,4)
+  real(8) :: norm
   integer :: k
 
-  ! iteration1
-  RK_Parameter = 0.0d0
-  d_omega(:,1) = RotEq(Rocket,RK_Parameter)
-  ! iteration2
-  do k = 1,3
-    RK_Parameter(k) = 0.5d0 * dt * d_omega(k,1)
-  end do
-  d_omega(:,2) = RotEq(Rocket,RK_Parameter)
-  ! iteration3
-  do k = 1,3
-    RK_Parameter(k) = 0.5d0 * dt * d_omega(k,2)
-  end do
-  d_omega(:,3) = RotEq(Rocket,RK_Parameter)
-  ! iteration4
-  do k = 1,3
-    RK_Parameter(k) = dt * d_omega(k,3)
-  end do
-  d_omega(:,4) = RotEq(Rocket,RK_Parameter)
+  dt2 = 0.5d0 * dt
+  !- iteration1
+  RKs = 0.0d0
+  RKs = RotEq(RKs)
+  omega_ = RKs
+  !- iteration2
+  RKs = RKs * dt2
+  RKs = RotEq(RKs)
+  omega_ = omega_ + 2.0d0 * RKs
+  !- iteration3
+  RKs = RKs * dt2
+  RKs = RotEq(RKs)
+  omega_ = omega_ + 2.0d0 * RKs
+  !- iteration4
+  RKs = RKs * dt
+  RKs = RotEq(RKs)
+  omega_ = omega_ + RKs
+
+  omega = omega + (omega_ / 6.0d0) * dt
+
+  omega_matrix(1,:) = (/0.0d0      ,omega_(3)  ,-omega_(2) ,omega_(1)/)
+  omega_matrix(2,:) = (/-omega_(3) ,0.0d0      ,omega_(1)  ,omega_(2)/)
+  omega_matrix(3,:) = (/omega_(2)  ,-omega_(1) ,0.0d0      ,omega_(3)/)
+  omega_matrix(4,:) = (/-omega_(1) ,-omega_(2) ,-omega_(3) ,0.0d0    /)
+
+  quat = quat + 0.5d0 * matmul(omega_matrix,quat) * dt
+  norm = sqrt(quat(1)**2 + quat(2)**2 + quat(3)**2 + quat(4)**2)
+  quat = quat / norm
   
-  Rocket%omega_pre = Rocket%omega
-  Rocket%omega(1) = Rocket%omega_pre(1) + ((d_omega(1,1) + 2.0d0 * (d_omega(1,2) + d_omega(1,3)) + d_omega(1,4)) / 6.0d0) * dt
-  Rocket%omega(2) = Rocket%omega_pre(2) + ((d_omega(2,1) + 2.0d0 * (d_omega(2,2) + d_omega(2,3)) + d_omega(2,4)) / 6.0d0) * dt
-  Rocket%omega(3) = Rocket%omega_pre(3) + ((d_omega(3,1) + 2.0d0 * (d_omega(3,2) + d_omega(3,3)) + d_omega(3,4)) / 6.0d0) * dt
-  
-  Rocket%quat_pre = Rocket%quat
-  
-  omega_matrix(1,:) = (/0.0d0,Rocket%omega(3),-Rocket%omega(2),Rocket%omega(1)/)
-  omega_matrix(2,:) = (/-Rocket%omega(3),0.0d0,Rocket%omega(1),Rocket%omega(2)/)
-  omega_matrix(3,:) = (/Rocket%omega(2),-Rocket%omega(1),0.0d0,Rocket%omega(3)/)
-  omega_matrix(4,:) = (/-Rocket%omega(1),-Rocket%omega(2),-Rocket%omega(3),0.0d0/)
-  
-  Rocket%quat = Rocket%quat_pre + 0.5d0 * matmul(omega_matrix,Rocket%quat) * dt
-  
-  norm = sqrt(Rocket%quat(1)**2 + Rocket%quat(2)**2 + Rocket%quat(3)**2 + Rocket%quat(4)**2)
-  Rocket%quat = Rocket%quat / norm
-  
-  call DCM_Set(Rocket%Cbe,Rocket%Ceb,Rocket%quat)
+  call set_DCM
   
 end subroutine ODE_Solve
 
@@ -315,10 +228,7 @@ end subroutine ODE_Solve
 !------------------------------------
 !- Quarternion to Euler Angle Convert
 !------------------------------------
-
-subroutine Quat2Euler(Ceb,theta,psi,fai)
-  real(8),intent(in) :: Ceb(:,:)
-  real(8),intent(out) :: theta,psi,fai
+subroutine Quat2Euler
   
   theta = -asin(Ceb(1,3))
   psi = atan2(Ceb(1,2),Ceb(1,1))
@@ -326,71 +236,58 @@ subroutine Quat2Euler(Ceb,theta,psi,fai)
   
   theta = rad2deg(theta)
   psi = rad2deg(psi)
-  if (psi <= 0.0d0) then
-    psi = 360.0d0 + psi
-  end if
+  psi =             psi * (0.5d0 + 0.5d0 * sign(1.0d0,psi + 1.0d-6)) &
+      + (psi + 360.0d0) * (0.5d0 - 0.5d0 * sign(1.0d0,psi + 1.0d-6))
   fai = rad2deg(fai)
-  if (fai <= 0.0d0) then
-    fai = 360.0d0 + fai
-  end if
+  fai =             fai * (0.5d0 + 0.5d0 * sign(1.0d0,fai + 1.0d-6)) &
+      + (fai + 360.0d0) * (0.5d0 - 0.5d0 * sign(1.0d0,fai + 1.0d-6))
   
 end subroutine Quat2Euler
-
 
 !------------------------------------
 !-        Euler to Quaternion
 !------------------------------------
-
-subroutine Euler2Quat(theta,psi,fai,Ceb,Cbe,quat)
-  real(8),intent(in) :: theta,psi,fai
-  real(8),intent(out) :: Ceb(:,:),Cbe(:,:),quat(:)
-  integer :: quat_case
+subroutine Euler2Quat
+  integer :: quat_max(1),quat_case
   real(8) :: norm
   
-  Ceb(1,1) = cos(psi)*cos(theta)
-  Ceb(2,1) = -sin(psi)*cos(fai) + cos(psi)*sin(theta)*sin(fai)
-  Ceb(3,1) = sin(psi)*sin(fai) + cos(psi)*sin(theta)*cos(fai)
-  Ceb(1,2) = sin(psi)*cos(theta)
-  Ceb(2,2) = cos(psi)*cos(fai) + sin(psi)*sin(theta)*sin(fai)
-  Ceb(3,2) = -cos(psi)*sin(fai) + sin(psi)*sin(theta)*cos(fai)
-  Ceb(1,3) = -sin(theta)
-  Ceb(2,3) = cos(theta)*sin(fai)
-  Ceb(3,3) = cos(theta)*cos(fai)
+  Ceb(1,:) = (/cos(psi)*cos(theta)                            ,sin(psi)*cos(theta)                            ,-sin(theta)        /)
+  Ceb(2,:) = (/-sin(psi)*cos(fai)+cos(psi)*sin(theta)*sin(fai),cos(psi)*cos(fai)+sin(psi)*sin(theta)*sin(fai) ,cos(theta)*sin(fai)/)
+  Ceb(3,:) = (/sin(psi)*sin(fai)+cos(psi)*sin(theta)*cos(fai) ,-cos(psi)*sin(fai)+sin(psi)*sin(theta)*cos(fai),cos(theta)*cos(fai)/)
   
-  quat(1) = 0.5d0*sqrt(1.0d0+Ceb(1,1)-Ceb(2,2)-Ceb(3,3))
-  quat(2) = 0.5d0*sqrt(1.0d0-Ceb(1,1)+Ceb(2,2)-Ceb(3,3))
-  quat(3) = 0.5d0*sqrt(1.0d0-Ceb(1,1)-Ceb(2,2)+Ceb(3,3))
-  quat(4) = 0.5d0*sqrt(1.0d0+Ceb(1,1)+Ceb(2,2)+Ceb(3,3))
+  quat(1) = 0.5d0 * sqrt(1.0d0 + Ceb(1,1) - Ceb(2,2) - Ceb(3,3))
+  quat(2) = 0.5d0 * sqrt(1.0d0 - Ceb(1,1) + Ceb(2,2) - Ceb(3,3))
+  quat(3) = 0.5d0 * sqrt(1.0d0 - Ceb(1,1) - Ceb(2,2) + Ceb(3,3))
+  quat(4) = 0.5d0 * sqrt(1.0d0 + Ceb(1,1) + Ceb(2,2) + Ceb(3,3))
 
-  call maxcheck(quat,quat_case)
+  quat_max = maxloc(quat)
+  quat_case = quat_max(1)
 
   select case(quat_case)
   case (1)
-    quat(1) = 0.5d0*sqrt(1.0d0+Ceb(1,1)-Ceb(2,2)-Ceb(3,3))
-    quat(2) = (Ceb(1,2)+Ceb(2,1))/(4.0d0*quat(1))
-    quat(3) = (Ceb(3,1)+Ceb(1,3))/(4.0d0*quat(1))
-    quat(4) = (Ceb(2,3)-Ceb(3,2))/(4.0d0*quat(1))
+    quat(1) = 0.5d0 * sqrt(1.0d0 + Ceb(1,1) - Ceb(2,2) - Ceb(3,3))
+    quat(2) = (Ceb(1,2) + Ceb(2,1)) / (4.0d0 * quat(1))
+    quat(3) = (Ceb(3,1) + Ceb(1,3)) / (4.0d0 * quat(1))
+    quat(4) = (Ceb(2,3) - Ceb(3,2)) / (4.0d0 * quat(1))
   case (2)
-    quat(2) = 0.5d0*sqrt(1.0d0-Ceb(1,1)+Ceb(2,2)-Ceb(3,3))
-    quat(1) = (Ceb(1,2)+Ceb(2,1))/(4.0d0*quat(2))
-    quat(3) = (Ceb(2,3)+Ceb(3,2))/(4.0d0*quat(2))
-    quat(4) = (Ceb(3,1)-Ceb(1,3))/(4.0d0*quat(2))
+    quat(2) = 0.5d0 * sqrt(1.0d0 - Ceb(1,1) + Ceb(2,2) - Ceb(3,3))
+    quat(1) = (Ceb(1,2) + Ceb(2,1)) / (4.0d0 * quat(2))
+    quat(3) = (Ceb(2,3) + Ceb(3,2)) / (4.0d0 * quat(2))
+    quat(4) = (Ceb(3,1) - Ceb(1,3)) / (4.0d0 * quat(2))
   case (3)
-    quat(3) = 0.5d0*sqrt(1.0d0-Ceb(1,1)-Ceb(2,2)+Ceb(3,3))
-    quat(1) = (Ceb(3,1)+Ceb(1,3))/(4.0d0*quat(3))
-    quat(2) = (Ceb(2,3)+Ceb(3,2))/(4.0d0*quat(3))
-    quat(4) = (Ceb(1,2)-Ceb(2,1))/(4.0d0*quat(3))
+    quat(3) = 0.5d0 * sqrt(1.0d0 - Ceb(1,1) - Ceb(2,2) + Ceb(3,3))
+    quat(1) = (Ceb(3,1) + Ceb(1,3)) / (4.0d0 * quat(3))
+    quat(2) = (Ceb(2,3) + Ceb(3,2)) / (4.0d0 * quat(3))
+    quat(4) = (Ceb(1,2) - Ceb(2,1)) / (4.0d0 * quat(3))
   case (4)
-    quat(4) = 0.5d0*sqrt(1.0d0+Ceb(1,1)+Ceb(2,2)+Ceb(3,3))
-    quat(1) = (Ceb(2,3)-Ceb(3,2))/(4.0d0*quat(4))
-    quat(2) = (Ceb(3,1)-Ceb(1,3))/(4.0d0*quat(4))
-    quat(3) = (Ceb(1,2)-Ceb(2,1))/(4.0d0*quat(4))
+    quat(4) = 0.5d0 * sqrt(1.0d0 + Ceb(1,1) + Ceb(2,2) + Ceb(3,3))
+    quat(1) = (Ceb(2,3) - Ceb(3,2)) / (4.0d0 * quat(4))
+    quat(2) = (Ceb(3,1) - Ceb(1,3)) / (4.0d0 * quat(4))
+    quat(3) = (Ceb(1,2) - Ceb(2,1)) / (4.0d0 * quat(4))
   end select
   
   norm = sqrt(quat(1)**2 + quat(2)**2 + quat(3)**2 + quat(4)**2)
   quat = quat / norm
-  
-  call DCM_Set(Cbe,Ceb,quat)
   
 end subroutine Euler2Quat
 
@@ -398,30 +295,28 @@ end subroutine Euler2Quat
 !-           DCM Setting
 !------------------------------------
 
-subroutine DCM_Set(Cbe,Ceb,quat)
-  real(8),intent(in) :: quat(:)
-  real(8),intent(out) :: Cbe(:,:),Ceb(:,:)
+subroutine set_DCM
   
-  Cbe(1,1) = quat(1)*quat(1) - quat(2)*quat(2) - quat(3)*quat(3) + quat(4)*quat(4)
-  Cbe(2,1) = 2.0d0*(quat(1)*quat(2) + quat(3)*quat(4))
-  Cbe(3,1) = 2.0d0*(quat(1)*quat(3) - quat(2)*quat(4))
-  Cbe(1,2) = 2.0d0*(quat(1)*quat(2) - quat(3)*quat(4))
-  Cbe(2,2) = quat(2)*quat(2) - quat(1)*quat(1) - quat(3)*quat(3) + quat(4)*quat(4)
-  Cbe(3,2) = 2.0d0*(quat(2)*quat(3) + quat(1)*quat(4))
-  Cbe(1,3) = 2.0d0*(quat(1)*quat(3) + quat(2)*quat(4))
-  Cbe(2,3) = 2.0d0*(quat(2)*quat(3) - quat(1)*quat(4))
-  Cbe(3,3) = quat(3)*quat(3) - quat(1)*quat(1) - quat(2)*quat(2) + quat(4)*quat(4)
+  Cbe(1,1) = quat(1) * quat(1) - quat(2) * quat(2) - quat(3) * quat(3) + quat(4) * quat(4)
+  Cbe(2,1) = 2.0d0 * (quat(1) * quat(2) + quat(3) * quat(4))
+  Cbe(3,1) = 2.0d0 * (quat(1) * quat(3) - quat(2) * quat(4))
+  Cbe(1,2) = 2.0d0 * (quat(1) * quat(2) - quat(3) * quat(4))
+  Cbe(2,2) = quat(2) * quat(2) - quat(1) * quat(1) - quat(3) * quat(3) + quat(4) * quat(4)
+  Cbe(3,2) = 2.0d0 * (quat(2) * quat(3) + quat(1) * quat(4))
+  Cbe(1,3) = 2.0d0 * (quat(1) * quat(3) + quat(2) * quat(4))
+  Cbe(2,3) = 2.0d0 * (quat(2) * quat(3) - quat(1) * quat(4))
+  Cbe(3,3) = quat(3) * quat(3) - quat(1) * quat(1) - quat(2) * quat(2) + quat(4) * quat(4)
 
-  Ceb(1,1) = quat(1)*quat(1) - quat(2)*quat(2) - quat(3)*quat(3) + quat(4)*quat(4)
-  Ceb(2,1) = 2.0d0*(quat(1)*quat(2) - quat(3)*quat(4))
-  Ceb(3,1) = 2.0d0*(quat(1)*quat(3) + quat(2)*quat(4))
-  Ceb(1,2) = 2.0d0*(quat(1)*quat(2) + quat(3)*quat(4))
-  Ceb(2,2) = quat(2)*quat(2) - quat(1)*quat(1) - quat(3)*quat(3) + quat(4)*quat(4)
-  Ceb(3,2) = 2.0d0*(quat(2)*quat(3) - quat(1)*quat(4))
-  Ceb(1,3) = 2.0d0*(quat(1)*quat(3) - quat(2)*quat(4))
-  Ceb(2,3) = 2.0d0*(quat(2)*quat(3) + quat(1)*quat(4))
-  Ceb(3,3) = quat(3)*quat(3) - quat(1)*quat(1) - quat(2)*quat(2) + quat(4)*quat(4)
+  Ceb(1,1) = quat(1) * quat(1) - quat(2) * quat(2) - quat(3) * quat(3) + quat(4) * quat(4)
+  Ceb(2,1) = 2.0d0 * (quat(1) * quat(2) - quat(3) * quat(4))
+  Ceb(3,1) = 2.0d0 * (quat(1) * quat(3) + quat(2) * quat(4))
+  Ceb(1,2) = 2.0d0 * (quat(1) * quat(2) + quat(3) * quat(4))
+  Ceb(2,2) = quat(2) * quat(2) - quat(1) * quat(1) - quat(3) * quat(3) + quat(4) * quat(4)
+  Ceb(3,2) = 2.0d0 * (quat(2) * quat(3) - quat(1) * quat(4))
+  Ceb(1,3) = 2.0d0 * (quat(1) * quat(3) - quat(2) * quat(4))
+  Ceb(2,3) = 2.0d0 * (quat(2) * quat(3) + quat(1) * quat(4))
+  Ceb(3,3) = quat(3) * quat(3) - quat(1) * quat(1) - quat(2) * quat(2) + quat(4) * quat(4)
   
-end subroutine DCM_Set
+end subroutine set_DCM
 
 end module Rocket_Dynamics
