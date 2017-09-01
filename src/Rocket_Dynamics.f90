@@ -192,6 +192,7 @@ subroutine ODE_Solve
   integer :: k
 
   dt2 = 0.5d0 * dt
+  omega_ = 0.0
   !- iteration1
   RKs = 0.0d0
   RKs = RotEq(RKs)

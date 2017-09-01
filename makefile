@@ -1,32 +1,30 @@
-FF=ifort
-LINKER=link
-RM=del
+FC=gfortran
 
 TARGET=ForRocket_v4.exe
 TARGETPOST=ForRocketPost.exe
-OUTDIR=./bin
+FFLAGS=-Wall -O2
+TARGETDIR=./bin
 OBJDIR=./obj
 SRCDIR=./src
 
 SRCS=$(SRCDIR)/Standard_Collection.f90 $(SRCDIR)/atmos76.f90 $(SRCDIR)/Environment.f90 $(SRCDIR)/Rocket_Dynamics.f90 $(SRCDIR)/Simulation.f90
-OBJS=$(OBJDIR)/Standard_Collection.obj $(OBJDIR)/atmos76.obj $(OBJDIR)/Environment.obj $(OBJDIR)/Rocket_Dynamics.obj $(OBJDIR)/Simulation.obj
+OBJS=$(OBJDIR)/Standard_Collection.o $(OBJDIR)/atmos76.o $(OBJDIR)/Environment.o $(OBJDIR)/Rocket_Dynamics.o $(OBJDIR)/Simulation.o
+MODS=Standard_Collection.mod atmos76.mod Environment.mod Rocket_Dynamics.mod Simulation.mod
 SRCSPOST=$(SRCDIR)/Post.f90
-OBJSPOST=$(OBJDIR)/Post.obj
+OBJSPOST=$(OBJDIR)/Post.o
 
-FFLAGS=/nologo /c /Fo"$(OBJDIR)\\" /O2 /module:"$(OBJDIR)"
-LFLAGS=/NOLOGO /SUBSYSTEM:CONSOLE  
+.SUFFIXES: .f90
 
-all:clean $(OBJDIR)\$(OBJS) $(OUTDIR)\$(TARGET) $(OUTDIR)\$(TARGETPOST)
-	
-clean:  
-	-@if not exist $(OUTDIR) md $(OUTDIR)
-	-@if not exist $(OBJDIR) md $(OBJDIR)
+$(TARGETDIR)/$(TARGET): $(OBJS)
+	$(FC) -o $@ $^ $(FFLAGS)
+	rm -f $(OBJS) ./*.mod
+	$(FC) -o $(TARGETDIR)/$(TARGETPOST) $(SRCSPOST) $(FFLAGS)
 
-$(OUTDIR)\$(TARGET): $(OBJS)  
-	$(LINKER) $(LFLAGS) $(OBJS) /OUT:"$(OUTDIR)\$(TARGET)"
+$(OBJDIR)/%.o $(OBJDIR)/%.mod: $(SRCDIR)/%.f90
+	@[ -d $(OBJDIR) ]
+	$(FC) -o $@ -c $<
 
-$(OBJDIR)\$(OBJS): $(SRCS)  
-	$(FF) $(FFLAGS) $(SRCS)
+all: $(TARGET)
 
-$(OUTDIR)\$(TARGETPOST): $(SRCDIRPOST)  
-	$(FF) /nologo /Fo"$(OBJDIR)\\" /Fe"$(OUTDIR)\\" /o $(OUTDIR)\$(TARGETPOST) $(SRCSPOST)
+clean:
+	rm -f $(OBJS) ./*.mod
