@@ -103,8 +103,7 @@ subroutine Acc2Position
   Ve_pre = Ve
   Position_pre = Position
 
-  acce = matmul(Cbe,F)
-  acce = acce / m
+  acce = matmul(Cbe,F) / m
   acce(3) = acce(3) - g
   acce_abs = abs_3axis(acce)
   
@@ -212,10 +211,10 @@ subroutine ODE_Solve
 
   omega = omega + (omega_ / 6.0d0) * dt
 
-  omega_matrix(1,:) = (/0.0d0      ,omega_(3)  ,-omega_(2) ,omega_(1)/)
-  omega_matrix(2,:) = (/-omega_(3) ,0.0d0      ,omega_(1)  ,omega_(2)/)
-  omega_matrix(3,:) = (/omega_(2)  ,-omega_(1) ,0.0d0      ,omega_(3)/)
-  omega_matrix(4,:) = (/-omega_(1) ,-omega_(2) ,-omega_(3) ,0.0d0    /)
+  omega_matrix(1,:) = (/0.0d0      ,omega(3)  ,-omega(2) ,omega(1)/)
+  omega_matrix(2,:) = (/-omega(3) ,0.0d0      ,omega(1)  ,omega(2)/)
+  omega_matrix(3,:) = (/omega(2)  ,-omega(1) ,0.0d0      ,omega(3)/)
+  omega_matrix(4,:) = (/-omega(1) ,-omega(2) ,-omega(3) ,0.0d0    /)
 
   quat = quat + 0.5d0 * matmul(omega_matrix,quat) * dt
   norm = sqrt(quat(1)**2 + quat(2)**2 + quat(3)**2 + quat(4)**2)
