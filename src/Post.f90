@@ -63,7 +63,7 @@ if (sw_log_ballistic == 0) then
                           & Va(1),Va(2),Va(3),Va_abs,Mach,Ve(1),Ve(2),Ve(3),theta,psi,fai,alpha,beta, &
                           & Position(1),Position(2),Position(3)
     write (101,'(4(f0.6,a))') t,',',Position(1),',',Position(2),',',Position(3)
-    write (102,'(6(f0.6,a))') t,',',theta,',',psi,',',fai,',',rad2deg(alpha),',',rad2deg(beta)
+    write (102,'(6(f0.6,a))') t,',',theta,',',psi,',',fai,',',alpha,',',beta
     write (103,'(9(f0.6,a))') t,',',Ve(1),',',Ve(2),',',Ve(3),',',Va(1),',',Va(2),',',Va(3),',',Va_abs,',',Mach
     write (104,'(4(f0.6,a))') t,',',Acce(1),',',Acce(2),',',Acce(3)
     write (105,'(5(f0.6,a))') t,',',Dx,',',F(1),',',F(2),',',F(3)
