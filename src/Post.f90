@@ -50,14 +50,22 @@ if (sw_log_ballistic == 0) then
   eof = 0
   print *, "Converting... : Log"
   open (100,file='OutputLog/BallisticLog.dat',status="old",form="unformatted")
+
   open (101,file='OutputLog/Position_log.csv',status="replace")
+  write (101,'(a)') 'time,X,Y,Z'
   open (102,file='OutputLog/Attitude_log.csv',status="replace")
+  write (102,'(a)') 'time,Pitch,Yaw,Roll,alpha,beta'
   open (103,file='OutputLog/Velocity_log.csv',status="replace")
+  write (103,'(a)') 'time,Vex,Vey,Vez,Vax,Vay,Vaz,Va,Mach'  
   open (104,file='OutputLog/Acceleration_log.csv',status="replace")
+  write (104,'(a)') 'time,Accx,Accy,Accz'
   open (105,file='OutputLog/Force_log.csv',status="replace")
+  write (105,'(a)') 'time,Drag,Fx,Fy,Fz'
   open (106,file='OutputLog/Structure_log.csv',status="replace")
+  write (106,'(a)') 'time,mf,mox,mp,m,lcgox,lcgp,lcg'
   open (107,file='OutputLog/Atmosphere_log.csv',status="replace")
-  
+  write (107,'(a)') 'time,Pa,Ta,rho,g,Cs,Vwx,Vwy'
+
   do while(eof >= 0)
     read (100,iostat = eof) t,Pa,Ta,rho,g,Cs,Vw(1),Vw(2),mf,mox,mp,m,lcgox,lcgp,lcg,Dx,F(1),F(2),F(3),Acce(1),Acce(2),Acce(3), &
                           & Va(1),Va(2),Va(3),Va_abs,Mach,Ve(1),Ve(2),Ve(3),theta,psi,fai,alpha,beta, &
