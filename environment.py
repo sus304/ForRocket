@@ -63,13 +63,15 @@ if __name__ == '__main__':
   import matplotlib.pyplot as plt
   altitude = np.empty(0)
   Pressure = np.empty(0)
+  gra = np.empty(0)
   for alt in range(-1000, 80000, 100):
     T, P, rho, Cs = std_atmo(alt)
-    g = gravity(100000.0)
+    g = gravity(alt)
     print (T, P, rho, Cs, g)
     altitude = np.append(altitude,alt)
     Pressure = np.append(Pressure, P)
+    gra = np.append(gra, g)
 
   plt.figure(0)
-  plt.plot(altitude, Pressure)
+  plt.plot(altitude, gra)
   plt.show()

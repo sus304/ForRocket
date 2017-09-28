@@ -6,9 +6,9 @@ def DCM_ECI2ECEF(t):
   omega = 7.292115e-5 # Earth Angular Velocity on Equator [rad/s]
   theta = omega * t # [rad]
 
-  DCM_ECI2ECEF = np.array([[np.cos(theta), np.sin(theta), 0.0], 
-                          [-np.sin(theta), np.cos(theta), 0.0], 
-                          [0.0           , 0.0          , 1.0]])
+  DCM_ECI2ECEF = np.array([[np.cos(theta) , np.sin(theta), 0.0], 
+                           [-np.sin(theta), np.cos(theta), 0.0], 
+                           [0.0           , 0.0          , 1.0]])
   return DCM_ECI2ECEF
 
 def DCM_ECEF2NED(lat, lon):
@@ -118,6 +118,18 @@ def Euler2Quat(Azimuth, Elevation, Roll=0.0):
 def Quat2Euler(DCM_NED2Body_Quat):
   Azimuth = np.arctan2(DCM_NED2Body_Quat[0,1], DCM_NED2Body_Quat[0,0])
   Elevation = np.arcsin(-DCM_NED2Body_Quat[0,2])
-  Roll = np.arctan2(DCM_NED2Body_Quat[1,2], DCM_NED2Body_Quat[2,2])
+  Roll = np.arctan2(DCM_NED2Body_Quat[2,1], DCM_NED2Body_Quat[2,2])
 
   return Azimuth, Elevation, Roll
+
+if __name__ == '__main__':
+  LLH = np.array([0.0, 0.0, 10.0])
+
+  DCM_ECI2ECEF = DCM_ECI2ECEF(0.0)
+  DCM_ECEF2ECI = DCM_ECI2ECEF.transpose()
+  Pos_ECEF = LLH2ECEF(LLH)   
+  Pos_ECI = DCM_ECEF2ECI.dot(Pos_ECEF)
+
+  print(LLH)
+  print(Pos_ECEF)
+  print(Pos_ECI)

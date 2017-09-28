@@ -8,78 +8,145 @@ class ResultBox:
     self.items = []
 
     # Output Items
-    self.items.append('Time [s]')
-    self.items.append('Mf [kg]')
-    self.items.append('Mox [kg]')
-    self.items.append('M [kg]')
-    self.items.append('Mdot_ox [kg/s]')
-    self.items.append('Mdot_f [kg/s]')
-    self.items.append('Lcgp [m]')
-    self.items.append('Lcg [m]')
-    self.items.append('Thrust [N]')
-    self.items.append('Isp [s]')
-    self.items.append('Drag [N]')
-    self.items.append('Normal Y [N]')
-    self.items.append('Normal Z [N]')
-    self.items.append('Acc_ECI X [m/s^2]')
-    self.items.append('Acc_ECI Y [m/s^2]')
-    self.items.append('Acc_ECI Z [m/s^2]')
-    self.items.append('Vel_ECI X [m/s]')
-    self.items.append('Vel_ECI Y [m/s]')
-    self.items.append('Vel_ECI Z [m/s]')
-    self.items.append('Pos_ECI X [m]')
-    self.items.append('Pos_ECI Y [m]')
-    self.items.append('Pos_ECI Z [m]')
-    self.items.append('Pos_ECEF X [m]')
-    self.items.append('Pos_ECEF Y [m]')
-    self.items.append('Pos_ECEF Z [m]')
-    self.items.append('Latitude [deg]')
-    self.items.append('Longitude [deg]')
-    self.items.append('Height [m]')
-    self.items.append('Azimuth [deg]')
-    self.items.append('Elevation [deg]')
-    self.items.append('Wind_North [m/s]')
-    self.items.append('Wind_East [m/s]')
-    self.items.append('Vel_Air X [m/s]')
-    self.items.append('Vel_Air Y [m/s]')
-    self.items.append('Vel_Air Z [m/s]')
-    self.items.append('alpha [deg]')
-    self.items.append('beta [deg]')
-    self.items.append('Mach [-]')
-    self.items.append('DynamicPressure [Pa]')
-    self.items.append('g [m/s^2]')
-    self.items.append('Pa [Pa]')
-    self.items.append('rho [kg/m^3]')
-    self.items.append('Ij X [kg*m^2]')
-    self.items.append('Ij Y [kg*m^2]')
-    self.items.append('Ij Z [kg*m^2]')
-    self.items.append('Moment X [Nm]')
-    self.items.append('Moment Y [Nm]')
-    self.items.append('Moment Z [Nm]')
-    self.items.append('Omega X [rad/s]')
-    self.items.append('Omega Y [rad/s]')
-    self.items.append('Omega Z [rad/s]')
+    self.items.append('Time [s]') # 0
+    self.items.append('Mf [kg]') # 1
+    self.items.append('Mox [kg]') # 2
+    self.items.append('M [kg]') # 3
+    self.items.append('Mdot_ox [kg/s]') # 4
+    self.items.append('Mdot_f [kg/s]') # 5
+    self.items.append('Lcgp [m]') # 6
+    self.items.append('Lcg [m]') # 7
+    self.items.append('Isp [s]') # 8    
+    self.items.append('Thrust [N]') # 9
+    self.items.append('Drag [N]') # 10
+    self.items.append('Normal Y [N]') # 11
+    self.items.append('Normal Z [N]') # 12
+    self.items.append('Acc_ECI X [m/s^2]') # 13
+    self.items.append('Acc_ECI Y [m/s^2]') # 14
+    self.items.append('Acc_ECI Z [m/s^2]') # 15
+    self.items.append('Vel_ECI X [m/s]') # 16
+    self.items.append('Vel_ECI Y [m/s]') # 17
+    self.items.append('Vel_ECI Z [m/s]') # 18
+    self.items.append('Pos_ECI X [m]') # 19
+    self.items.append('Pos_ECI Y [m]') # 20
+    self.items.append('Pos_ECI Z [m]') # 21
+    self.items.append('Pos_ECEF X [m]') # 22
+    self.items.append('Pos_ECEF Y [m]') # 23
+    self.items.append('Pos_ECEF Z [m]') # 24
+    self.items.append('Latitude [deg]') # 25
+    self.items.append('Longitude [deg]') # 26
+    self.items.append('Height [m]') # 27
+    self.items.append('Azimuth [deg]') # 28
+    self.items.append('Elevation [deg]') # 29
+    self.items.append('Wind_North [m/s]') # 30
+    self.items.append('Wind_East [m/s]') # 31
+    self.items.append('Vel_Air X [m/s]') # 32
+    self.items.append('Vel_Air Y [m/s]') # 33
+    self.items.append('Vel_Air Z [m/s]') # 34
+    self.items.append('alpha [deg]') # 35
+    self.items.append('beta [deg]') # 36
+    self.items.append('Mach [-]') # 37
+    self.items.append('DynamicPressure [Pa]') # 38
+    self.items.append('g [m/s^2]') # 39
+    self.items.append('Pa [Pa]') # 40
+    self.items.append('rho [kg/m^3]') # 41
+    self.items.append('Moment X [Nm]') # 42
+    self.items.append('Moment Y [Nm]') # 43
+    self.items.append('Moment Z [Nm]') # 44
+    self.items.append('Omega X [rad/s]') # 45
+    self.items.append('Omega Y [rad/s]') # 46
+    self.items.append('Omega Z [rad/s]') # 47
 
-    self.value = np.empty(len(self.items))
+    self.value = np.zeros(len(self.items))
 
-  def debug():
-    # self.value = np.delete(self.value, 0, 0)
+  def tdebug(self, de):
+    self.value = np.delete(self.value, 0, 0)
 
     plt.close('all')
     plt.figure(0)
-    plt.plot(self.value[:,0], self.value[:,1], label='Mf')
-    plt.plot(self.value[:,0], self.value[:,2], label='Mox')
-    plt.plot(self.value[:,0], self.value[:,3], label='M')
-    plt.plot(self.value[:,0], self.value[:,4], label='Lcgp')
-    plt.plot(self.value[:,0], self.value[:,5], label='Lcg')
-    plt.plot(self.value[:,0], self.value[:,6], label='Lcp')
+    for i in range(1,4):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
     plt.legend(loc='best')
     plt.grid()
-    
     plt.figure(1)
-    plt.plot(self.value[:,0], self.value[:,7], label='Drag')
-    plt.plot(self.value[:,0], self.value[:,8], label='Thrust')
-    plt.legend(loc='best')    
+    for i in range(4,6):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(2)
+    for i in range(6,8):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(3)
+    for i in range(8,9):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(4)
+    for i in range(9,13):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(5)
+    for i in range(13,16):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(6)
+    for i in range(16,19):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(7)
+    for i in range(19,22):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(8)
+    for i in range(22,25):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(9)
+    for i in range(27,28):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(10)
+    for i in range(28,30):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(11)
+    for i in range(30,32):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(12)
+    for i in range(32,35):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(13)
+    for i in range(35,37):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(14)
+    for i in range(37,38):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(15)
+    for i in range(38,39):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
+    plt.grid()
+    plt.figure(16)
+    for i in range(45,48):
+      plt.plot(self.value[:,0], self.value[:,i], label=self.items[i])
+    plt.legend(loc='best')
     plt.grid()
 
     plt.show()

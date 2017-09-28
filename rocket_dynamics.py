@@ -80,7 +80,7 @@ class Config:
         Time = Thrust_Original[:,0]
         Thrust = Thrust_Original[:,1]
         th = M * 9.80665
-        index = (Thrust < th).argmin()
+        index = (Thrust > th).argmax()
         Thrust = Thrust[index:]
         Time = Time[:len(Thrust)]
         return Time, Thrust
@@ -139,15 +139,20 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
     v = Vel_Air_Bodyframe[1]
     w = Vel_Air_Bodyframe[2]
 
-    alpha = np.arctan2(w, u)
-    beta = np.arctan2(v, Vel_Air_abs)
+    if Vel_Air_abs < 0.0 or np.abs(u) < 0.0:
+      alpha = 0.0
+      beta = 0.0
+    else:
+      alpha = np.arctan2(w, u)
+      beta = np.arcsin(v / Vel_Air_abs)
 
-    return alpha, beta
+    return alpha, beta # rad
 
   def AeroForce(rocket, DynamicPressure, alpha, beta, Mach):
     Drag = DynamicPressure * rocket.Cd(Mach) * rocket.A
     Normal = DynamicPressure * rocket.CNa * rocket.A
-    return np.array([-Drag, Normal * beta, -Normal * alpha])
+    # return np.array([-Drag, Normal * beta, -Normal * alpha])
+    return np.array([-Drag, Normal, -Normal])
 
   def AeroMoment(rocket, AeroForce, Lcg):
     return np.array([0.0, (rocket.Lcp - Lcg) * AeroForce[2], -(rocket.Lcp - Lcg) * AeroForce[1]])
@@ -256,11 +261,11 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
       Mdot_ox = 0.0
     Aeroforce = AeroForce(rocket, DynamicPressure, alpha, beta, Mach)
     # Newton Equation
-    Acc_ECI = DCM_Body2ECI.dot(thrust + DCM_Air2Body.dot(Aeroforce)) / M + DCM_NED2ECI.dot(g)
+    Acc_ECI = DCM_Body2ECI.dot((thrust + DCM_Air2Body.dot(Aeroforce)) / M) + DCM_NED2ECI.dot(g)
     # Add Coriolis Force
-    Acc_ECI[0] = Omega_Body[2] * Vel_ECEF_Bodyframe[1] - Omega_Body[1] * Vel_ECEF_Bodyframe[2] + Acc_ECI[0]
-    Acc_ECI[1] = Omega_Body[0] * Vel_ECEF_Bodyframe[2] - Omega_Body[2] * Vel_ECEF_Bodyframe[0] + Acc_ECI[1]
-    Acc_ECI[2] = Omega_Body[1] * Vel_ECEF_Bodyframe[0] - Omega_Body[0] * Vel_ECEF_Bodyframe[1] + Acc_ECI[2]
+    # Acc_ECI[0] = Omega_Body[2] * Vel_ECEF_Bodyframe[1] - Omega_Body[1] * Vel_ECEF_Bodyframe[2] + Acc_ECI[0]
+    # Acc_ECI[1] = Omega_Body[0] * Vel_ECEF_Bodyframe[2] - Omega_Body[2] * Vel_ECEF_Bodyframe[0] + Acc_ECI[1]
+    # Acc_ECI[2] = Omega_Body[1] * Vel_ECEF_Bodyframe[0] - Omega_Body[0] * Vel_ECEF_Bodyframe[1] + Acc_ECI[2]
 
     # Rotation
     Lcg, Lcgp = center_gravity(rocket, Mox, Mf)
@@ -295,12 +300,12 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
       dx[3] = 0.0
       dx[4] = 0.0
     # 着地まで結果を出力
-    if Altitude < 0.0:
-      output_items = np.array([t, Mf, Mox, M, Mdot_ox, Mdot_f, Lcgp, Lcg, thrust[0], Isp, Aeroforce[0], Aeroforce[1], Aeroforce[2],
+    if Altitude > 0.0:
+      output_items = np.array([t, Mf, Mox, M, Mdot_ox, Mdot_f, Lcgp, Lcg, Isp, thrust[0], Aeroforce[0], Aeroforce[1], Aeroforce[2],
                               Acc_ECI[0], Acc_ECI[1], Acc_ECI[2], Vel_ECI[0], Vel_ECI[1], Vel_ECI[2], Pos_ECI[0], Pos_ECI[1], Pos_ECI[2], 
-                              Pos_ECEF[0], Pos_ECEF[1], Pos_ECEF[2], Pos_LLH[0], Pos_LLH[1], Pos_LLH[2], Azimuth, Elevation,
-                              Wind_NED[0], Wind_NED[1], Wind_NED[2], Vel_Air_Bodyframe[0], Vel_Air_Bodyframe[1], Vel_Air_Bodyframe[2], alpha, beta, Mach, DynamicPressure, g, Pa, rho,
-                              Ij[0], Ij[1], Ij[2], Moment[0], Moment[1], Moment[2], Omega_Body[0], Omega_Body[1], Omega_Body[2]])
+                              Pos_ECEF[0], Pos_ECEF[1], Pos_ECEF[2], Pos_LLH[0], Pos_LLH[1], Pos_LLH[2], np.degrees(Azimuth), np.degrees(Elevation),
+                              Wind_NED[0], Wind_NED[1], Vel_Air_Bodyframe[0], Vel_Air_Bodyframe[1], Vel_Air_Bodyframe[2], np.degrees(alpha), np.degrees(beta), Mach, DynamicPressure, g[2], Pa, rho,
+                              Moment[0], Moment[1], Moment[2], Omega_Body[0], Omega_Body[1], Omega_Body[2]])
       result.value = np.vstack((result.value, output_items))
       
 
@@ -348,7 +353,7 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
   t = np.arange(rocket.StartTime, rocket.EndTime + rocket.TimeStep, rocket.TimeStep)
   x0 = Initialize(rocket)
   params = np.array([WindSpeed, WindDirection])
-  x = odeint(dynamics, x0, t, args=(params, rocket, result, ), mxstep=100000)
+  x = odeint(dynamics, x0, t, args=(params, rocket, result, ), mxstep=10000)
 
   return t, x
 
@@ -358,4 +363,41 @@ def Simulation(rocket, WindSpeed, WindDirection, ResultDir, result):
 # @ output
 
 
-  
+if __name__ == '__main__':
+  import os
+  import sys
+  import json
+
+  print ('6-DoF Rocket Flight Simulator')
+  print ('ForRocket')
+
+  import plot_result as Result
+
+  # Config File Load
+  ConfigFile = open('rocket_config.json')
+  json_obj = json.load(ConfigFile)
+
+  # Result Directory Create
+  ObjectName = json_obj.get('Name')
+  ResultDir = json_obj.get('System').get('Result Directory') + '_' + ObjectName
+  if os.path.exists(ResultDir):  
+    ResultDir_org = ResultDir
+    i = 1
+    while os.path.exists(ResultDir):
+      sys.stderr.write ('\r\033[K' + '%s already exists' % ResultDir)
+      sys.stderr.flush()
+      ResultDir = ResultDir_org + '_%02d' % (i)
+      i = i + 1
+  else:
+    print ('"%s" not found' % ResultDir)
+  print ()
+  print ('Making...')
+  os.mkdir(ResultDir)
+  print ('Result Directory : %s' % ResultDir)
+
+
+  # Rocket instance
+  rocket = Config(json_obj)
+  result = Result.ResultBox()
+  TimeLog, Log = Simulation(rocket, 2.0, 45.0, ResultDir, result)
+  result.tdebug(1)  
