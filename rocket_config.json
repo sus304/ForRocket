@@ -18,10 +18,10 @@
 	"Start Time [sec]": 0.0,
 	"End Time [sec]": 1.0,
 	"Time Step [sec]": 0.1,
-	
+
 	"Launch Pad": {
 		"LLH [deg, deg, m]": [40.0, 140.0, 10.0],
-		"Launch Azimuth [deg]": 125.0,		
+		"Launch Azimuth [deg]": 125.0,
 		"Launch Elevation [deg]": 80.0,
 		"Launch Roll Angle [deg]":0.0,
 		"Launcher Rail Length [m]": 5.0
@@ -41,17 +41,21 @@
 
 	"Aero":{
 		"Cd File": "Cd.csv",
-		"File Exist":true,		
-		"Constant Cd":0.55,		
-		"Length-C.P. [m]": 2.0,
-		"Normal Coefficient CNa": 12.0,
+		"Cd File Exist":true,
+		"Constant Cd":0.55,
+		"Lcp File": "Lcp.csv",
+		"Lcp File Exist":false,
+		"Constant Length-C.P. [m]": 2.0,
+		"CNa File": "CNa.csv",
+		"CNa File Exist":false,
+		"Constant Normal Coefficient CNa": 12.0,
 		"Roll Dumping Moment Coefficient Clp": 0.01,
 		"Pitch Dumping Moment Coefficient Cmq": 0.3
 	},
 
 	"Engine": {
 		"Thrust File": "Thrust.csv",
-		"File Exist":true,		
+		"File Exist":true,
 		"Constant Thrust [N]":1000.0,
 		"Burn Time [sec]":7.0,
 		"Isp [sec]": 180.0,
@@ -67,13 +71,12 @@
 		"Fuel Mass Flow Rate [kg/s]": 0.1,
 		"Fuel Outside Diameter [m]": 0.08,
 		"Fuel Inside Diameter [m]": 0.04,
-		"Fuel Length [m]": 0.3,
-		"Use HyperTEK Tank": true
+		"Fuel Length [m]": 0.3
 	},
 
 	"Environment": {
 		"Wind Mesurement Height [m]": 5.0,
 		"Wind Power Law Exponential Coefficient": 7.0
 	}
-	
+
 }
