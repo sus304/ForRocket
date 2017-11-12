@@ -14,7 +14,7 @@ Ref.
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-import environment as env
+import FlightHeating.environment as env
 
 class NoseCone:
     def __init__(self):

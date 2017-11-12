@@ -23,6 +23,8 @@ def std_atmo(altitude):
     for i in range(8):
         if h < h_list[i]:
             k = i - 1
+            if k < 0:
+                k = 0
             break
         elif h >= h_list[7]:
             k = 7
@@ -83,7 +85,7 @@ def gravity(altitude):
     gravity = g0 * (Re / (Re + altitude)) ** 2 # [m/s^2]
     return gravity
 
-def wind_NED(WindSpeed, WindDirection, altitude, refaltitude, power_exp):
+def Wind_NED(WindSpeed, WindDirection, altitude, refaltitude, power_exp):
     # WindSpeed [m/s]
     # WindDirection [deg] Northから時計回り
     # 負にすることで風向"からの"風にしてる
