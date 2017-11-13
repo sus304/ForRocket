@@ -39,6 +39,16 @@ class Rocket:
         self.Ij0_s_roll = struct.get('Structure Inertia-Moment Roll-Axis [kg*m^2]')
         self.Ij0_s_pitch = struct.get('Structure Inertia-Moment Pitch-Axis [kg*m^2]')
 
+        para = json.get('Parachute')
+        self.CdS1 = para.get('1st Parachute CdS [m2]')
+        para2_exist = para.get('2nd Parachute Exist')
+        if para2_exist:
+            self.CdS2 = para.get('2nd Parachute CdS [m2]')
+            self.alt_sepa2 = para.get('2nd Parachute Opening Altitude [m]')
+        else:
+            self.CdS2 = 0.0
+            self.alt_sepa2 = 0.0
+
         prop = json.get('Propellant')
         self.m0_ox = prop.get('Oxidizer Mass [kg]')
         self.mdot_ox = prop.get('Oxidizer Mass Flow Rate [kg/s]')
@@ -145,23 +155,10 @@ def run():
     print ('Created Result Directory: ', resultdir)
 
     rocket = Rocket(json_obj)
+
+
     simulator = Simulator.Simulator(2.0, 0.0)
-    time, ode_log = simulator.simulation(rocket)
-
-    plt.figure()
-    plt.plot(time, ode_log[:,0], label='X')
-    plt.plot(time, ode_log[:,1], label='Y')
-    plt.plot(time, ode_log[:,2], label='Z')
-    plt.grid()
-    plt.legend()
-
-    plt.figure()
-    plt.plot(time, ode_log[:,16], label='Mf')
-    plt.plot(time, ode_log[:,17], label='Mox')    
-    plt.grid()
-    plt.legend()
-
-    plt.show()
+    simulator.simulation(rocket)
 
 
 if __name__ == '__main__':

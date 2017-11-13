@@ -39,6 +39,13 @@
 		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 3.0
 	},
 
+	"Parachute": {
+		"1st Parachute CdS [m2]": 0.3,
+		"2nd Parachute Exist": true,
+		"2nd Parachute CdS [m2]": 0.6,
+		"2nd Parachute Opening Altitude [m]": 300.0
+	},
+
 	"Aero":{
 		"Cd File": "Cd.csv",
 		"Cd File Exist":true,
