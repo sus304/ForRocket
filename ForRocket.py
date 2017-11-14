@@ -14,7 +14,7 @@ from FlightHeating import heating
 
 class Rocket:
     def __init__(self, json):
-        self.start_time = json.get('Start Time [sec]')
+        self.auto_end = json.get('Auto End Time')
         self.end_time = json.get('End Time [sec]')
         self.timestep = json.get('Time Step [sec]')
 
@@ -113,10 +113,12 @@ class Rocket:
             thrust_array = thrust_array[index:]
             time_array = time_array[index:] - time_array[index]
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+            self.total_impulse = round(np.sum(thrust_array) * np.sum(time_array) / len(time_array))
         else:
             time_array = np.arange(0.0, engine.get('Burn Time [sec]') + 0.01, 0.01)
             thrust_array = np.array([engine.get('Constant Thrust [N]')] * time_array.size)
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+            self.total_impulse = round(engine.get('Constant Thrust [N]') * engine.get('Burn Time [sec]'))
         self.Isp = engine.get('Isp [sec]')
         self.dth = engine.get('Nozzle Throat Diameter [m]')
         self.eps = engine.get('Nozzle Expansion Ratio')
@@ -133,34 +135,42 @@ class Rocket:
         self.Lcg0 = (self.ms * self.Lcg_s + self.m0_p * self.Lcg0_p) / self.m0
 
 
-def run():
+def run(config_file):
+    json_obj = json.load(open(config_file))
+    print('Config File: ', config_file)
+
+    model_name = json_obj.get('Name')
+    result_dir = json_obj.get('System').get('Result Directory') + '_' + model_name
+    if os.path.exists(result_dir):
+        resultdir_org = result_dir
+        i = 1
+        while os.path.exists(result_dir):
+            result_dir = resultdir_org + '_%02d' % (i)
+            i = i + 1
+    os.mkdir(result_dir)
+    print ('Created Result Directory: ', result_dir)
+
+    rocket = Rocket(json_obj)
+
+    single_condition = json_obj.get('Wind').get('Single Condition Simulation')
+    if single_condition:
+        vel_wind = json_obj.get('Wind').get('Wind Velocity [m/s]')
+        angle_wind = json_obj.get('Wind').get('Wind Direction [deg]')
+        simulator = Simulator.Simulator(vel_wind, angle_wind, result_dir)
+        simulator.simulation(rocket)
+    else:
+        simulator = Simulator.WindMapper(result_dir)
+
+    simulator.simulation(rocket)
+    MapPlotter(simulator.landing_points)
+
+
+if __name__ == '__main__':
     argv = sys.argv
     if len(argv) < 2:
         print ('Argument is missing')
         print ('Usage: python ForRocket.py configFileName.json')
         sys.exit()
     config_file = argv[1]
-    json_obj = json.load(open(config_file))
-    print('Config File: ', config_file)
-
-    model_name = json_obj.get('Name')
-    resultdir = json_obj.get('System').get('Result Directory') + '_' + model_name
-    if os.path.exists(resultdir):
-        resultdir_org = resultdir
-        i = 1
-        while os.path.exists(resultdir):
-            resultdir = resultdir_org + '_%02d' % (i)
-            i = i + 1
-    os.mkdir(resultdir)
-    print ('Created Result Directory: ', resultdir)
-
-    rocket = Rocket(json_obj)
-
-
-    simulator = Simulator.Simulator(2.0, 0.0)
-    simulator.simulation(rocket)
-
-
-if __name__ == '__main__':
-    run()
+    run(config_file)
 

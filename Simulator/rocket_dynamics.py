@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy import interpolate
 from scipy.integrate import odeint
 
@@ -6,9 +7,11 @@ import Simulator.coordinate as coord
 import Simulator.environment as env
 
 class Simulator:
-    def __init__(self, vel_wind, angle_wind):
+    def __init__(self, vel_wind, angle_wind, result_dir, multi_mode=False):
         self.vel_wind = vel_wind
         self.angle_wind = angle_wind
+        self.result_dir = result_dir
+        self.multi_mode = multi_mode
 
         # ランチクリア値、計算中に記録
         self.acc_launch_clear = 0.0
@@ -69,6 +72,7 @@ class Simulator:
         self.mdot_f_log = np.array(self.mdot_f_log)
         self.Lcg_log = np.array(self.Lcg_log)
         self.Lcg_ox_log = np.array(self.Lcg_ox_log)
+        print(len(self.Vel_air_log), len(self.Pos_ENU_log[:,2]))
 
         # 着地後の分をカット
         index_hard_landing = np.argmax(self.Pos_ENU_log[:, 2] <= 0.0)
@@ -110,7 +114,15 @@ class Simulator:
         self.Lcp_log = rocket.Lcp(self.time_log)
         self.mp_log = self.mox_log + self.mf_log
         self.m_log = self.mp_log + rocket.ms
-        self.Vel_air_abs_log = np.linalg.norm(self.Vel_air_log)
+        # np.array(list(map(lambda x,y,z: np.sqrt(x**2+y**2+z**2), self.Vel_air_log[:,0], self.Vel_air_log[:,1], self.Vel_air_log[:,2])))
+        self.Vel_air_abs_log = []
+        for i in range(len(self.Vel_air_log[:, 0])):
+            self.Vel_air_abs_log.append(np.linalg.norm(self.Vel_air_log[i, :]))
+        self.Vel_air_abs_log = np.array(self.Vel_air_abs_log)
+        print(len(self.Vel_air_log), len(self.Pos_ENU_log[:,2]))
+        plt.figure()
+        plt.plot(self.Pos_ENU_log[:,2])
+        plt.show()
         self.Mach_log = self.Vel_air_abs_log / env.get_std_soundspeed_array(altitude_log)
         self.dynamic_pressure_log = 0.5 * self.rho_air_log * self.Vel_air_abs_log * self.Vel_air_abs_log
 
@@ -123,6 +135,7 @@ class Simulator:
         self.Vel_ENU_apogee = self.Vel_ENU_log[index_apogee, :]
         self.Vel_air_abs_apogee = self.Vel_air_abs_log[index_apogee]
         self.m_apogee = self.m_log[index_apogee]
+        self.downrange_apogee = np.linalg.norm(self.Pos_ENU_apogee[0:2])        
 
         # Max Speed
         index_vel_max = np.argmax(self.Vel_air_abs_log[:index_apogee])
@@ -138,6 +151,7 @@ class Simulator:
         # Hard Landing
         self.time_hard_landing = self.time_log[-1]
         self.hard_landing_point = self.Pos_ENU_log[-1, 0:2]
+        self.downrange_hard_landing = no.linalg.norm(self.hard_landing_point)
 
         #  パラシュート降下
         x0 = np.zeros(4)
@@ -152,6 +166,32 @@ class Simulator:
         self.time_sepa2 = time[index_sepa2]
         self.time_soft_landing = time[index_soft_landing]
         self.soft_landing_point = ode_log[index_soft_landing, 0:2]
+        self.downrange_soft_landing = no.linalg.norm(self.soft_landing_point)
+
+        self.landing_points = [self.hard_landing_point, self.soft_landing_point]
+
+        if self.multi_mode:
+            return
+
+        txt = open(self.result_dir + '/result.txt', mode='w')
+        txt.writelines(['Launcher Clear Acceleration,', str(self.acc_launch_clear / 9.80665), '[G]\n'])
+        txt.writelines(['Launcher Clear Velocity,', str(self.vel_launch_clear), '[m/s]\n'])
+        txt.writelines(['Max Q X+,', str(self.time_maxQ), '[s]\n'])
+        txt.writelines(['Max Q Altitude,', str(self.altitude_maxQ / 1000.0), '[km]\n'])
+        txt.writelines(['Max Q,', str(self.maxQ / 1000.0), '[kPa]\n'])
+        txt.writelines(['Max Speed X+,', str(self.time_vel_max), '[s]\n'])
+        txt.writelines(['Max Speed Altitude,', str(self.altitude_vel_max / 1000.0), '[km]\n'])
+        txt.writelines(['Max Speed,', str(self.Vel_air_max), '[m/s]\n'])
+        txt.writelines(['Apogee X+,', str(self.time_apogee), '[s]\n'])
+        txt.writelines(['Apogee Altitude,', str(self.altitude_apogee / 1000.0), '[km]\n'])
+        txt.writelines(['Apogee Downrange,', str(self.downrange_apogee / 1000.0), '[km]\n'])
+        txt.writelines(['Apogee Air Velocity,', str(self.Vel_air_abs_apogee), '[m/s]\n'])
+        txt.writelines(['Hard Landing X+,', str(self.time_hard_landing), '[s]\n'])
+        txt.writelines(['Hard Landing Downrange,', str(self.downrange_hard_landing / 1000.0), '[km]\n'])
+        txt.writelines(['2nd Parachute Opening X+,', str(self.time_sepa2), '[s]\n'])
+        txt.writelines(['Soft Landing X+,', str(self.time_soft_landing), '[s]\n'])
+        txt.writelines(['Soft Landing Downrange,', str(self.downrange_soft_landing / 1000.0), '[km]\n'])
+        txt.close()
 
     def simulation(self, rocket):
         length = (rocket.L - rocket.Lcg0) * np.cos(np.deg2rad(rocket.elevation0))
@@ -170,7 +210,15 @@ class Simulator:
         x0[12:16] = self.quat0  # quat
         x0[16] = rocket.m0_f  # mf
         x0[17] = rocket.m0_ox  # mox
-        time = np.arange(rocket.start_time, rocket.end_time, rocket.timestep)
+        start_time = 0.0
+        def estimate_end():
+            It_digits = len(str(rocket.total_impulse))
+            return rocket.total_impulse / (10 ** (It_digits - 3)) * 1.5
+        if rocket.auto_end:
+            end_time = estimate_end()
+        else:
+            end_time = rocket.end_time
+        time = np.arange(start_time, end_time, rocket.timestep)
         ode_log = odeint(dynamics, x0, time, args=(rocket, self))
 
         self.time_log = time
@@ -181,6 +229,7 @@ class Simulator:
         self.quat_log = ode_log[:, 12:16]
         self.mf_log = ode_log[:, 16]
         self.mox_log = ode_log[:, 17]
+        self.post_process(rocket)
 
 
 def dynamics(x, t, rocket, simulator):
@@ -373,3 +422,32 @@ def parachute_dynamics(x, t, rocket, simulator):
     dx[3] = Acc  # Vel_descent
 
     return dx
+
+
+class WindMapper:
+    # 継承していないがSimulatorクラスとスイッチングされるクラス
+    # simulationメソッドは共通の引数であること
+    def __init__(self, result_dir):
+        self.result_dir = result_dir
+        self.Vel_wind_min = 1.0
+        self.Vel_wind_max = 7.0
+        self.angle_wind_min = 0.0  # [deg]
+        self.angle_wind_max = 360.0
+
+        self.Vel_wind_array = np.arange(self.Vel_wind_min, self.Vel_wind_max+1.0, 1.0)
+        self.angle_wind_array = np.arange(self.angle_wind_min, self.angle_wind_max, 45.0)
+
+    def simulation(self, rocket):
+        self.landing_points = []
+        for Vel_wind in self.Vel_wind_array:
+            points = []
+            for angle_wind in self.angle_wind_array:
+                simulator = Simulator(Vel_wind, angle_wind, self.result_dir, True)
+                simulator.simulation()
+                points.append(simulator.landing_points)
+
+            points.append(points[0])  # 分散を閉じるため
+            self.landing_points.append(points)
+
+        
+        

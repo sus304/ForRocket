@@ -15,9 +15,16 @@
 	},
 
 	"Name": "H-44",
-	"Start Time [sec]": 0.0,
+	"Auto End Time": true,
 	"End Time [sec]": 50.0,
 	"Time Step [sec]": 0.001,
+	"If the calculation is slow, try increasing the Time Step. Precision and trade-off": "comment",
+
+	"Wind":{
+		"Single Condition Simulation": true,
+		"Wind Velocity [m/s]": 2.5,
+		"Wind Direction [deg]": 0.0
+	},
 
 	"Launch Pad": {
 		"LLH [deg, deg, m]": [40.0, 140.0, 10.0],
