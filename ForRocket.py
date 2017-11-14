@@ -162,7 +162,7 @@ def run(config_file):
         simulator = Simulator.WindMapper(result_dir)
 
     simulator.simulation(rocket)
-    MapPlotter(simulator.landing_points)
+    # MapPlotter(simulator.landing_points)
 
 
 if __name__ == '__main__':

@@ -70,8 +70,8 @@
 	"Engine": {
 		"Thrust File": "Thrust.csv",
 		"File Exist":false,
-		"Constant Thrust [N]":1000.0,
-		"Burn Time [sec]":1.0,
+		"Constant Thrust [N]":1500.0,
+		"Burn Time [sec]":1.2,
 		"Isp [sec]": 180.0,
 		"Nozzle Throat Diameter [m]": 0.03,
 		"Nozzle Expansion Ratio": 10.0

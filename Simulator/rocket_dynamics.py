@@ -6,232 +6,6 @@ from scipy.integrate import odeint
 import Simulator.coordinate as coord
 import Simulator.environment as env
 
-class Simulator:
-    def __init__(self, vel_wind, angle_wind, result_dir, multi_mode=False):
-        self.vel_wind = vel_wind
-        self.angle_wind = angle_wind
-        self.result_dir = result_dir
-        self.multi_mode = multi_mode
-
-        # ランチクリア値、計算中に記録
-        self.acc_launch_clear = 0.0
-        self.vel_launch_clear = 0.0
-
-        # odeintの出力からsimulationメソッドで代入
-        self.time_log = []
-        self.Pos_ENU_log = []
-        self.Vel_ENU_log = []
-        self.Vel_Body_log = []
-        self.omega_log = []
-        self.quat_log = []
-        self.mf_log = []
-        self.mox_log = []
-
-        # 計算中にappend
-        self.Acc_ENU_log = []
-        self.Acc_Body_log = []
-        self.Vel_air_log = []
-        self.Force_log = []
-        self.Isp_log = []
-        self.F_aero_log = []
-        self.azimuth_log = []
-        self.elevation_log = []
-        self.roll_log = []
-        self.alpha_log = []
-        self.beta_log = []
-        self.moment_log = []
-        self.moment_aero_log = []
-        self.moment_aero_dumping_log = []
-        self.moment_jet_dumping_log = []
-        self.mdot_p_log = []
-        self.mdot_ox_log = []
-        self.mdot_f_log = []
-        self.Lcg_log = []
-        self.Lcg_ox_log = []
-
-    def post_process(self, rocket):
-        # list to ndarray
-        # これやらないとこのあとの計算がめんどう
-        self.Acc_ENU_log = np.array(self.Acc_ENU_log)
-        self.Acc_Body_log = np.array(self.Acc_Body_log)
-        self.Vel_air_log = np.array(self.Vel_air_log)
-        self.Force_log = np.array(self.Force_log)
-        self.Isp_log = np.array(self.Isp_log)
-        self.F_aero_log = np.array(self.F_aero_log)
-        self.azimuth_log = np.array(self.azimuth_log)
-        self.elevation_log = np.array(self.elevation_log)
-        self.roll_log = np.array(self.roll_log)
-        self.alpha_log = np.array(self.alpha_log)
-        self.beta_log = np.array(self.beta_log)
-        self.moment_log = np.array(self.moment_log)
-        self.moment_aero_log = np.array(self.moment_aero_log)
-        self.moment_aero_dumping_log = np.array(self.moment_aero_dumping_log)
-        self.moment_jet_dumping_log = np.array(self.moment_jet_dumping_log)
-        self.mdot_p_log = np.array(self.mdot_p_log)
-        self.mdot_ox_log = np.array(self.mdot_ox_log)
-        self.mdot_f_log = np.array(self.mdot_f_log)
-        self.Lcg_log = np.array(self.Lcg_log)
-        self.Lcg_ox_log = np.array(self.Lcg_ox_log)
-        print(len(self.Vel_air_log), len(self.Pos_ENU_log[:,2]))
-
-        # 着地後の分をカット
-        index_hard_landing = np.argmax(self.Pos_ENU_log[:, 2] <= 0.0)
-        self.time_log = self.time_log[:index_hard_landing+1]
-        self.Pos_ENU_log = self.Pos_ENU_log[:index_hard_landing+1, :]
-        self.Vel_ENU_log = self.Vel_ENU_log[:index_hard_landing+1, :]
-        self.Vel_Body_log = self.Vel_Body_log[:index_hard_landing+1, :]
-        self.omega_log = self.omega_log[:index_hard_landing+1, :]
-        self.quat_log = self.quat_log[:index_hard_landing+1, :]
-        self.mf_log = self.mf_log[:index_hard_landing+1]
-        self.mox_log = self.mox_log[:index_hard_landing+1]
-        self.Acc_ENU_log = self.Acc_ENU_log[:index_hard_landing+1, :]
-        self.Acc_Body_log = self.Acc_Body_log[:index_hard_landing+1, :]
-        self.Vel_air_log = self.Vel_air_log[:index_hard_landing+1, :]
-        self.Force_log = self.Force_log[:index_hard_landing+1, :]
-        self.Isp_log = self.Isp_log[:index_hard_landing+1]
-        self.F_aero_log = self.F_aero_log[:index_hard_landing+1, :]
-        self.azimuth_log = self.azimuth_log[:index_hard_landing+1]
-        self.elevation_log = self.elevation_log[:index_hard_landing+1]
-        self.roll_log = self.roll_log[:index_hard_landing+1]
-        self.alpha_log = self.alpha_log[:index_hard_landing+1]
-        self.beta_log = self.beta_log[:index_hard_landing+1]
-        self.moment_log = self.moment_log[:index_hard_landing+1, :]
-        self.moment_aero_log = self.moment_aero_log[:index_hard_landing+1, :]
-        self.moment_aero_dumping_log = self.moment_aero_dumping_log[:index_hard_landing+1, :]
-        self.moment_jet_dumping_log = self.moment_jet_dumping_log[:index_hard_landing+1, :]
-        self.mdot_p_log = self.mdot_p_log[:index_hard_landing+1]
-        self.mdot_ox_log = self.mdot_ox_log[:index_hard_landing+1]
-        self.mdot_f_log = self.mdot_f_log[:index_hard_landing+1]
-        self.Lcg_log = self.Lcg_log[:index_hard_landing+1]
-        self.Lcg_ox_log = self.Lcg_ox_log[:index_hard_landing+1]
-
-        # あとから計算、計算中にappendするよりコストが低くく計算が容易なものだけ
-        altitude_log = self.Pos_ENU_log[:, 2]
-        self.g_log = np.array(list(map(env.gravity, altitude_log)))
-        self.P_air_log = env.get_std_press_array(altitude_log)
-        self.rho_air_log = env.get_std_density_array(altitude_log)
-        self.thrust_log = rocket.thrust(self.time_log)
-        self.Lcp_log = rocket.Lcp(self.time_log)
-        self.mp_log = self.mox_log + self.mf_log
-        self.m_log = self.mp_log + rocket.ms
-        # np.array(list(map(lambda x,y,z: np.sqrt(x**2+y**2+z**2), self.Vel_air_log[:,0], self.Vel_air_log[:,1], self.Vel_air_log[:,2])))
-        self.Vel_air_abs_log = []
-        for i in range(len(self.Vel_air_log[:, 0])):
-            self.Vel_air_abs_log.append(np.linalg.norm(self.Vel_air_log[i, :]))
-        self.Vel_air_abs_log = np.array(self.Vel_air_abs_log)
-        print(len(self.Vel_air_log), len(self.Pos_ENU_log[:,2]))
-        plt.figure()
-        plt.plot(self.Pos_ENU_log[:,2])
-        plt.show()
-        self.Mach_log = self.Vel_air_abs_log / env.get_std_soundspeed_array(altitude_log)
-        self.dynamic_pressure_log = 0.5 * self.rho_air_log * self.Vel_air_abs_log * self.Vel_air_abs_log
-
-        #  イベントでの値
-        # apogee
-        index_apogee = np.argmax(altitude_log)
-        self.time_apogee = self.time_log[index_apogee]
-        self.altitude_apogee = altitude_log[index_apogee]
-        self.Pos_ENU_apogee = self.Pos_ENU_log[index_apogee, :]
-        self.Vel_ENU_apogee = self.Vel_ENU_log[index_apogee, :]
-        self.Vel_air_abs_apogee = self.Vel_air_abs_log[index_apogee]
-        self.m_apogee = self.m_log[index_apogee]
-        self.downrange_apogee = np.linalg.norm(self.Pos_ENU_apogee[0:2])        
-
-        # Max Speed
-        index_vel_max = np.argmax(self.Vel_air_abs_log[:index_apogee])
-        self.time_vel_max = self.time_log[index_vel_max]
-        self.Vel_air_max = self.Vel_air_abs_log[index_vel_max]
-        self.altitude_vel_max = altitude_log[index_vel_max]
-
-        # Max Q
-        index_maxQ = np.argmax(self.dynamic_pressure_log[:index_apogee])
-        self.time_maxQ = self.time_log[index_maxQ]
-        self.maxQ = self.dynamic_pressure_log[index_maxQ]
-
-        # Hard Landing
-        self.time_hard_landing = self.time_log[-1]
-        self.hard_landing_point = self.Pos_ENU_log[-1, 0:2]
-        self.downrange_hard_landing = no.linalg.norm(self.hard_landing_point)
-
-        #  パラシュート降下
-        x0 = np.zeros(4)
-        x0[0:3] = self.Pos_ENU_apogee
-        x0[3] = self.Vel_ENU_apogee[2]
-        est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
-        time = np.arange(self.time_hard_landing, est_landing, 0.1)
-        ode_log = odeint(parachute_dynamics, x0, time, args=(rocket, self))
-
-        index_sepa2 = np.argmax(ode_log[:, 2] <= rocket.alt_sepa2)
-        index_soft_landing = np.argmax(ode_log[:, 2] <= 0.0)
-        self.time_sepa2 = time[index_sepa2]
-        self.time_soft_landing = time[index_soft_landing]
-        self.soft_landing_point = ode_log[index_soft_landing, 0:2]
-        self.downrange_soft_landing = no.linalg.norm(self.soft_landing_point)
-
-        self.landing_points = [self.hard_landing_point, self.soft_landing_point]
-
-        if self.multi_mode:
-            return
-
-        txt = open(self.result_dir + '/result.txt', mode='w')
-        txt.writelines(['Launcher Clear Acceleration,', str(self.acc_launch_clear / 9.80665), '[G]\n'])
-        txt.writelines(['Launcher Clear Velocity,', str(self.vel_launch_clear), '[m/s]\n'])
-        txt.writelines(['Max Q X+,', str(self.time_maxQ), '[s]\n'])
-        txt.writelines(['Max Q Altitude,', str(self.altitude_maxQ / 1000.0), '[km]\n'])
-        txt.writelines(['Max Q,', str(self.maxQ / 1000.0), '[kPa]\n'])
-        txt.writelines(['Max Speed X+,', str(self.time_vel_max), '[s]\n'])
-        txt.writelines(['Max Speed Altitude,', str(self.altitude_vel_max / 1000.0), '[km]\n'])
-        txt.writelines(['Max Speed,', str(self.Vel_air_max), '[m/s]\n'])
-        txt.writelines(['Apogee X+,', str(self.time_apogee), '[s]\n'])
-        txt.writelines(['Apogee Altitude,', str(self.altitude_apogee / 1000.0), '[km]\n'])
-        txt.writelines(['Apogee Downrange,', str(self.downrange_apogee / 1000.0), '[km]\n'])
-        txt.writelines(['Apogee Air Velocity,', str(self.Vel_air_abs_apogee), '[m/s]\n'])
-        txt.writelines(['Hard Landing X+,', str(self.time_hard_landing), '[s]\n'])
-        txt.writelines(['Hard Landing Downrange,', str(self.downrange_hard_landing / 1000.0), '[km]\n'])
-        txt.writelines(['2nd Parachute Opening X+,', str(self.time_sepa2), '[s]\n'])
-        txt.writelines(['Soft Landing X+,', str(self.time_soft_landing), '[s]\n'])
-        txt.writelines(['Soft Landing Downrange,', str(self.downrange_soft_landing / 1000.0), '[km]\n'])
-        txt.close()
-
-    def simulation(self, rocket):
-        length = (rocket.L - rocket.Lcg0) * np.cos(np.deg2rad(rocket.elevation0))
-        X0_ENU = length * np.cos(np.deg2rad(rocket.azimuth0))
-        Y0_ENU = length * np.sin(np.deg2rad(rocket.azimuth0))
-        Z0_ENU = (rocket.L - rocket.Lcg0) * np.sin(np.deg2rad(np.abs(rocket.elevation0)))
-        self.Pos0_ENU = np.array([X0_ENU, Y0_ENU, Z0_ENU])
-        self.quat0 = coord.euler2quat(rocket.azimuth0, rocket.elevation0, rocket.roll0)
-        zero_array = np.array([[0.0] * 3])
-
-        x0 = np.zeros(18)
-        x0[0:3] = self.Pos0_ENU
-        x0[3:6] = zero_array  # Vel_ENU
-        x0[6:9] = zero_array  # Vel_Body
-        x0[9:12] =  zero_array  # omega_Body
-        x0[12:16] = self.quat0  # quat
-        x0[16] = rocket.m0_f  # mf
-        x0[17] = rocket.m0_ox  # mox
-        start_time = 0.0
-        def estimate_end():
-            It_digits = len(str(rocket.total_impulse))
-            return rocket.total_impulse / (10 ** (It_digits - 3)) * 1.5
-        if rocket.auto_end:
-            end_time = estimate_end()
-        else:
-            end_time = rocket.end_time
-        time = np.arange(start_time, end_time, rocket.timestep)
-        ode_log = odeint(dynamics, x0, time, args=(rocket, self))
-
-        self.time_log = time
-        self.Pos_ENU_log = ode_log[:, 0:3]
-        self.Vel_ENU_log = ode_log[:, 3:6]
-        self.Vel_Body_log = ode_log[:, 6:9]
-        self.omega_log = ode_log[:, 9:12]
-        self.quat_log = ode_log[:, 12:16]
-        self.mf_log = ode_log[:, 16]
-        self.mox_log = ode_log[:, 17]
-        self.post_process(rocket)
-
-
 def dynamics(x, t, rocket, simulator):
     Pos_ENU = x[0:3]
     altitude = Pos_ENU[2]
@@ -361,11 +135,11 @@ def dynamics(x, t, rocket, simulator):
     tersor = np.array([tersor_0, tersor_1, tersor_2, tersor_3])
     quatdot = 0.5 * tersor.dot(quat)
 
-    if altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and simulator.vel_launch_clear <= 0.0:
+    if altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and t < 0.5:
         omegadot = np.array([0.0] * 3)
         quatdot = np.array([0.0] * 4)
-        simulator.vel_launch_clear = np.linalg.norm(Vel_Body)
-        simulator.acc_launch_clear = np.linalg.norm(Acc_Body)
+        simulator.vel_launch_clear = Vel_Body[0]
+        simulator.acc_launch_clear = Acc_Body[0]
 
     dx = np.zeros(18)
     dx[0:3] = Vel_ENU  # Pos_ENU
@@ -375,27 +149,6 @@ def dynamics(x, t, rocket, simulator):
     dx[12:16] = quatdot  # quat
     dx[16] = -mdot_f  # mf
     dx[17] = -mdot_ox  # mox
-
-    simulator.Acc_ENU_log.append(Acc_ENU)
-    simulator.Acc_Body_log.append(Acc_Body)
-    simulator.Vel_air_log.append(Vel_air)
-    simulator.Force_log.append(Force)
-    simulator.Isp_log.append(Isp)
-    simulator.F_aero_log.append(F_aero)
-    simulator.azimuth_log.append(azimuth)
-    simulator.elevation_log.append(elevation)
-    simulator.roll_log.append(roll)
-    simulator.alpha_log.append(alpha)
-    simulator.beta_log.append(beta)
-    simulator.moment_log.append(moment)
-    simulator.moment_aero_log.append(moment_aero)
-    simulator.moment_aero_dumping_log.append(moment_aero_dumping)
-    simulator.moment_jet_dumping_log.append(moment_jet_dumping)
-    simulator.mdot_p_log.append(mdot_p)
-    simulator.mdot_ox_log.append(mdot_ox)
-    simulator.mdot_f_log.append(mdot_f)
-    simulator.Lcg_log.append(Lcg)
-    simulator.Lcg_ox_log.append(Lcg_ox)
 
     return dx
 
@@ -415,13 +168,170 @@ def parachute_dynamics(x, t, rocket, simulator):
     else:
         CdS = rocket.CdS1
     drag = 0.5 * rho * CdS * Vel_ENU[2] ** 2
-    Acc = drag / m - g
-
+    Acc = drag / m + g[2]
     dx = np.zeros(4)
     dx[0:3] = Vel_ENU  # Pos_ENU
     dx[3] = Acc  # Vel_descent
 
     return dx
+
+class Simulator:
+    def __init__(self, vel_wind, angle_wind, result_dir, multi_mode=False):
+        self.vel_wind = vel_wind
+        self.angle_wind = angle_wind
+        self.result_dir = result_dir
+        self.multi_mode = multi_mode
+
+        # ランチクリア値、計算中に記録
+        self.acc_launch_clear = 0.0
+        self.vel_launch_clear = 0.0
+
+    def simulation(self, rocket):
+        length = (rocket.L - rocket.Lcg0) * np.cos(np.deg2rad(rocket.elevation0))
+        X0_ENU = length * np.cos(np.deg2rad(rocket.azimuth0))
+        Y0_ENU = length * np.sin(np.deg2rad(rocket.azimuth0))
+        Z0_ENU = (rocket.L - rocket.Lcg0) * np.sin(np.deg2rad(np.abs(rocket.elevation0)))
+        self.Pos0_ENU = np.array([X0_ENU, Y0_ENU, Z0_ENU])
+        self.quat0 = coord.euler2quat(rocket.azimuth0, rocket.elevation0, rocket.roll0)
+        zero_array = np.array([[0.0] * 3])
+
+        x0 = np.zeros(18)
+        x0[0:3] = self.Pos0_ENU
+        x0[3:6] = zero_array  # Vel_ENU
+        x0[6:9] = zero_array  # Vel_Body
+        x0[9:12] =  zero_array  # omega_Body
+        x0[12:16] = self.quat0  # quat
+        x0[16] = rocket.m0_f  # mf
+        x0[17] = rocket.m0_ox  # mox
+        start_time = 0.0
+        def estimate_end():
+            It_digits = len(str(rocket.total_impulse))
+            return rocket.total_impulse / (10 ** (It_digits - 3)) * 1.5
+        if rocket.auto_end:
+            end_time = estimate_end()
+        else:
+            end_time = rocket.end_time
+        time = np.arange(start_time, end_time, rocket.timestep)
+        ode_log = odeint(dynamics, x0, time, args=(rocket, self))
+
+        self.time_log = time
+        self.Pos_ENU_log = ode_log[:, 0:3]
+        self.Vel_ENU_log = ode_log[:, 3:6]
+        self.Vel_Body_log = ode_log[:, 6:9]
+        self.omega_log = ode_log[:, 9:12]
+        self.quat_log = ode_log[:, 12:16]
+        self.mf_log = ode_log[:, 16]
+        self.mox_log = ode_log[:, 17]
+        self.post_process(rocket)
+
+    def post_process(self, rocket):
+        # 着地後の分をカット
+        index_hard_landing = np.argmax(self.Pos_ENU_log[:, 2] <= 0.0)
+        self.time_log = self.time_log[:index_hard_landing+1]
+        self.Pos_ENU_log = self.Pos_ENU_log[:index_hard_landing+1, :]
+        self.Vel_ENU_log = self.Vel_ENU_log[:index_hard_landing+1, :]
+        self.Vel_Body_log = self.Vel_Body_log[:index_hard_landing+1, :]
+        self.omega_log = self.omega_log[:index_hard_landing+1, :]
+        self.quat_log = self.quat_log[:index_hard_landing+1, :]
+        self.mf_log = self.mf_log[:index_hard_landing+1]
+        self.mox_log = self.mox_log[:index_hard_landing+1]
+
+        # あとから計算
+        altitude_log = self.Pos_ENU_log[:, 2]
+        self.g_log = np.array(list(map(env.gravity, altitude_log)))
+        self.P_air_log = env.get_std_press_array(altitude_log)
+        self.rho_air_log = env.get_std_density_array(altitude_log)
+        self.thrust_log = rocket.thrust(self.time_log)
+        self.Lcp_log = rocket.Lcp(self.time_log)
+        self.mp_log = self.mox_log + self.mf_log
+        self.m_log = self.mp_log + rocket.ms
+
+        self.quat_log = np.array(list(map(coord.quat_normalize, self.quat_log)))
+        DCM_ENU2Body_log = np.array(list(map(coord.DCM_ENU2Body_quat, self.quat_log)))
+        self.wind_ENU_log = np.array([env.Wind_ENU(self.vel_wind, self.angle_wind, alt, rocket.Wind_refAltitude, rocket.Wind_power_exp) for alt in altitude_log])
+        self.Vel_air_log = np.array([DCM.dot(vel - wind) for DCM, vel, wind in zip(DCM_ENU2Body_log, self.Vel_ENU_log, self.wind_ENU_log)])
+        self.Vel_air_abs_log = np.array(list(map(np.linalg.norm, self.Vel_air_log)))
+        self.Mach_log = self.Vel_air_abs_log / env.get_std_soundspeed_array(altitude_log)
+        self.dynamic_pressure_log = 0.5 * self.rho_air_log * self.Vel_air_abs_log * self.Vel_air_abs_log
+
+        #  イベントでの値
+        # apogee
+        index_apogee = np.argmax(altitude_log)
+        self.time_apogee = self.time_log[index_apogee]
+        self.altitude_apogee = altitude_log[index_apogee]
+        self.Pos_ENU_apogee = self.Pos_ENU_log[index_apogee, :]
+        self.Vel_ENU_apogee = self.Vel_ENU_log[index_apogee, :]
+        self.Vel_air_abs_apogee = self.Vel_air_abs_log[index_apogee]
+        self.m_apogee = self.m_log[index_apogee]
+        self.downrange_apogee = np.linalg.norm(self.Pos_ENU_apogee[0:2])        
+
+        # Max Speed
+        index_vel_max = np.argmax(self.Vel_air_abs_log[:index_apogee])
+        self.time_vel_max = self.time_log[index_vel_max]
+        self.altitude_vel_max = altitude_log[index_vel_max]
+        self.Vel_air_max = self.Vel_air_abs_log[index_vel_max]
+
+        # Max Mach Number
+        index_Mach_max = np.argmax(self.Mach_log[:index_apogee])
+        self.time_Mach_max = self.time_log[index_Mach_max]
+        self.altitude_Mach_max = altitude_log[index_Mach_max]
+        self.Mach_max = self.Mach_log[index_Mach_max]
+
+        # Max Q
+        index_maxQ = np.argmax(self.dynamic_pressure_log[:index_apogee])
+        self.time_maxQ = self.time_log[index_maxQ]
+        self.altitude_maxQ = altitude_log[index_maxQ]
+        self.maxQ = self.dynamic_pressure_log[index_maxQ]
+
+        # Hard Landing
+        self.time_hard_landing = self.time_log[-1]
+        self.hard_landing_point = self.Pos_ENU_log[-1, 0:2]
+        self.downrange_hard_landing = np.linalg.norm(self.hard_landing_point)
+
+        #  パラシュート降下
+        x0 = np.zeros(4)
+        x0[0:3] = self.Pos_ENU_apogee
+        x0[3] = self.Vel_ENU_apogee[2]
+        est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
+        time = np.arange(self.time_hard_landing, est_landing, 0.1)
+        ode_log = odeint(parachute_dynamics, x0, time, args=(rocket, self))
+
+        index_sepa2 = np.argmax(ode_log[:, 2] <= rocket.alt_sepa2)
+        index_soft_landing = np.argmax(ode_log[:, 2] <= 0.0)
+        self.time_sepa2 = time[index_sepa2]
+        self.time_soft_landing = time[index_soft_landing]
+        self.soft_landing_point = ode_log[index_soft_landing, 0:2]
+        self.downrange_soft_landing = np.linalg.norm(self.soft_landing_point)
+
+        self.landing_points = [self.hard_landing_point, self.soft_landing_point]
+
+        if self.multi_mode:
+            return
+
+        txt = open(self.result_dir + '/result.txt', mode='w')
+        txt.writelines(['Launcher Clear Acceleration,', str(round(self.acc_launch_clear / 9.80665, 3)), '[G]\n'])
+        txt.writelines(['Launcher Clear Velocity,', str(round(self.vel_launch_clear, 3)), '[m/s]\n'])
+        txt.writelines(['Max Q X+,', str(round(self.time_maxQ, 3)), '[s]\n'])
+        txt.writelines(['Max Q Altitude,', str(round(self.altitude_maxQ / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Max Q,', str(round(self.maxQ / 1000.0, 3)), '[kPa]\n'])
+        txt.writelines(['Max Speed X+,', str(round(self.time_vel_max,3)), '[s]\n'])
+        txt.writelines(['Max Speed Altitude,', str(round(self.altitude_vel_max / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Max Speed,', str(round(self.Vel_air_max, 3)), '[m/s]\n'])
+        txt.writelines(['Max Mach Number X+,', str(round(self.time_Mach_max, 3)), '[s]\n'])
+        txt.writelines(['Max Mach Number Altitude,', str(round(self.altitude_Mach_max / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Max Mach Number,', str(round(self.Mach_max, 3)), '[-]\n'])
+        txt.writelines(['Apogee X+,', str(round(self.time_apogee, 3)), '[s]\n'])
+        txt.writelines(['Apogee Altitude,', str(round(self.altitude_apogee / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Apogee Downrange,', str(round(self.downrange_apogee / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Apogee Air Velocity,', str(round(self.Vel_air_abs_apogee, 3)), '[m/s]\n'])
+        txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
+        txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_sepa2, 3)), '[s]\n'])
+        txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
+        txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing / 1000.0, 3)), '[km]\n'])
+        txt.close()
+
+    
 
 
 class WindMapper:
