@@ -22,7 +22,7 @@ class Rocket:
         self.Pos0_LLH = LP.get('LLH [deg, deg, m]')
         self.azimuth0 = LP.get('Launch Azimuth [deg]')
         self.elevation0 = LP.get('Launch Elevation [deg]')
-        if self.elevation0 < 0.0:
+        if self.elevation0 > 0.0:
             self.elevation0 *= -1.0
         self.roll0 = LP.get('Launch Roll Angle [deg]')
         self.launcher_rail = LP.get('Launcher Rail Length [m]')
