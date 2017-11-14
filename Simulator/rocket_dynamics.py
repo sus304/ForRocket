@@ -319,7 +319,7 @@ class Simulator:
         x0[0:3] = self.Pos_ENU_apogee
         x0[3] = self.Vel_ENU_apogee[2]
         est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
-        time = np.arange(self.time_hard_landing, est_landing, 0.1)
+        time = np.arange(self.time_hard_landing, self.time_hard_landing+est_landing, 0.1)
         ode_log = odeint(parachute_dynamics, x0, time, args=(rocket, self))
 
         index_sepa2 = np.argmax(ode_log[:, 2] <= rocket.alt_sepa2)
