@@ -1,5 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import re
+
+
+class LaunchSite:
+    def __init__(self, launch_site_name):
+        name = launch_site_name
+        noshiro = True if re.search(r'noshiro|nosiro', name, re.IGNORECASE) else False
+        taiki = True if re.search(r'taiki', name, re.IGNORECASE) else False
+        land = True if re.search(r'land', name, re.IGNORECASE) else False
+        sea = True if re.search(r'sea', name, re.IGNORECASE) else False
+        asanai = True if re.search(r'asanai|asauchi|asauti', name, re.IGNORECASE) else False
+        field3rd = True if re.search(r'3rd', name, re.IGNORECASE) else False
+        ochiai = True if re.search(r'ochiai|otiai', name, re.IGNORECASE) else False
+
+        if noshiro and (land or asanai or field3rd):
+            self.site = NoshiroAsanai3rd()
+        if noshiro and (sea or oshiai):
+            self.site = NoshiroOchiai3km()
+        if taiki:
+            self.site = TaikiLand()
+        
+    def point_in_range(landing_point_ENU):
+        return self.site.in_range(landing_point_ENU)
+
+    def wind_limit(landing_points):
+        tf_list = []
+        for speed in landing_points:
+            tf_list_angle = []
+            for angle in speed:
+                tf_list.append(self.point_in_range(angle))
 
 
 class NoshiroAsanai3rd:
@@ -84,7 +114,6 @@ class TaikiLand:
         y = landing_point_ENU[1]
         judge = self.judge_poly([x, y])
         return judge
-
 
 
 class Judge_inside_circle:
@@ -234,15 +263,46 @@ class Coordinate:
 
         return point_LLH
 
+# def kml_make(name,Launch_LLH):
+#   import simpelkml
+#   Log = np.loadtxt('Position_log.csv',delimiter=",",skiprows=1)
+#   array = Log[:,1]
+#   array_len = len(array)
+#   print ":"
+#   Position_ENU = np.zeros((array_len,3))
+#   Position_ENU[:,0] = np.array(Log[:,0])
+#   Position_ENU[:,1] = np.array(Log[:,1])
+#   Position_ENU[:,2] = np.array(Log[:,2])
+  
+#   Position_ecef = np.zeros((array_len,3))
+#   Position_LLH = np.zeros((array_len,3))
+#   print ":"
+#   for i in range(array_len):
+#     Position_ecef[i,:] = ENU2ECEF(Position_ENU[i,:],Launch_LLH)
+#     Position_LLH[i,:] = ECEF2LLH(Position_ecef[i,:])
+#   print ":"
+  
+#   header = 'Latitude,Longitude,Height'
+#   np.savetxt("Result Log 1.csv",Position_LLH,fmt = '%.5f',delimiter = ',',header = header)
+  
+#   kml = simplekml.Kml(open=1)
+#   Log_LLH = []
+#   for i in range(array_len):
+#     if 0 == i % 10000:
+#       Log_LLH.append((Position_LLH[i,1],Position_LLH[i,0],Position_LLH[i,2]))
+#   print ":"
+#   line = kml.newlinestring(name = name)
+#   line.style.linestyle.width = 5
+#   line.style.linestyle.color = simplekml.Color.red
+#   line.extrude = 1
+#   line.altitudemode = simplekml.AltitudeMode.absolute
+#   line.coords = Log_LLH
+#   line.style.linestyle.colormode = simplekml.ColorMode.random
+#   kml.save(name + ".kml")
+
 
 if __name__ == '__main__':
-    pass
-    # plotter = Plotter()
-    # launchsite = NoshiroOchiai3km()
-    # launchsite.initialize()
-    # point = LandingPointLog('sample.csv')
-    # plotter.Plot(launchsite, point)
-
-    
+    site = LaunchSite('taiki')
+    print(site.launch_point_LLH)
 
     

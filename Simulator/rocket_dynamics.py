@@ -2,11 +2,136 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from scipy.integrate import odeint
+import gc
+from tqdm import tqdm
 
 import Simulator.coordinate as coord
 import Simulator.environment as env
 
-def dynamics(x, t, rocket, simulator):
+
+class Rocket:
+    def __init__(self, json):
+        self.auto_end = json.get('Solver').get('Auto End Time')
+        self.end_time = json.get('Solver').get('End Time [sec]')
+        self.timestep = json.get('Solver').get('Time Step [sec]')
+
+        LP = json.get('Launch Pad')
+        self.azimuth0 = LP.get('Launch Azimuth [deg]')
+        self.elevation0 = LP.get('Launch Elevation [deg]')
+        if self.elevation0 > 0.0:
+            self.elevation0 *= -1.0
+        self.roll0 = LP.get('Launch Roll Angle [deg]')
+        self.launcher_rail = LP.get('Launcher Rail Length [m]')
+
+        struct = json.get('Structure')
+        self.L = struct.get('Length [m]')
+        self.d = struct.get('Diameter [m]')
+        self.A = 0.25 * np.pi * self.d ** 2
+        self.ms = struct.get('Structure Mass [kg]')
+        self.Lcg_s = struct.get('Structure Length-C.G. FormNoseTip [m]')
+        self.Lcg0_ox = struct.get('Initial Oxidizer Length-C.G. FromEnd [m]')  # ノーズからへの変換はメインルーチン内
+        self.Lcg_f = self.L - struct.get('Fuel Length-C.G. FromEnd [m]')
+        self.L_motor = struct.get('Length End-to-Tank [m]')
+        self.Ij0_s_roll = struct.get('Structure Inertia-Moment Roll-Axis [kg*m^2]')
+        self.Ij0_s_pitch = struct.get('Structure Inertia-Moment Pitch-Axis [kg*m^2]')
+
+        para = json.get('Parachute')
+        self.CdS1 = para.get('1st Parachute CdS [m2]')
+        para2_exist = para.get('2nd Parachute Exist')
+        if para2_exist:
+            self.CdS2 = para.get('2nd Parachute CdS [m2]')
+            self.alt_sepa2 = para.get('2nd Parachute Opening Altitude [m]')
+        else:
+            self.CdS2 = 0.0
+            self.alt_sepa2 = 0.0
+
+        prop = json.get('Propellant')
+        self.m0_ox = prop.get('Oxidizer Mass [kg]')
+        self.mdot_ox = prop.get('Oxidizer Mass Flow Rate [kg/s]')
+        self.m0_f = prop.get('Fuel Mass Before Burn [kg]')
+        self.mf_after = prop.get('Fuel Mass After Burn [kg]')
+        self.mdot_f = prop.get('Fuel Mass Flow Rate [kg/s]')
+        self.d_out_f = prop.get('Fuel Outside Diameter [m]')
+        self.d_port_f = prop.get('Fuel Inside Diameter [m]')
+        self.L_f = prop.get('Fuel Length [m]')
+
+        aero = json.get('Aero')
+        Cd_file_exist = aero.get('Cd File Exist')
+        if Cd_file_exist:
+            Cd_file = aero.get('Cd File')
+            Cd_array = np.loadtxt(Cd_file, delimiter=',', skiprows=1)
+            self.Cd = interpolate.interp1d(Cd_array[:,0], Cd_array[:,1], kind='cubic', bounds_error=False, fill_value=(Cd_array[0,1], Cd_array[-1,1]))
+        else:
+            Mach_array = np.arange(0.0, 20.01, 0.01)
+            Cd_array = np.array([aero.get('Constant Cd')] * Mach_array.size)
+            self.Cd = interpolate.interp1d(Mach_array, Cd_array, kind='linear', bounds_error=False, fill_value=(Cd_array[0], Cd_array[-1]))
+
+        Lcp_file_exist = aero.get('Lcp File Exist')
+        if Lcp_file_exist:
+            Lcp_file = aero.get('Lcp File')
+            Lcp_array = np.loadtxt(Lcp_file, delimiter=',', skiprows=1)
+            self.Lcp = interpolate.interp1d(Lcp_array[:,0], Lcp_array[:,1], kind='cubic', bounds_error=False, fill_value=(Lcp_array[0,1], Lcp_array[-1,1]))
+        else:
+            Mach_array = np.arange(0.0, 20.01, 0.01)
+            Lcp_array = np.array([aero.get('Constant Length-C.P. [m]')] * Mach_array.size)
+            self.Lcp = interpolate.interp1d(Mach_array, Lcp_array, kind='linear', bounds_error=False, fill_value=(Lcp_array[0], Lcp_array[-1]))
+
+        CNa_file_exist = aero.get('CNa File Exist')
+        if CNa_file_exist:
+            CNa_file = aero.get('CNa File')
+            CNa_array = np.loadtxt(CNa_file, delimiter=',', skiprows=1)
+            self.CNa = interpolate.interp1d(CNa_array[:,0], CNa_array[:,1], kind='cubic', bounds_error=False, fill_value=(CNa_array[0,1], CNa_array[-1,1]))
+        else:
+            Mach_array = np.arange(0.0, 20.01, 0.01)
+            CNa_array = np.array([aero.get('Constant Normal Coefficient CNa')] * Mach_array.size)
+            self.CNa = interpolate.interp1d(Mach_array, CNa_array, kind='linear', bounds_error=False, fill_value=(CNa_array[0], CNa_array[-1]))
+
+        self.Clp = aero.get('Roll Dumping Moment Coefficient Clp')
+        if self.Clp > 0.0:
+            self.Clp *= -1.0
+        self.Cmq = aero.get('Pitch Dumping Moment Coefficient Cmq')
+        if self.Cmq > 0.0:
+            self.Cmq *= -1.0
+        self.Cnr = self.Cmq
+
+        # Thrust, SL
+        # 1st column : time [s]
+        # 2nd column : thrust [N]
+        engine = json.get('Engine')
+        thrust_file_exist = engine.get('File Exist')
+        if thrust_file_exist:
+            thrust_file = engine.get('Thrust File')
+            thrust_array = np.loadtxt(thrust_file, delimiter=',', skiprows=1)
+            # 1G Cut
+            time_array = thrust_array[:,0]
+            thrust_array = thrust_array[:,1]
+            index = (thrust_array > (self.ms + self.m0_f + self.m0_ox)).argmax()
+            thrust_array = thrust_array[index:]
+            time_array = time_array[index:] - time_array[index]
+            self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+            self.total_impulse = round(np.sum(thrust_array) * np.sum(time_array) / len(time_array))
+        else:
+            time_array = np.arange(0.0, engine.get('Burn Time [sec]') + 0.01, 0.01)
+            thrust_array = np.array([engine.get('Constant Thrust [N]')] * time_array.size)
+            self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+            self.total_impulse = round(engine.get('Constant Thrust [N]') * engine.get('Burn Time [sec]'))
+        self.Isp = engine.get('Isp [sec]')
+        self.dth = engine.get('Nozzle Throat Diameter [m]')
+        self.eps = engine.get('Nozzle Expansion Ratio')
+        self.Ath = 0.25 * np.pi * self.dth ** 2
+        self.Ae = self.Ath * self.eps
+        self.de = np.sqrt(self.Ae * 4.0 / np.pi)
+
+        self.Wind_refAltitude = json.get('Environment').get('Wind Mesurement Height [m]')
+        self.Wind_power_exp = json.get('Environment').get('Wind Power Law Exponential Coefficient')
+
+        self.m0_p = self.m0_ox + self.m0_f
+        self.m0 = self.ms + self.m0_p
+        self.Lcg0_p = (self.m0_ox * (self.L - self.Lcg0_ox) + self.m0_f * self.Lcg_f) / self.m0_p
+        self.Lcg0 = (self.ms * self.Lcg_s + self.m0_p * self.Lcg0_p) / self.m0
+
+
+def dynamics(x, t, rocket, solver):
     Pos_ENU = x[0:3]
     altitude = Pos_ENU[2]
     Vel_ENU = x[3:6]
@@ -25,7 +150,7 @@ def dynamics(x, t, rocket, simulator):
     # azimuth, elevation, roll = coord.quat2euler(DCM_ENU2Body)
 
     # alpha beta Vel_Air
-    wind_ENU = env.Wind_ENU(simulator.vel_wind, simulator.angle_wind, altitude, rocket.Wind_refAltitude, rocket.Wind_power_exp)
+    wind_ENU = env.Wind_ENU(solver.vel_wind, solver.angle_wind, altitude, rocket.Wind_refAltitude, rocket.Wind_power_exp)
     Vel_air = DCM_ENU2Body.dot(Vel_ENU - wind_ENU)
     Vel_air_abs = np.linalg.norm(Vel_air)
     u = Vel_air[0]
@@ -144,8 +269,8 @@ def dynamics(x, t, rocket, simulator):
     if altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and t < 0.5:
         omegadot = np.array([0.0] * 3)
         quatdot = np.array([0.0] * 4)
-        simulator.vel_launch_clear = Vel_Body[0]
-        simulator.acc_launch_clear = Acc_Body[0]
+        solver.vel_launch_clear = Vel_Body[0]
+        solver.acc_launch_clear = Acc_Body[0]
 
     dx = np.zeros(18)
     dx[0:3] = Vel_ENU  # Pos_ENU
@@ -158,13 +283,13 @@ def dynamics(x, t, rocket, simulator):
 
     return dx
 
-def parachute_dynamics(x, t, rocket, simulator):
-    m = simulator.m_apogee
+def parachute_dynamics(x, t, rocket, solver):
+    m = solver.m_apogee
     Pos_ENU = x[0:3]
     altitude = Pos_ENU[2]
     Vel_descent = x[3]
 
-    wind_ENU = env.Wind_ENU(simulator.vel_wind, simulator.angle_wind, altitude, rocket.Wind_refAltitude, rocket.Wind_power_exp)
+    wind_ENU = env.Wind_ENU(solver.vel_wind, solver.angle_wind, altitude, rocket.Wind_refAltitude, rocket.Wind_power_exp)
     Vel_ENU = np.array([wind_ENU[0], wind_ENU[1], Vel_descent])
 
     g = np.array([0.0, 0.0, -env.gravity(altitude)])
@@ -178,7 +303,7 @@ def parachute_dynamics(x, t, rocket, simulator):
 
     return dx
 
-class Simulator:
+class Solver:
     def __init__(self, vel_wind, angle_wind, result_dir, multi_mode=False):
         self.vel_wind = vel_wind
         self.angle_wind = angle_wind
@@ -189,7 +314,7 @@ class Simulator:
         self.acc_launch_clear = 0.0
         self.vel_launch_clear = 0.0
 
-    def simulation(self, rocket):
+    def solve(self, rocket):
         length = (rocket.L - rocket.Lcg0) * np.cos(np.deg2rad(rocket.elevation0))
         X0_ENU = length * np.cos(np.deg2rad(rocket.azimuth0))
         Y0_ENU = length * np.sin(np.deg2rad(rocket.azimuth0))
@@ -209,7 +334,7 @@ class Simulator:
         start_time = 0.0
         def estimate_end():
             It_digits = len(str(rocket.total_impulse))
-            return rocket.total_impulse / (10 ** (It_digits - 5)) * 1.5
+            return rocket.total_impulse / (10 ** (It_digits - 5))
         end_time = estimate_end() if rocket.auto_end else rocket.end_time
         time = np.arange(start_time, end_time, rocket.timestep)
         ode_log = odeint(dynamics, x0, time, args=(rocket, self))
@@ -258,12 +383,12 @@ class Simulator:
         self.azimuth_log = attitude_log[:, 0]
         self.elevation_log = attitude_log[:, 1]
         self.roll_log = attitude_log[:, 2]
-        thrust_SL_log = rocket.thrust(self.time_log)        
+        thrust_SL_log = rocket.thrust(self.time_log)
         self.mdot_p_log = thrust_SL_log / (rocket.Isp * 9.80665)
         self.mdot_f_log = rocket.mdot_f * np.array([thrust > 0.0 for thrust in rocket.thrust(self.time_log)])
         self.mdot_ox_log = self.mdot_p_log - self.mdot_f_log
         pressure_thrust_log = (self.P_air_log[0] - self.P_air_log) * rocket.Ae
-        self.thrust_log = np.array([thrust_SL + pressure_thrust if thrust_SL > 0.0 else 0.0 for thrust_SL, pressure_thrust in zip(thrust_SL_log, pressure_thrust_log)]) 
+        self.thrust_log = np.array([thrust_SL + pressure_thrust if thrust_SL > 0.0 else 0.0 for thrust_SL, pressure_thrust in zip(thrust_SL_log, pressure_thrust_log)])
         self.Isp_log = rocket.Isp + np.array([pressure_thrust / (mdot_p * 9.80665) if mdot_p > 0.0 else 0.0 for pressure_thrust, mdot_p in zip(pressure_thrust_log, self.mdot_p_log)])
         self.drag_log = self.dynamic_pressure_log * rocket.Cd(self.Mach_log) * rocket.A
         self.normal_log = self.dynamic_pressure_log * rocket.CNa(self.Mach_log) * rocket.A
@@ -322,8 +447,8 @@ class Simulator:
         self.time_soft_landing = time[index_soft_landing]
         self.soft_landing_point = ode_log[index_soft_landing, 0:2]
         self.downrange_soft_landing = np.linalg.norm(self.soft_landing_point)
-
-        self.landing_points = [self.hard_landing_point, self.soft_landing_point]
+        self.Vel_descent_1st = np.average(ode_log[:index_sepa2, 3])
+        self.Vel_descent_2nd = np.average(ode_log[index_sepa2:index_soft_landing, 3])
 
         if self.multi_mode:
             return
@@ -346,7 +471,9 @@ class Simulator:
         txt.writelines(['Apogee Air Velocity,', str(round(self.Vel_air_abs_apogee, 3)), '[m/s]\n'])
         txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
         txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['1st Parachute Descent Velocity,', str(round(self.Vel_descent_1st, 3)), '[m/s]\n'])
         txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_sepa2, 3)), '[s]\n'])
+        txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])
         txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
         txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing / 1000.0, 3)), '[km]\n'])
         txt.close()
@@ -511,29 +638,79 @@ class Simulator:
         plt.savefig(self.result_dir + '/Trajectory.png')
 
 
-class WindMapper:
-    # 継承していないがSimulatorクラスとスイッチングされるクラス
-    # simulationメソッドは共通の引数であること
-    def __init__(self, result_dir):
+class Mapper4Wind:
+    def __init__(self, result_dir, vel_wind_config, angle_wind_config):
         self.result_dir = result_dir
-        self.Vel_wind_min = 1.0
-        self.Vel_wind_max = 7.0
-        self.angle_wind_min = 0.0  # [deg]
-        self.angle_wind_max = 360.0
+        self.Vel_wind_min = vel_wind_config[0]
+        self.Vel_wind_max = vel_wind_config[1]
+        self.Vel_wind_step = vel_wind_config[2]
+        self.angle_wind_min = angle_wind_config[0]
+        self.angle_wind_max = angle_wind_config[1]
+        self.angle_wind_step = angle_wind_config[2]
 
-        self.Vel_wind_array = np.arange(self.Vel_wind_min, self.Vel_wind_max+1.0, 1.0)
-        self.angle_wind_array = np.arange(self.angle_wind_min, self.angle_wind_max, 45.0)
+        self.Vel_wind_array = np.arange(self.Vel_wind_min, self.Vel_wind_max + self.Vel_wind_step, self.Vel_wind_step)
+        self.angle_wind_array = np.arange(self.angle_wind_min, self.angle_wind_max + self.angle_wind_step, self.angle_wind_step)
 
-    def simulation(self, rocket):
-        self.landing_points = []
+    def mapping(self, rocket):
+        self.time_apogee_list = []
+        self.Vel_air_apogee_list = []
+        self.altitude_apogee_list = []
+        self.Vel_air_max_list = []
+        self.Mach_max_list = []
+        self.MaxQ_list = []
+        self.time_hard_landing_list = []
+        self.hard_landing_points = []
+        self.time_sepa2_list = []
+        self.time_soft_landing_list = []
+        self.soft_landing_points = []
         for Vel_wind in self.Vel_wind_array:
-            points = []
-            for angle_wind in self.angle_wind_array:
-                simulator = Simulator(Vel_wind, angle_wind, self.result_dir, True)
-                simulator.simulation()
-                points.append(simulator.landing_points)
+            time_apogee_list_angle = []
+            Vel_air_apogee_list_angle = []
+            altitude_apogee_list_angle = []
+            Vel_air_max_list_angle = []
+            Mach_max_list_angle = []
+            MaxQ_list_angle = []
+            time_hard_landing_list_angle = []
+            hard_landing_points_angle = []
+            time_sepa2_list_angle = []
+            time_soft_landing_list_angle = []
+            soft_landing_points_angle = []
+            for angle_wind in tqdm(self.angle_wind_array):
+                solver = Solver(Vel_wind, angle_wind, self.result_dir, True)
+                solver.solve(rocket)
+                # Result Pickup
+                time_apogee_list_angle.append(solver.time_apogee)
+                Vel_air_apogee_list_angle.append(solver.Vel_air_abs_apogee)
+                altitude_apogee_list_angle.append(solver.altitude_apogee)
+                Vel_air_max_list_angle.append(solver.Vel_air_max)
+                Mach_max_list_angle.append(solver.Mach_max)
+                MaxQ_list_angle.append(solver.maxQ)
+                time_hard_landing_list_angle.append(solver.time_hard_landing)
+                hard_landing_points_angle.append(solver.hard_landing_point)
+                time_sepa2_list_angle.append(solver.time_sepa2)
+                time_soft_landing_list_angle.append(solver.time_soft_landing)
+                soft_landing_points_angle.append(solver.soft_landing_point)
+                del solver
+                gc.collect()
+            self.time_apogee_list.append(time_apogee_list_angle)
+            self.Vel_air_apogee_list.append(Vel_air_apogee_list_angle)
+            self.altitude_apogee_list.append(altitude_apogee_list_angle)
+            self.Vel_air_max_list.append(Vel_air_max_list_angle)
+            self.Mach_max_list.append(Mach_max_list_angle)
+            self.MaxQ_list.append(MaxQ_list_angle)
+            self.time_hard_landing_list.append(time_hard_landing_list_angle)
+            self.hard_landing_points.append(hard_landing_points_angle)
+            self.time_sepa2_list.append(time_sepa2_list_angle)
+            self.time_soft_landing_list.append(time_soft_landing_list_angle)
+            self.soft_landing_points.append(soft_landing_points_angle)
+        np.savetxt(self.result_dir + '/time_apogee.csv', np.array(self.time_apogee_list), delimiter=',')
+        np.savetxt(self.result_dir + '/vel_apogee.csv', np.array(self.Vel_air_apogee_list), delimiter=',')
+        np.savetxt(self.result_dir + '/altitude_apogee.csv', np.array(self.altitude_apogee_list), delimiter=',')
+        np.savetxt(self.result_dir + '/vel_max.csv', np.array(self.Vel_air_max_list), delimiter=',')
+        np.savetxt(self.result_dir + '/mach_max.csv', np.array(self.Mach_max_list), delimiter=',')
+        np.savetxt(self.result_dir + '/maxQ.csv', np.array(self.MaxQ_list), delimiter=',')
+        np.savetxt(self.result_dir + '/time_hard_landing.csv', np.array(self.time_hard_landing_list), delimiter=',')
+        np.savetxt(self.result_dir + '/time_sepa_2nd.csv', np.array(self.time_sepa2_list), delimiter=',')
+        np.savetxt(self.result_dir + '/time_soft_landing.csv', np.array(self.time_soft_landing_list), delimiter=',')
 
-            points.append(points[0])  # 分散を閉じるため
-            self.landing_points.append(points)
-
-
+        return self.hard_landing_points, self.soft_landing_points

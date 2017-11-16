@@ -11,23 +11,32 @@
 	},
 
 	"System": {
+		"Name": "H-44",	
 		"Result Directory": "./Result"
 	},
 
-	"Name": "H-44",
-	"Auto End Time": true,
-	"End Time [sec]": 50.0,
-	"Time Step [sec]": 0.001,
-	"If the calculation is slow, try increasing the Time Step. Precision and trade-off": "comment",
+	"Solver": {
+		"Auto End Time": true,
+		"End Time [sec]": 50.0,
+		"Time Step [sec]": 0.01,
+		"If the calculation is slow, try increasing the Time Step. Precision and trade-off": "comment"
+	},
 
 	"Wind":{
-		"Single Condition Simulation": true,
+		"Single Condition Simulation": false,
 		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 0.0
+		"Wind Direction [deg]": 0.0,
+		"multi mode": "comment",
+		"Wind Velocity Mini [m/s]": 1.0,
+		"Wind Velocity Max [m/s]": 7.0,
+		"Wind Velocity Step [m/s]": 1.0,
+		"Wind Direction Mini [deg]": 0.0,
+		"Wind Direction Max [deg]": 315.0,
+		"Wind Direction Step [deg]": 45.0
 	},
 
 	"Launch Pad": {
-		"Name": "Noshiro Sea",
+		"Site": "Noshiro Sea",
 		"Launch Azimuth [deg]": 0.0,
 		"Launch Elevation [deg]": -80.0,
 		"Launch Roll Angle [deg]":0.0,
@@ -70,7 +79,7 @@
 	"Engine": {
 		"Thrust File": "Thrust.csv",
 		"File Exist":false,
-		"Constant Thrust [N]":1500.0,
+		"Constant Thrust [N]":1000.0,
 		"Burn Time [sec]":1.2,
 		"Isp [sec]": 180.0,
 		"Nozzle Throat Diameter [m]": 0.03,
