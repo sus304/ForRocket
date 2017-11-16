@@ -19,7 +19,6 @@ class Rocket:
         self.timestep = json.get('Time Step [sec]')
 
         LP = json.get('Launch Pad')
-        self.Pos0_LLH = LP.get('LLH [deg, deg, m]')
         self.azimuth0 = LP.get('Launch Azimuth [deg]')
         self.elevation0 = LP.get('Launch Elevation [deg]')
         if self.elevation0 > 0.0:

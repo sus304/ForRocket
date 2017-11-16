@@ -27,7 +27,7 @@
 	},
 
 	"Launch Pad": {
-		"LLH [deg, deg, m]": [40.0, 140.0, 10.0],
+		"Name": "Noshiro Sea",
 		"Launch Azimuth [deg]": 0.0,
 		"Launch Elevation [deg]": -80.0,
 		"Launch Roll Angle [deg]":0.0,

@@ -169,10 +169,7 @@ def parachute_dynamics(x, t, rocket, simulator):
 
     g = np.array([0.0, 0.0, -env.gravity(altitude)])
     Ta, Pa, rho, Cs = env.std_atmo(altitude)
-    if altitude <= rocket.alt_sepa2:
-        CdS = rocket.CdS1 + rocket.CdS2
-    else:
-        CdS = rocket.CdS1
+    CdS = rocket.CdS1 + rocket.CdS2 if altitude <= rocket.alt_sepa2 else rocket.CdS1
     drag = 0.5 * rho * CdS * Vel_ENU[2] ** 2
     Acc = drag / m + g[2]
     dx = np.zeros(4)
@@ -213,10 +210,7 @@ class Simulator:
         def estimate_end():
             It_digits = len(str(rocket.total_impulse))
             return rocket.total_impulse / (10 ** (It_digits - 5)) * 1.5
-        if rocket.auto_end:
-            end_time = estimate_end()
-        else:
-            end_time = rocket.end_time
+        end_time = estimate_end() if rocket.auto_end else rocket.end_time
         time = np.arange(start_time, end_time, rocket.timestep)
         ode_log = odeint(dynamics, x0, time, args=(rocket, self))
 
