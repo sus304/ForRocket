@@ -653,8 +653,8 @@ class Mapper4Wind:
         angle_wind_max = angle_wind_config[1]
         angle_wind_step = angle_wind_config[2]
 
-        self.Vel_wind_array = np.arange(self.Vel_wind_min, self.Vel_wind_max + self.Vel_wind_step, self.Vel_wind_step)
-        self.angle_wind_array = np.arange(self.angle_wind_min, self.angle_wind_max + self.angle_wind_step, self.angle_wind_step)
+        self.Vel_wind_array = np.arange(Vel_wind_min, Vel_wind_max + Vel_wind_step, Vel_wind_step)
+        self.angle_wind_array = np.arange(angle_wind_min, angle_wind_max + angle_wind_step, angle_wind_step)
 
     def mapping(self, rocket):
         time_apogee_array = np.empty((0, len(self.angle_wind_array)))
@@ -697,17 +697,17 @@ class Mapper4Wind:
                 soft_landing_points_angle = np.append(soft_landing_points_angle, solver.soft_landing_point)
                 del solver
                 gc.collect()
-            time_apogee_array = np.append(time_apogee_array, time_apogee_array_angle, axis=0)
-            Vel_air_apogee_array = np.append(Vel_air_apogee_array, Vel_air_apogee_array_angle, axis=0)
-            altitude_apogee_array = np.append(altitude_apogee_array, altitude_apogee_array_angl, axis=0)
-            Vel_air_max_array = np.append(Vel_air_max_array, Vel_air_max_array_angle, axis=0)
-            Mach_max_array = np.append(Mach_max_array, Mach_max_array_angle, axis=0)
-            MaxQ_array = np.append(MaxQ_array, MaxQ_array_angle, axis=0)
-            time_hard_landing_array = np.append(time_hard_landing_array, time_hard_landing_array_an, axis=0)
-            hard_landing_points = np.append(hard_landing_points, hard_landing_points_angle, axis=0)
-            time_sepa2_array = np.append(time_sepa2_array, time_sepa2_array_angle, axis=0)
-            time_soft_landing_array = np.append(time_soft_landing_array, time_soft_landing_array_an, axis=0)
-            soft_landing_points = np.append(soft_landing_points, soft_landing_points_angle, axis=0)
+            time_apogee_array = np.append(time_apogee_array, np.array([time_apogee_array_angle]), axis=0)
+            Vel_air_apogee_array = np.append(Vel_air_apogee_array, np.array([Vel_air_apogee_array_angle]), axis=0)
+            altitude_apogee_array = np.append(altitude_apogee_array, np.array([altitude_apogee_array_angle]), axis=0)
+            Vel_air_max_array = np.append(Vel_air_max_array, np.array([Vel_air_max_array_angle]), axis=0)
+            Mach_max_array = np.append(Mach_max_array, np.array([Mach_max_array_angle]), axis=0)
+            MaxQ_array = np.append(MaxQ_array, np.array([MaxQ_array_angle]), axis=0)
+            time_hard_landing_array = np.append(time_hard_landing_array, np.array([time_hard_landing_array_angle]), axis=0)
+            hard_landing_points = np.append(hard_landing_points, np.array([hard_landing_points_angle]), axis=0)
+            time_sepa2_array = np.append(time_sepa2_array, np.array([time_sepa2_array_angle]), axis=0)
+            time_soft_landing_array = np.append(time_soft_landing_array, np.array([time_soft_landing_array_angle]), axis=0)
+            soft_landing_points = np.append(soft_landing_points, np.array([soft_landing_points_angle]), axis=0)
 
         np.savetxt(self.result_dir + '/time_apogee.csv', time_apogee_array, delimiter=',')
         np.savetxt(self.result_dir + '/vel_apogee.csv', Vel_air_apogee_array, delimiter=',')

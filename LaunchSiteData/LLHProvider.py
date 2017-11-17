@@ -16,31 +16,31 @@ class LaunchSite:
 
         if noshiro and (land or asanai or field3rd):
             self.site = NoshiroAsanai3rd()
-        if noshiro and (sea or oshiai):
+        elif noshiro and (sea or oshiai):
             self.site = NoshiroOchiai3km()
-        if taiki:
+        elif taiki:
             self.site = TaikiLand()
         
-    # def points_in_range(self, landing_points_ENU):
-    #     verify_array = np.empty((0, len(landing_points_ENU[0, :])))
-    #     for i in range(len(landing_points_ENU[0, :])):
-    #         for k in range(len(landing_points_ENU[:, 0])):
-    #             verify_array = np.append(verify_array, self.site.in_range(landing_points_ENU[i, k]))
-    #         verify_array_angle = np.empty(0)
-    #         for angle in speed:
-    #             verify_array_angle = np.append(verify_array_angle, self.site.in_range(angle))
-    #         verify_array = np.append(verify_array, verify_array_angle, axis=0)
-    #     return verify_array
+    def points_in_range(self, landing_points_ENU):
+        limit_array = np.empty(0)
+        for i in range(len(landing_points_ENU[0, :])):
+            verify_array = np.array([self.site.in_range(point) for point in landing_points_ENU[:, i]].append(False))
+            limit_index = np.argmin(verify_array)
+            limit_index_array = np.append(limit_array, limit)
+        return limit_index_array
 
-    # def wind_limit(vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points):
-    #     verify_hard_array = self.points_in_range(hard_landing_points)
-    #     verify_soft_array = self.points_in_range(soft_landing_points)
-    #     li = np.array([True, True, True, False])
-    #     np.argmin(li) # => 2
-    #     li = np.array([True, True, True, True])
-    #     np.argmin(li) # => 0
-        
-    #     for i in range(len(verify_hard_array[0, :]))
+    def wind_limit(self, vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points):
+        limit_index_hard_array = self.points_in_range(hard_landing_points)
+        limit_index_soft_array = self.points_in_range(soft_landing_points)
+        wind_limit_index_array = np.array([np.min(hard, soft) for hard, soft in zip(limit_hard_array, limit_soft_array)])
+
+        txt = open(self.result_dir + '/wind_limit.txt', mode='w')
+        txt.writeline(['Wind Limit'])
+        for i in wind_limit_index_array:
+            txt.writelines([str(angle_wind_array[i]), str(wind_limit_index_array[i]), '[m/s]\n'])
+        txt.close()
+
+
 
 
 class NoshiroAsanai3rd:

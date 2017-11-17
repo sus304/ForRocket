@@ -21,7 +21,7 @@
 	},
 
 	"Wind":{
-		"Single Condition Simulation": true,
+		"Single Condition Simulation": false,
 		"Wind Velocity [m/s]": 2.5,
 		"Wind Direction [deg]": 0.0,
 		"multi mode": "comment",

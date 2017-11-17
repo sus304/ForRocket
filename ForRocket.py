@@ -48,6 +48,7 @@ def run(config_file):
         angle_wind_config = [wind.get('Wind Direction Mini [deg]'), wind.get('Wind Direction Max [deg]'), wind.get('Wind Direction Step [deg]')]
         mappper = Simulator.Mapper4Wind(result_dir, vel_wind_config, angle_wind_config)
         vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points = mappper.mapping(rocket)
+        launch_site.wind_limit(vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points)
 
 
 
