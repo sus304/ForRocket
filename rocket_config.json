@@ -17,13 +17,11 @@
 
 	"Solver": {
 		"Auto End Time": true,
-		"End Time [sec]": 50.0,
-		"Time Step [sec]": 0.01,
-		"If the calculation is slow, try increasing the Time Step. Precision and trade-off": "comment"
+		"End Time [sec]": 50.0
 	},
 
 	"Wind":{
-		"Single Condition Simulation": false,
+		"Single Condition Simulation": true,
 		"Wind Velocity [m/s]": 2.5,
 		"Wind Direction [deg]": 0.0,
 		"multi mode": "comment",

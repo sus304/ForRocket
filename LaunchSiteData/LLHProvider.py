@@ -21,20 +21,31 @@ class LaunchSite:
         if taiki:
             self.site = TaikiLand()
         
-    def point_in_range(landing_point_ENU):
-        return self.site.in_range(landing_point_ENU)
+    # def points_in_range(self, landing_points_ENU):
+    #     verify_array = np.empty((0, len(landing_points_ENU[0, :])))
+    #     for i in range(len(landing_points_ENU[0, :])):
+    #         for k in range(len(landing_points_ENU[:, 0])):
+    #             verify_array = np.append(verify_array, self.site.in_range(landing_points_ENU[i, k]))
+    #         verify_array_angle = np.empty(0)
+    #         for angle in speed:
+    #             verify_array_angle = np.append(verify_array_angle, self.site.in_range(angle))
+    #         verify_array = np.append(verify_array, verify_array_angle, axis=0)
+    #     return verify_array
 
-    def wind_limit(landing_points):
-        tf_list = []
-        for speed in landing_points:
-            tf_list_angle = []
-            for angle in speed:
-                tf_list.append(self.point_in_range(angle))
+    # def wind_limit(vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points):
+    #     verify_hard_array = self.points_in_range(hard_landing_points)
+    #     verify_soft_array = self.points_in_range(soft_landing_points)
+    #     li = np.array([True, True, True, False])
+    #     np.argmin(li) # => 2
+    #     li = np.array([True, True, True, True])
+    #     np.argmin(li) # => 0
+        
+    #     for i in range(len(verify_hard_array[0, :]))
 
 
 class NoshiroAsanai3rd:
     def __init__(self):
-        self.launch_point_LLH = [40.138633, 139.984850, 0.0]
+        self.launch_point_LLH = np.array([40.138633, 139.984850, 0.0])
         points = []
         points.append([40.139816, 139.983804, 0.0])
         points.append([40.137125, 139.982444, 0.0])
@@ -60,12 +71,12 @@ class NoshiroAsanai3rd:
 
 class NoshiroOchiai3km:
     def __init__(self):
-        self.launch_point_LLH = [40.242865, 140.010450, 0.0]
-        self.center_point_LLH = [40.248855, 139.975967, 0.0]
+        self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
+        self.center_point_LLH = np.array([40.248855, 139.975967, 0.0])
         self.radius = 3000.0
 
         self.judge_circle = Judge_inside_circle(self.launch_point_LLH, self.center_point_LLH, self.radius)
-        self.judge_border = Judge_inside_border(self.launch_point_LLH, [40.243015, 140.007566, 0.0], [40.235585, 140.005619, 0.0], [1, -1])
+        self.judge_border = Judge_inside_border(self.launch_point_LLH, np.array([40.243015, 140.007566, 0.0]), np.array([40.235585, 140.005619, 0.0]), [1, -1])
         
     def in_range(landing_point_ENU):
         x = landing_point_ENU[0]
@@ -76,7 +87,7 @@ class NoshiroOchiai3km:
 
 class TaikiLand:
     def __init__(self):
-        self.launch_point_LLH = [42.514320, 143.439793, 0.0]
+        self.launch_point_LLH = np.array([42.514320, 143.439793, 0.0])
         points = []
         points.append([42.514340, 143.439894, 0.0])
         points.append([42.520564, 143.437342, 0.0])
@@ -137,14 +148,14 @@ class Judge_inside_border:
         # over axis: False判定の方向をx,yの単位ベクトルで
         # ENUでE正N負がNG=overなら[1,-1]
         coord = Coordinate()
-        self.edge_point1 = coord.LLH2ENU(launch_point_LLH, edge_point1_LLH)
-        self.edge_point2 = coord.LLH2ENU(launch_point_LLH, edge_point2_LLH)
-        self.over_axis = over_axis
+        edge_point1 = coord.LLH2ENU(launch_point_LLH, edge_point1_LLH)
+        edge_point2 = coord.LLH2ENU(launch_point_LLH, edge_point2_LLH)
+        self.over_axis = np.array(over_axis)
 
-        dx = (self.edge_point2[0] - self.edge_point1[0])
-        dy = (self.edge_point2[1] - self.edge_point1[1])
+        dx = (edge_point2[0] - edge_point1[0])
+        dy = (edge_point2[1] - edge_point1[1])
         self.slope = dy / dx if dx != 0 else 0
-        self.intercept_y_border = (self.edge_point2[0] * self.edge_point1[1] - self.edge_point1[0] * self.edge_point2[1]) / dx
+        self.intercept_y_border = (edge_point2[0] * edge_point1[1] - edge_point1[0] * edge_point2[1]) / dx
 
     def __call__(self, landing_point):
         x = landing_point[0]
@@ -164,7 +175,7 @@ class Judge_inside_poly:
             pass
         else:
             poly_points_LLH.append(poly_points_LLH[0])
-        self.poly_points = [coord.LLH2ENU(launch_point_LLH, poly_point_LLH) for poly_point_LLH in poly_points_LLH]
+        self.poly_points = np.array([coord.LLH2ENU(launch_point_LLH, poly_point_LLH) for poly_point_LLH in poly_points_LLH])
 
 
     def __call__(self, landing_point):
