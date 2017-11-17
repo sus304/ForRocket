@@ -4,7 +4,8 @@ import re
 
 
 class LaunchSite:
-    def __init__(self, launch_site_name):
+    def __init__(self, launch_site_name, result_dir):
+        self.result_dir = result_dir
         name = launch_site_name
         noshiro = True if re.search(r'noshiro|nosiro', name, re.IGNORECASE) else False
         taiki = True if re.search(r'taiki', name, re.IGNORECASE) else False
@@ -22,22 +23,31 @@ class LaunchSite:
             self.site = TaikiLand()
         
     def points_in_range(self, landing_points_ENU):
-        limit_array = np.empty(0)
-        for i in range(len(landing_points_ENU[0, :])):
-            verify_array = np.array([self.site.in_range(point) for point in landing_points_ENU[:, i]].append(False))
-            limit_index = np.argmin(verify_array)
-            limit_index_array = np.append(limit_array, limit)
+        verify_list = []
+        for vel in landing_points_ENU:
+            verify_list_vel = []
+            verify_list_vel = [self.site.in_range(point) for point in vel]
+            verify_list.append(verify_list_vel)
+        verify_array = np.array(verify_list)
+        # all True対策
+        verify_array = np.append(verify_array, np.array([[False] * len(verify_array[0, :])]), axis=0)
+
+        limit_index_array = np.empty(0)
+        for i in range(len(verify_array[0, :])):
+            limit_index = int(np.argmin(verify_array[:, i])) - 1
+            limit_index_array = np.append(limit_index_array, limit_index)
         return limit_index_array
 
     def wind_limit(self, vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points):
         limit_index_hard_array = self.points_in_range(hard_landing_points)
         limit_index_soft_array = self.points_in_range(soft_landing_points)
-        wind_limit_index_array = np.array([np.min(hard, soft) for hard, soft in zip(limit_hard_array, limit_soft_array)])
+        wind_limit_index_array = np.array([int(min(hard, soft)) for hard, soft in zip(limit_index_hard_array, limit_index_soft_array)])
+        vel_wind_array = np.append(vel_wind_array, 0.0)
 
         txt = open(self.result_dir + '/wind_limit.txt', mode='w')
-        txt.writeline(['Wind Limit'])
-        for i in wind_limit_index_array:
-            txt.writelines([str(angle_wind_array[i]), str(wind_limit_index_array[i]), '[m/s]\n'])
+        txt.write('Wind Limit\n')
+        for i in range(len(wind_limit_index_array)):
+            txt.writelines([str(angle_wind_array[i]), ' [deg]: ', str(vel_wind_array[wind_limit_index_array[i]]), ' [m/s]\n'])
         txt.close()
 
 
@@ -62,7 +72,7 @@ class NoshiroAsanai3rd:
 
         self.judge_poly = Judge_inside_poly(self.launch_point_LLH, points)
     
-    def in_range(landing_point_ENU):
+    def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]
         y = landing_point_ENU[1]
         judge = self.judge_poly([x, y])
@@ -78,7 +88,7 @@ class NoshiroOchiai3km:
         self.judge_circle = Judge_inside_circle(self.launch_point_LLH, self.center_point_LLH, self.radius)
         self.judge_border = Judge_inside_border(self.launch_point_LLH, np.array([40.243015, 140.007566, 0.0]), np.array([40.235585, 140.005619, 0.0]), [1, -1])
         
-    def in_range(landing_point_ENU):
+    def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]
         y = landing_point_ENU[1]
         judge = self.judge_circle([x, y]) and self.judge_border([x, y])
@@ -120,7 +130,7 @@ class TaikiLand:
 
         self.judge_poly = Judge_inside_poly(self.launch_point_LLH, points)
 
-    def in_range(landing_point_ENU):
+    def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]
         y = landing_point_ENU[1]
         judge = self.judge_poly([x, y])

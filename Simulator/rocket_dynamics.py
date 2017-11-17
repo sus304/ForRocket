@@ -644,7 +644,7 @@ class Solver:
 
 
 class Mapper4Wind:
-    def __init__(self, result_dir, vel_wind_config, angle_wind_config):
+    def __init__(self, vel_wind_config, angle_wind_config, result_dir):
         self.result_dir = result_dir
         Vel_wind_min = vel_wind_config[0]
         Vel_wind_max = vel_wind_config[1]
@@ -664,10 +664,10 @@ class Mapper4Wind:
         Mach_max_array = np.empty((0, len(self.angle_wind_array)))
         MaxQ_array = np.empty((0, len(self.angle_wind_array)))
         time_hard_landing_array = np.empty((0, len(self.angle_wind_array)))
-        hard_landing_points = np.empty((0, len(self.angle_wind_array)))
+        hard_landing_points = []
         time_sepa2_array = np.empty((0, len(self.angle_wind_array)))
         time_soft_landing_array = np.empty((0, len(self.angle_wind_array)))
-        soft_landing_points = np.empty((0, len(self.angle_wind_array)))
+        soft_landing_points = []
         for Vel_wind in tqdm(self.Vel_wind_array):
             time_apogee_array_angle = np.empty(0)
             Vel_air_apogee_array_angle = np.empty(0)
@@ -676,10 +676,10 @@ class Mapper4Wind:
             Mach_max_array_angle = np.empty(0)
             MaxQ_array_angle = np.empty(0)
             time_hard_landing_array_angle = np.empty(0)
-            hard_landing_points_angle = np.empty(0)
+            hard_landing_points_angle = []
             time_sepa2_array_angle = np.empty(0)
             time_soft_landing_array_angle = np.empty(0)
-            soft_landing_points_angle = np.empty(0)
+            soft_landing_points_angle = []
             for angle_wind in self.angle_wind_array:
                 solver = Solver(Vel_wind, angle_wind, self.result_dir, True)
                 solver.solve(rocket)
@@ -691,10 +691,10 @@ class Mapper4Wind:
                 Mach_max_array_angle = np.append(Mach_max_array_angle, solver.Mach_max)
                 MaxQ_array_angle = np.append(MaxQ_array_angle, solver.maxQ)
                 time_hard_landing_array_angle = np.append(time_hard_landing_array_angle, solver.time_hard_landing)
-                hard_landing_points_angle = np.append(hard_landing_points_angle, solver.hard_landing_point)
+                hard_landing_points_angle.append(solver.hard_landing_point)
                 time_sepa2_array_angle = np.append(time_sepa2_array_angle, solver.time_sepa2)
                 time_soft_landing_array_angle = np.append(time_soft_landing_array_angle, solver.time_soft_landing)
-                soft_landing_points_angle = np.append(soft_landing_points_angle, solver.soft_landing_point)
+                soft_landing_points_angle.append(solver.soft_landing_point)
                 del solver
                 gc.collect()
             time_apogee_array = np.append(time_apogee_array, np.array([time_apogee_array_angle]), axis=0)
@@ -704,10 +704,10 @@ class Mapper4Wind:
             Mach_max_array = np.append(Mach_max_array, np.array([Mach_max_array_angle]), axis=0)
             MaxQ_array = np.append(MaxQ_array, np.array([MaxQ_array_angle]), axis=0)
             time_hard_landing_array = np.append(time_hard_landing_array, np.array([time_hard_landing_array_angle]), axis=0)
-            hard_landing_points = np.append(hard_landing_points, np.array([hard_landing_points_angle]), axis=0)
+            hard_landing_points.append(hard_landing_points_angle)
             time_sepa2_array = np.append(time_sepa2_array, np.array([time_sepa2_array_angle]), axis=0)
             time_soft_landing_array = np.append(time_soft_landing_array, np.array([time_soft_landing_array_angle]), axis=0)
-            soft_landing_points = np.append(soft_landing_points, np.array([soft_landing_points_angle]), axis=0)
+            soft_landing_points.append(soft_landing_points_angle)
 
         np.savetxt(self.result_dir + '/time_apogee.csv', time_apogee_array, delimiter=',')
         np.savetxt(self.result_dir + '/vel_apogee.csv', Vel_air_apogee_array, delimiter=',')

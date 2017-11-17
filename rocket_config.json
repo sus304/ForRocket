@@ -34,8 +34,8 @@
 	},
 
 	"Launch Pad": {
-		"Site": "Noshiro Sea",
-		"Launch Azimuth [deg]": 0.0,
+		"Site": "Taiki",
+		"Launch Azimuth [deg]": 25.0,
 		"Launch Elevation [deg]": -80.0,
 		"Launch Roll Angle [deg]":0.0,
 		"Launcher Rail Length [m]": 5.0
