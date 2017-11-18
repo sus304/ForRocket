@@ -35,14 +35,14 @@ def run(config_file):
 
     # Simulation
     single_condition = json_obj.get('Wind').get('Single Condition Simulation')
+    launch_site_name = json_obj.get('Launch Pad').get('Site')
+    launch_site = LaunchSiteProvider.LaunchSite(launch_site_name, result_dir)
     if single_condition:
         vel_wind = json_obj.get('Wind').get('Wind Velocity [m/s]')
         angle_wind = json_obj.get('Wind').get('Wind Direction [deg]')
         solver = Simulator.Solver(vel_wind, angle_wind, result_dir)
         solver.solve(rocket)
     else:
-        launch_site_name = json_obj.get('Launch Pad').get('Site')
-        launch_site = LaunchSiteProvider.LaunchSite(launch_site_name, result_dir)
         wind = json_obj.get('Wind')
         vel_wind_config = [wind.get('Wind Velocity Mini [m/s]'), wind.get('Wind Velocity Max [m/s]'), wind.get('Wind Velocity Step [m/s]')]
         angle_wind_config = [wind.get('Wind Direction Mini [deg]'), wind.get('Wind Direction Max [deg]'), wind.get('Wind Direction Step [deg]')]

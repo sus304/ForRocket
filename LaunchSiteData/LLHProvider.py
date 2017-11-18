@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import re
+import simplekml
 
 
 class LaunchSite:
@@ -21,7 +22,16 @@ class LaunchSite:
             self.site = NoshiroOchiai3km()
         elif taiki:
             self.site = TaikiLand()
-        
+
+    def plot_kml(self, landing_points_ENU, name=''):
+        coord = Coordinate()
+        kml = simplekml.Kml()
+        for vel in landing_points_ENU:
+            landing_points_LLH = [coord.ENU2LLH(self.site.launch_point_LLH, np.append(point, 0.0)) for point in vel]
+            linestring = kml.newlinestring()
+            linestring.coords = landing_points_LLH
+        kml.save(self.result_dir + '/' + name + 'landing_range.kml')
+
     def points_in_range(self, landing_points_ENU):
         verify_list = []
         for vel in landing_points_ENU:
@@ -39,6 +49,8 @@ class LaunchSite:
         return limit_index_array
 
     def wind_limit(self, vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points):
+        self.plot_kml(hard_landing_points, name='hard')
+        self.plot_kml(soft_landing_points, name='soft')
         limit_index_hard_array = self.points_in_range(hard_landing_points)
         limit_index_soft_array = self.points_in_range(soft_landing_points)
         wind_limit_index_array = np.array([int(min(hard, soft)) for hard, soft in zip(limit_index_hard_array, limit_index_soft_array)])
@@ -49,6 +61,7 @@ class LaunchSite:
         for i in range(len(wind_limit_index_array)):
             txt.writelines([str(angle_wind_array[i]), ' [deg]: ', str(vel_wind_array[wind_limit_index_array[i]]), ' [m/s]\n'])
         txt.close()
+
 
 
 
@@ -281,8 +294,9 @@ class Coordinate:
         point_LLH[1] = np.degrees(np.arctan2(y_ecef, x_ecef))
         N = a / np.sqrt(1.0 - e_sq * np.power(np.sin(np.radians(point_LLH[0])), 2))
         point_LLH[2] = (p / np.cos(np.radians(point_LLH[0]))) - N
+        point_earth = [point_LLH[1], point_LLH[0], point_LLH[1]]
 
-        return point_LLH
+        return point_earth
 
 # def kml_make(name,Launch_LLH):
 #   import simpelkml
