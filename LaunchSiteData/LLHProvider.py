@@ -28,7 +28,9 @@ class LaunchSite:
         kml = simplekml.Kml()
         for vel in landing_points_ENU:
             landing_points_LLH = [coord.ENU2LLH(self.site.launch_point_LLH, np.append(point, 0.0)) for point in vel]
+            landing_points_LLH.append(landing_points_LLH[0])
             linestring = kml.newlinestring()
+            linestring.style.linestyle.color = simplekml.Color.red
             linestring.coords = landing_points_LLH
         kml.save(self.result_dir + '/' + name + 'landing_range.kml')
 

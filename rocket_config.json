@@ -34,8 +34,8 @@
 	},
 
 	"Launch Pad": {
-		"Site": "Taiki",
-		"Launch Azimuth [deg]": 25.0,
+		"Site": "Noshiro Land",
+		"Launch Azimuth [deg]": 225.0,
 		"Launch Elevation [deg]": -80.0,
 		"Launch Roll Angle [deg]":0.0,
 		"Launcher Rail Length [m]": 5.0
@@ -55,7 +55,7 @@
 
 	"Parachute": {
 		"1st Parachute CdS [m2]": 0.3,
-		"2nd Parachute Exist": true,
+		"2nd Parachute Exist": false,
 		"2nd Parachute CdS [m2]": 0.6,
 		"2nd Parachute Opening Altitude [m]": 300.0
 	},
@@ -77,19 +77,19 @@
 	"Engine": {
 		"Thrust File": "Thrust.csv",
 		"File Exist":false,
-		"Constant Thrust [N]":1000.0,
-		"Burn Time [sec]":1.2,
-		"Isp [sec]": 180.0,
+		"Constant Thrust [N]":300.0,
+		"Burn Time [sec]":2.25,
+		"Isp [sec]": 159.2,
 		"Nozzle Throat Diameter [m]": 0.03,
 		"Nozzle Expansion Ratio": 10.0
 	},
 
 	"Propellant":{
-		"Oxidizer Mass [kg]": 4.6,
-		"Oxidizer Mass Flow Rate [kg/s]": 0.5,
-		"Fuel Mass Before Burn [kg]": 1.0,
-		"Fuel Mass After Burn [kg]": 0.3,
-		"Fuel Mass Flow Rate [kg/s]": 0.1,
+		"Oxidizer Mass [kg]": 0.38,
+		"Oxidizer Mass Flow Rate [kg/s]": 0.169,
+		"Fuel Mass Before Burn [kg]": 0.17,
+		"Fuel Mass After Burn [kg]": 0.107,
+		"Fuel Mass Flow Rate [kg/s]": 0.028,
 		"Fuel Outside Diameter [m]": 0.08,
 		"Fuel Inside Diameter [m]": 0.04,
 		"Fuel Length [m]": 0.3
