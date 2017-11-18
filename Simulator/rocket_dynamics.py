@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import Simulator.coordinate as coord
 import Simulator.environment as env
+import Simulator.heating as heating
 
 
 class Rocket:
@@ -128,6 +129,17 @@ class Rocket:
         self.m0 = self.ms + self.m0_p
         self.Lcg0_p = (self.m0_ox * (self.L - self.Lcg0_ox) + self.m0_f * self.Lcg_f) / self.m0_p
         self.Lcg0 = (self.ms * self.Lcg_s + self.m0_p * self.Lcg0_p) / self.m0
+
+        self.heat_obj = heating.NoseCone()
+        heat_param = json.get('Aerodynamics Heating Parameter')
+        self.heat_obj.T_surface_init = heat_param.get('Initial Surface Temperature [K]')
+        self.heat_obj.R_nosetip = heat_param.get('Blunt Radius Tip [m]')
+        self.heat_obj.thickness = heat_param.get('Thickness Tip [m]')
+        self.heat_obj.rho = heat_param.get('Material Dencity [kg/m^3]')
+        self.heat_obj.c = heat_param.get('Material Specific Heat [J/kg-K]')
+        self.heat_obj.epsilon = heat_param.get('Matrial Surface Emissivity')
+        self.heat_obj.T_ablation = heat_param.get('Ablation Temperature [K]')
+        self.heat_obj.h_vaporization = heat_param.get('Vaporization Heat [kJ/kg]') / 1000.0
 
 
 def dynamics(x, t, rocket, solver):
@@ -405,6 +417,14 @@ class Solver:
         Lcp_log = rocket.Lcp(Mach_log)
         Fst_log = (Lcp_log - Lcg_log) / rocket.L * 100  # [%]
 
+        heater = heating.FlightHeating(time_log, Vel_air_abs_log, altitude_log)
+        heater.heating(rocket.heat_obj)
+        q_conv_log = heater.q_conv
+        q_rad_log = heater.q_rad
+        q_heat_log = q_conv_log + q_rad_log
+        T_surface_log = heater.T_surface
+        thickness_log = heater.thickness
+
         #  イベントでの値
         # apogee
         index_apogee = np.argmax(altitude_log)
@@ -481,6 +501,8 @@ class Solver:
         txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])
         txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
         txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing / 1000.0, 3)), '[km]\n'])
+        txt.writelines(['Max Tip Temperature,', str(round(max(T_surface_log), 2)), '[K]\n'])
+        txt.writelines(['Terminal Tip Thickness,', str(round(thickness_log[-1], 2)), '[mm]\n'])
         txt.close()
 
         output_array = np.c_[
@@ -515,14 +537,19 @@ class Solver:
             Force_log,
             Vel_air_log,
             Vel_air_abs_log,
+            Mach_log,            
             dynamic_pressure_log,
-            Mach_log,
+            q_conv_log,
+            q_rad_log,
+            q_heat_log,
+            T_surface_log,
+            thickness_log,
             Acc_Body_log,
             Vel_Body_log,
             Vel_ENU_log,
             Pos_ENU_log,
         ]
-        header = 'time,g,P_air,rho_air,wind_East,wind_North,wind_Up,mdot_f,mdot_ox,mdot_p,mf,mox,mp,m,Lcg_ox,Lcg_p,Lcg,Lcp,Fst,alpha,beta,omega_roll,omega_pitch,omega_yaw,quat0,quat1,quat2,quat3,azimuth,elevation,roll,thrust,Isp,drag,normal,Force_X,Force_Y,Force_Z,Vel_air_X,Vel_air_Y,Vel_air_Z,Vel_air_abs,dynamic_pressure,Mach,Acc_Body_X,Acc_Body_Y,Acc_Body_Z,Vel_Body_X,Vel_Body_Y,Vel_Body_Z,Vel_East,Vel_North,Vel_Up,Pos_East,Pos_North,Pos_Up'
+        header = 'time,g,P_air,rho_air,wind_East,wind_North,wind_Up,mdot_f,mdot_ox,mdot_p,mf,mox,mp,m,Lcg_ox,Lcg_p,Lcg,Lcp,Fst,alpha,beta,omega_roll,omega_pitch,omega_yaw,quat0,quat1,quat2,quat3,azimuth,elevation,roll,thrust,Isp,drag,normal,Force_X,Force_Y,Force_Z,Vel_air_X,Vel_air_Y,Vel_air_Z,Vel_air_abs,Mach,dynamic_pressure,q_conv,q_rad,q_heat,T_surface,tip_thickness,Acc_Body_X,Acc_Body_Y,Acc_Body_Z,Vel_Body_X,Vel_Body_Y,Vel_Body_Z,Vel_East,Vel_North,Vel_Up,Pos_East,Pos_North,Pos_Up'
         np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header=header)
 
         plt.close('all')
@@ -554,6 +581,7 @@ class Solver:
         plt.plot(time_log, np.rad2deg(beta_log), label='beta')
         plt.xlabel('Time [sec]')
         plt.ylabel('Attitude [deg]')
+        plt.ylim(ymin=-180, ymax=180)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Attitude.png')
@@ -561,7 +589,7 @@ class Solver:
         plt.figure('Force')
         plt.plot(time_log, thrust_log, label='thrust')
         plt.plot(time_log, drag_log, label='drag')
-        plt.plot(time_log, normal_log, label='normal')
+        plt.plot(time_log, Force_log[:,1], label='normal')
         plt.xlabel('Time [sec]')
         plt.ylabel('Force [N]')
         plt.grid()
@@ -593,6 +621,24 @@ class Solver:
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Dynamicpressure.png')
+        
+        plt.figure('Aerodynamics Heating')
+        plt.plot(time_log, q_conv_log / 10**6, label='convection heat')
+        plt.plot(time_log, q_rad_log / 10**6, label='radiation heat')
+        plt.plot(time_log, q_heat_log / 10**6, label='total heat')
+        plt.xlabel('Time [sec]')
+        plt.ylabel('q dot [MW/m^2]')
+        plt.grid()
+        plt.legend()
+        plt.savefig(self.result_dir + '/AerodynamicsHeating.png')
+
+        plt.figure('Surface Temperature')
+        plt.plot(time_log, T_surface_log, label='Surface Temperature')
+        plt.xlabel('Time [sec]')
+        plt.ylabel('Surface Temperature [K]')
+        plt.grid()
+        plt.legend()
+        plt.savefig(self.result_dir + '/SurfaceTemperature.png')
 
         plt.figure('Body Acceleration')
         plt.plot(time_log, Acc_Body_log[:, 0], label='Acc_Body X')
@@ -625,9 +671,9 @@ class Solver:
         plt.savefig(self.result_dir + '/VelocityENU.png')
 
         plt.figure('ENU Position')
-        plt.plot(time_log, Vel_ENU_log[:, 0] / 1000.0, label='Pos_East')
-        plt.plot(time_log, Vel_ENU_log[:, 1] / 1000.0, label='Pos_North')
-        plt.plot(time_log, Vel_ENU_log[:, 2] / 1000.0, label='Pos_Up')
+        plt.plot(time_log, Pos_ENU_log[:, 0] / 1000.0, label='Pos_East')
+        plt.plot(time_log, Pos_ENU_log[:, 1] / 1000.0, label='Pos_North')
+        plt.plot(time_log, Pos_ENU_log[:, 2] / 1000.0, label='Pos_Up')
         plt.xlabel('Time [sec]')
         plt.ylabel('ENU Position [km]')
         plt.grid()

@@ -98,6 +98,17 @@
 	"Environment": {
 		"Wind Mesurement Height [m]": 5.0,
 		"Wind Power Law Exponential Coefficient": 7.0
+	},
+
+	"Aerodynamics Heating Parameter":{
+		"Initial Surface Temperature [K]": 298.15,
+		"Blunt Radius Tip [m]": 0.2,
+		"Thickness Tip [m]": 0.03,
+		"Material Dencity [kg/m^3]": 1270.0,
+		"Material Specific Heat [J/kg-K]": 1592.0,
+		"Matrial Surface Emissivity": 0.8,
+		"Ablation Temperature [K]": 600.0,
+		"Vaporization Heat [kJ/kg]": 9288.48
 	}
 
 }

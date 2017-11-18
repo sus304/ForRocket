@@ -91,7 +91,7 @@ def Wind_ENU(WindSpeed, WindDirection, altitude, refaltitude, power_exp):
     # 負にすることで風向"からの"風にしてる
 
     if altitude < 0.0:
-      altitude = 0.0
+        altitude = 0.0
 
     Wind_ENU = np.zeros(3)
     Wind_ENU[0] = -WindSpeed * np.cos(np.radians(WindDirection)) * (altitude / refaltitude) ** (1.0 / power_exp)

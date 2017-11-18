@@ -14,7 +14,7 @@ Ref.
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-import FlightHeating.environment as env
+import Simulator.environment as env
 
 class NoseCone:
     def __init__(self):
@@ -32,22 +32,10 @@ class FlightHeating:
     '''
     Calculate aerodynamic heating and ablation cooling during flight from flight log file speed, altitude.
     '''
-    def __init__(self):
-        # self.logfile_name = 'Momo_dynamics_PlanB_20170619(Rev6.2).csv'
-        # self.log_all = np.loadtxt(self.logfile_name, delimiter=',', skiprows=1)
-        # self.time = self.log_all[:,0]
-        # self.altitude = self.log_all[:,5]
-        # self.mach = self.log_all[:,22]   
-        # def mach2vel(mach, alt):
-        #     return mach * env.std_soundspeed(alt)     
-        # self.vel = list(map(mach2vel, self.mach, self.altitude))
-        # self.array_length = len(self.time)
-
-        self.logfile_name = 'hayabusa_result.csv'
-        self.log_all = np.loadtxt(self.logfile_name, delimiter=',', skiprows=1)
-        self.time = self.log_all[:,0]
-        self.vel = self.log_all[:,1]
-        self.altitude = self.log_all[:,2]
+    def __init__(self, time_array, vel_array, altitude_array):
+        self.time = time_array
+        self.vel = vel_array
+        self.altitude = altitude_array
         self.array_length = len(self.time)
 
     def heating(self, obj):
@@ -72,13 +60,13 @@ class FlightHeating:
 
         for i in range(1, self.array_length):
             dt = self.time[i] - self.time[i-1]
-            rho_air = env.std_density(self.altitude[i])
+            rho_air = env.get_std_density(self.altitude[i])
             g = env.gravity(self.altitude[i])
             R = Re + self.altitude[i]  # [m] distance from center of earth
             uc = np.sqrt(g0 * Re**2 / Re)  # [m/s] circular velocity
 
             # ref. Detra-Kemp-Riddell
-            self.q_conv[i] = 11030.0 / np.sqrt(obj.R_nosetip) * (rho_air / env.std_density(0.0))**0.5 * (np.abs(self.vel[i]) / uc)**3.05 * 10**4  # [W/m^2]
+            self.q_conv[i] = 11030.0 / np.sqrt(obj.R_nosetip) * (rho_air / env.get_std_density(0.0))**0.5 * (np.abs(self.vel[i]) / uc)**3.05 * 10**4  # [W/m^2]
             # ref. Tauber
             def exp_n(R_nose, vel, rho):
                 # input:[m, m/s, kg/m^3]
