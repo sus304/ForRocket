@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import BarrowmanFlow as bf
+import BarrowmanFlow as bmf
 
 ################## User Input ###################
 length_body = 3.9663 # [m] from nose tip to body. without tail
@@ -20,11 +20,11 @@ span = 160.0 # [mm]
 thickness_fin = 3.0 # [mm]
 young_modulus = 69.0 # [GPa]
 poisson_ratio = 0.3 # [-]
-max_altitude = 6000.0 # [m]
+altitude = 6000.0 # [m]
 #################################################
 
 def mm2m(value):
-  return value / 1000.0
+    return value / 1000.0
 
 offset_fin = mm2m(offset_fin)
 root_chord = mm2m(root_chord)
@@ -33,22 +33,19 @@ leading_edge_chord = mm2m(leading_edge_chord)
 span = mm2m(span)
 thickness_fin = mm2m(thickness_fin)
 
-bf.initialize(diameter_body, length_body)
-nose = bf.Nose(shape_nose, length_nose)
-fin = bf.Fin(root_chord, tip_chord, leading_edge_chord, span, length_body-offset_fin-root_chord)
-fin.flutter_speed(young_modulus, poisson_ratio, thickness_fin, max_altitude)
-# tail = bf.TaperBody(diameter_body, diameter_tail, length_tail, length_body)
-stage = bf.integral(length_cg, nose, fin)
+stage = bmf.Stage(diameter_body, length_body, length_cg)
+nose = bmf.Nose(stage, shape_nose, length_nose)
+fin = bmf.Fin(stage, root_chord, tip_chord, leading_edge_chord, span, length_body - offset_fin - root_chord)
+fin.flutter_speed(young_modulus, poisson_ratio, thickness_fin, altitude)
+# tail = bmf.TaperBody(diameter_body, diameter_tail, length_tail, length_body)
+stage.integrate([nose, fin])
 
 print('*=============Result==============*')
 print('Length of C.P.:', stage.Lcp, '[m]')
 print('Coefficient of Normal Force:', stage.CNa, '[deg^-1]')
 print('Coefficient of Pitch Damping Moment:', stage.Cmq, '[-]')
 print('Coefficient of Roll Damping Moment:', stage.Clp, '[-]')
-print('Flutter Velocity:', max(fin.Vf), '[m/s]')
+print('Flutter Velocity:', fin.Vf, '[m/s]')
 print('*=================================*')
 
 stage.plot()
-
-
-

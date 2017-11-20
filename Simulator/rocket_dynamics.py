@@ -152,6 +152,7 @@ def dynamics(x, t, rocket, solver):
     mf = x[16]
     mox = x[17]
     quat = coord.quat_normalize(quat)
+    on_launcher = altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and t < 0.5
 
     # Translation coordinate
     DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat)
@@ -167,14 +168,15 @@ def dynamics(x, t, rocket, solver):
     u = Vel_air[0]
     v = Vel_air[1]
     w = Vel_air[2]
-    # if Vel_air_abs < 0.0 or np.abs(u) < 0.0:
-    #     alpha = 0.0
-    #     beta = 0.0
-    # else:
-    #     alpha = np.arctan2(w, u)
-    #     beta = np.arcsin(-v / Vel_air_abs)
-    alpha = np.arctan2(w, u)
-    beta = np.arcsin(-v / Vel_air_abs)
+    
+    if Vel_air_abs < 0.0 or np.abs(u) < 0.0 or on_launcher:
+        alpha = 0.0
+        beta = 0.0
+    else:
+        alpha = np.arctan2(w, u)
+        beta = np.arcsin(-v / Vel_air_abs)
+    # alpha = np.arctan2(w, u)
+    # beta = np.arcsin(-v / Vel_air_abs)
 
     # Air Condition
     g0 = 9.80665
@@ -251,13 +253,13 @@ def dynamics(x, t, rocket, solver):
 
     # Jet Dumping Moment
     moment_jet_dumping = np.zeros(3)
-    # moment_jet_dumping[0] = (-Ijdot_f[0] + mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
-    # moment_jet_dumping[1] = (-Ijdot_f[1] + mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
-    # moment_jet_dumping[2] = (-Ijdot_f[2] + mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
+    moment_jet_dumping[0] = (-Ijdot_f[0] + mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
+    moment_jet_dumping[1] = (-Ijdot_f[1] + mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
+    moment_jet_dumping[2] = (-Ijdot_f[2] + mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
     # moment_jet_dumping[0] = -(mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
-    moment_jet_dumping[0] = 0.0
-    moment_jet_dumping[1] = -(mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
-    moment_jet_dumping[2] = -(mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
+    # moment_jet_dumping[0] = 0.0
+    # moment_jet_dumping[1] = -(mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
+    # moment_jet_dumping[2] = -(mdot_p * ((Lcg - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
 
     # Euler Equation
     moment = moment_aero + moment_aero_dumping + moment_jet_dumping
@@ -277,7 +279,7 @@ def dynamics(x, t, rocket, solver):
     tersor = np.array([tersor_0, tersor_1, tersor_2, tersor_3])
     quatdot = 0.5 * tersor.dot(quat)
 
-    if altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and t < 0.5:
+    if on_launcher:
         omegadot = np.array([0.0] * 3)
         quatdot = np.array([0.0] * 4)
         solver.vel_launch_clear = Vel_Body[0]
