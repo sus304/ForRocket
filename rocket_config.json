@@ -11,7 +11,8 @@
 	},
 
 	"System": {
-		"Name": "H-44",	
+		"Name": "A",	
+		"Engine Config json": "EngineConfig.json",
 		"Result Directory": "./Result"
 	},
 
@@ -21,9 +22,9 @@
 	},
 
 	"Wind":{
-		"Single Condition Simulation": false,
+		"Single Condition Simulation": true,
 		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 0.0,
+		"Wind Direction [deg]": 125.0,
 		"multi mode": "comment",
 		"Wind Velocity Mini [m/s]": 1.0,
 		"Wind Velocity Max [m/s]": 7.0,
@@ -34,30 +35,30 @@
 	},
 
 	"Launch Pad": {
-		"Site": "Noshiro Land",
-		"Launch Azimuth [deg]": 225.0,
-		"Launch Elevation [deg]": -80.0,
-		"Launch Roll Angle [deg]":0.0,
+		"Site": "Taiki Land",
+		"Launch Azimuth [deg]": 25.0,
+		"Launch Elevation [deg]": -85.0,
+		"Launch Roll Angle [deg]": 0.0,
 		"Launcher Rail Length [m]": 5.0
 	},
 
 	"Structure": {
-		"Length [m]": 2.5,
+		"Length [m]": 1.5087,
 		"Diameter [m]": 0.154,
-		"Structure Mass [kg]": 5.0,
-		"Structure Length-C.G. FormNoseTip [m]": 1.2,
-		"Initial Oxidizer Length-C.G. FromEnd [m]": 0.7,
-		"Fuel Length-C.G. FromEnd [m]": 0.3,
-		"Length End-to-Tank [m]": 0.5,
-		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.1,
-		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 3.0
+		"Structure Mass [kg]": 6.217,
+		"Structure Length-C.G. FormNoseTip [m]": 0.886,
+		"Initial Oxidizer Length-C.G. FromEnd [m]": 0.213,
+		"Fuel Length-C.G. FromEnd [m]": 0.142,
+		"Length End-to-Tank [m]": 0.3,
+		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
+		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091
 	},
 
 	"Parachute": {
 		"1st Parachute CdS [m2]": 0.3,
 		"2nd Parachute Exist": false,
 		"2nd Parachute CdS [m2]": 0.6,
-		"2nd Parachute Opening Altitude [m]": 300.0
+		"2nd Parachute Opening Altitude [m]": 150.0
 	},
 
 	"Aero":{
@@ -67,38 +68,17 @@
 		"Use Barrowman Flow": false,
 		"Lcp File": "Lcp.csv",
 		"Lcp File Exist":false,
-		"Constant Length-C.P. [m]": 2.0,
+		"Constant Length-C.P. [m]": 1.122,
 		"CNa File": "CNa.csv",
 		"CNa File Exist":false,
-		"Constant Normal Coefficient CNa": 12.0,
-		"Roll Dumping Moment Coefficient Clp": 0.01,
-		"Pitch Dumping Moment Coefficient Cmq": 0.3
-	},
-
-	"Engine": {
-		"Thrust File": "Thrust.csv",
-		"File Exist":false,
-		"Constant Thrust [N]":300.0,
-		"Burn Time [sec]":2.25,
-		"Isp [sec]": 159.2,
-		"Nozzle Throat Diameter [m]": 0.03,
-		"Nozzle Expansion Ratio": 10.0
-	},
-
-	"Propellant":{
-		"Oxidizer Mass [kg]": 0.38,
-		"Oxidizer Mass Flow Rate [kg/s]": 0.169,
-		"Fuel Mass Before Burn [kg]": 0.17,
-		"Fuel Mass After Burn [kg]": 0.107,
-		"Fuel Mass Flow Rate [kg/s]": 0.028,
-		"Fuel Outside Diameter [m]": 0.08,
-		"Fuel Inside Diameter [m]": 0.04,
-		"Fuel Length [m]": 0.3
+		"Constant Normal Coefficient CNa": 10.523,
+		"Roll Dumping Moment Coefficient Clp": 0.136,
+		"Pitch Dumping Moment Coefficient Cmq": 2.26
 	},
 
 	"Environment": {
 		"Wind Mesurement Height [m]": 5.0,
-		"Wind Power Law Exponential Coefficient": 7.0
+		"Wind Power Law Exponential Coefficient": 7.4
 	},
 
 	"Aerodynamics Heating Parameter":{
