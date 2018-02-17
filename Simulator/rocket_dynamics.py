@@ -86,7 +86,7 @@ class Rocket:
 
         prop = json_engine.get('Propellant')
         self.m0_ox = prop.get('Oxidizer Mass [kg]')
-        self.mdot_ox = prop.get('Oxidizer Mass Flow Rate [kg/s]')
+        # self.mdot_ox = prop.get('Oxidizer Mass Flow Rate [kg/s]')
         self.m0_f = prop.get('Fuel Mass Before Burn [kg]')
         self.mf_after = prop.get('Fuel Mass After Burn [kg]')
         self.mdot_f = prop.get('Fuel Mass Flow Rate [kg/s]')
@@ -122,6 +122,25 @@ class Rocket:
         self.Ae = self.Ath * self.eps
         self.de = np.sqrt(self.Ae * 4.0 / np.pi)
 
+        # Mass interpolate
+        self.mdot_p_log = thrust_array / (self.Isp * 9.80665)
+        self.mdot_p = interpolate.interp1d(time_array, self.mdot_p_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+        self.mdot_f = interpolate.interp1d(time_array, np.array([self.mdot_f]*len(time_array)), kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+        self.mdot_ox_log = self.mdot_p_log - self.mdot_f(time_array)
+        self.mdot_ox = interpolate.interp1d(time_array, self.mdot_ox_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))        
+        
+        mf_log_ode = odeint(lambda x, t: -self.mdot_f(t), self.m0_f, time_array)
+        self.mf_log = mf_log_ode[0][0]
+        for mf in mf_log_ode[1:]:
+            self.mf_log = np.append(self.mf_log, mf[0])
+        self.mf = interpolate.interp1d(time_array, self.mf_log, kind='linear', bounds_error=False, fill_value=(self.mf_log[0], self.mf_log[-1]))        
+        
+        mox_log_ode = odeint(lambda x, t: -self.mdot_ox(t), self.m0_ox, time_array)
+        self.mox_log = mox_log_ode[0][0]
+        for mox in mox_log_ode[1:]:
+            self.mox_log = np.append(self.mox_log, mox[0])
+        self.mox = interpolate.interp1d(time_array, self.mox_log, kind='linear', bounds_error=False, fill_value=(self.mox_log[0], 0.0))        
+
         self.Wind_refAltitude = json.get('Environment').get('Wind Mesurement Height [m]')
         self.Wind_power_exp = json.get('Environment').get('Wind Power Law Exponential Coefficient')
 
@@ -149,8 +168,10 @@ def dynamics(x, t, rocket, solver):
     Vel_Body = x[6:9]
     omega_Body = x[9:12]
     quat = x[12:16]
-    mf = x[16]
-    mox = x[17]
+    # mf = x[16]
+    mf = rocket.mf(t)
+    # mox = x[17]
+    mox = rocket.mox(t)
     quat = coord.quat_normalize(quat)
     on_launcher = altitude / np.sin(np.deg2rad(np.abs(rocket.elevation0))) < rocket.launcher_rail and t < 2.0
 
@@ -192,22 +213,13 @@ def dynamics(x, t, rocket, solver):
         mdot_f = 0.0
         mdot_ox = 0.0
     else:
-        mdot_p = rocket.thrust(t) / (rocket.Isp * g0)
-        mdot_f = rocket.mdot_f
-        mdot_ox = mdot_p - mdot_f
+        mdot_p = rocket.mdot_p(t)
+        mdot_f = rocket.mdot_f(t)
+        mdot_ox = rocket.mdot_ox(t)
         pressure_thrust = (Pa0 - Pa) * rocket.Ae
         thrust = np.array([rocket.thrust(t) + pressure_thrust, 0.0, 0.0])
         Isp = rocket.Isp + pressure_thrust / (mdot_p * g0)
-        # Limit Increase and Empty Oxidizers
-        if mdot_ox < 0.0:
-            mdot_ox = 0.0
-    # Limit Negative Propellant Mass
-    if mf <= rocket.mf_after:
-        mdot_f = 0.0
-        mf = rocket.mf_after
-    if mox <= 0.0:
-        mdot_ox = 0.0
-        mox = 0.0
+
     mp = mf + mox
     m = rocket.ms + mp
 
@@ -283,14 +295,14 @@ def dynamics(x, t, rocket, solver):
         solver.vel_launch_clear = Vel_Body[0]
         solver.acc_launch_clear = Acc_Body[0]
 
-    dx = np.zeros(18)
+    dx = np.zeros(16)
     dx[0:3] = Vel_ENU  # Pos_ENU
     dx[3:6] = Acc_ENU  # Vel_ENU
     dx[6:9] = Acc_Body  # Vel_Body
     dx[9:12] = omegadot  # omega_Body
     dx[12:16] = quatdot  # quat
-    dx[16] = -mdot_f  # mf
-    dx[17] = -mdot_ox  # mox
+    # dx[16] = -mdot_f  # mf
+    # dx[17] = -mdot_ox  # mox
 
     return dx
 
@@ -334,14 +346,14 @@ class Solver:
         quat0 = coord.euler2quat(rocket.azimuth0, rocket.elevation0, rocket.roll0)
         zero_array = np.array([[0.0] * 3])
 
-        x0 = np.zeros(18)
+        x0 = np.zeros(16)
         x0[0:3] = Pos0_ENU
         x0[3:6] = zero_array  # Vel_ENU
         x0[6:9] = zero_array  # Vel_Body
         x0[9:12] =  zero_array  # omega_Body
         x0[12:16] = quat0  # quat
-        x0[16] = rocket.m0_f  # mf
-        x0[17] = rocket.m0_ox  # mox
+        # x0[16] = rocket.m0_f  # mf
+        # x0[17] = rocket.m0_ox  # mox
         start_time = 0.0
         def estimate_end():
             It_digits = len(str(int(rocket.total_impulse)))
@@ -362,8 +374,10 @@ class Solver:
         self.Vel_Body_log = ode_log[:, 6:9]
         self.omega_log = ode_log[:, 9:12]
         self.quat_log = ode_log[:, 12:16]
-        self.mf_log = ode_log[:, 16]
-        self.mox_log = ode_log[:, 17]
+        # self.mf_log = ode_log[:, 16]
+        self.mf_log = rocket.mf(self.time_log)
+        # self.mox_log = ode_log[:, 17]
+        self.mox_log = rocket.mox(self.time_log)
         self.post_process(rocket)
 
     def post_process(self, rocket):
@@ -404,9 +418,12 @@ class Solver:
         elevation_log = attitude_log[:, 1]
         roll_log = attitude_log[:, 2]
         thrust_SL_log = rocket.thrust(time_log)
-        mdot_p_log = thrust_SL_log / (rocket.Isp * 9.80665)
-        mdot_f_log = rocket.mdot_f * np.array([thrust > 0.0 for thrust in rocket.thrust(time_log)])
-        mdot_ox_log = mdot_p_log - mdot_f_log
+        # mdot_p_log = thrust_SL_log / (rocket.Isp * 9.80665)
+        mdot_p_log = rocket.mdot_p(time_log)
+        # mdot_f_log = rocket.mdot_f * np.array([thrust > 0.0 for thrust in rocket.thrust(time_log)])
+        mdot_f_log = rocket.mdot_f(time_log)
+        # mdot_ox_log = mdot_p_log - mdot_f_log
+        mdot_ox_log = rocket.mdot_ox(time_log)
         pressure_thrust_log = (P_air_log[0] - P_air_log) * rocket.Ae
         thrust_log = np.array([thrust_SL + pressure_thrust if thrust_SL > 0.0 else 0.0 for thrust_SL, pressure_thrust in zip(thrust_SL_log, pressure_thrust_log)])
         Isp_log = rocket.Isp + np.array([pressure_thrust / (mdot_p * 9.80665) if mdot_p > 0.0 else 0.0 for pressure_thrust, mdot_p in zip(pressure_thrust_log, mdot_p_log)])

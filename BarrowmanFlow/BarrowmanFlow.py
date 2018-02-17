@@ -144,6 +144,13 @@ class Fin:
         shear = young / (2.0 * (1.0 + poisson)) # shear modulus
         self.Vf = Std_Atmo(altitude)[3] * np.sqrt(shear * 10.0 ** 9 / ((1.337 * AR ** 3 * Std_Atmo(altitude)[1] * (ramda + 1.0)) / (2.0 * (AR + 2.0) * (thickness / self.Cr) ** 3)))
         return self.Vf
+    
+    def center_of_gravity_for_fin(self, mass_body, cg_body, thickness, rho_fin):
+        AR = (self.Cr + self.Ct) * self.span * 0.5
+        self.mass_fin = AR * thickness * rho_fin * 4
+        cg_fin = self.distance + (self.Cr - (self.Ct ** 2 + self.Cr * self.Ct + self.Cr ** 2) / (3.0 * (self.Cr + self.Ct)))
+        cg_move = (cg_body * mass_body + cg_fin * self.mass_fin) / (mass_body + self.mass_fin)
+        return cg_move  # [m]
 
 
 class Stage:
@@ -278,7 +285,7 @@ class FinOptimize:
 
     def solve(self, config):
         cons = ({'type':'eq', 'fun': lambda param:self.equality(param, config)}, {'type':'ineq', 'fun': lambda param:self.inequality(param, config)})
-        result = minimize(self.cost, self.param_init, args=(config,), constraints=cons, method='SLSQP', options={'maxiter': 100})#, 'disp': True, })
+        result = minimize(self.cost, self.param_init, args=(config,), constraints=cons, method='SLSQP', options={'maxiter': 300})#, 'disp': True, })
         return result
 
 
