@@ -4,8 +4,8 @@ import BarrowmanFlow as bmf
 ################## User Input ###################
 length_body = 1.743 # [m] from nose tip to body. without tail
 diameter_body = 0.154 # [m]
-mass_body = 13.238  # [kg]
-length_cg = 1.07216 # [m] from nose tip
+mass_body = 12.3694  # [kg]
+length_cg = 1.0407 # [m] from nose tip
 
 shape_nose = 'double' # 'ogive' or 'double' or 'parabolic' or 'ellipse'
 length_nose = 0.2412 # [m]

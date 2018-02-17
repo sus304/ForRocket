@@ -34,25 +34,28 @@ def run(config_file):
     os.mkdir(result_dir)
     print ('Created Result Directory: ', result_dir)
 
-    # Make Flight Object Instance
-    rocket = Simulator.Rocket(json_config, json_engine)
-
     # Simulation
     single_condition = json_config.get('Wind').get('Single Condition Simulation')
     launch_site_name = json_config.get('Launch Pad').get('Site')
     launch_site = LaunchSiteProvider.LaunchSite(launch_site_name, result_dir)
+    mag_dec = launch_site.magnetic_declination()
+
+    # Make Flight Object Instance
+    rocket = Simulator.Rocket(json_config, json_engine)
+    rocket.azimuth0 += mag_dec
+
     if single_condition:
         vel_wind = json_config.get('Wind').get('Wind Velocity [m/s]')
-        angle_wind = json_config.get('Wind').get('Wind Direction [deg]')
+        angle_wind = json_config.get('Wind').get('Wind Direction [deg]') + mag_dec
         solver = Simulator.Solver(vel_wind, angle_wind, result_dir)
         solver.solve(rocket)
     else:
         wind = json_config.get('Wind')
         vel_wind_config = [wind.get('Wind Velocity Mini [m/s]'), wind.get('Wind Velocity Max [m/s]'), wind.get('Wind Velocity Step [m/s]')]
-        angle_wind_config = [wind.get('Wind Direction Mini [deg]'), wind.get('Wind Direction Max [deg]'), wind.get('Wind Direction Step [deg]')]
+        angle_wind_config = [wind.get('Wind Direction Mini [deg]') + mag_dec, wind.get('Wind Direction Max [deg]') + mag_dec, wind.get('Wind Direction Step [deg]')]
         mappper = Simulator.Mapper4Wind(vel_wind_config, angle_wind_config, result_dir)
         vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points = mappper.mapping(rocket)
-        launch_site.wind_limit(vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points)
+        launch_site.wind_limit(vel_wind_array, angle_wind_array - mag_dec, hard_landing_points, soft_landing_points)
 
 
 

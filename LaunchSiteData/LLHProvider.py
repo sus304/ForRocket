@@ -23,6 +23,15 @@ class LaunchSite:
         elif taiki:
             self.site = TaikiLand()
 
+    def magnetic_declination(self):
+        lat = self.site.launch_point_LLH[0]
+        lon = self.site.launch_point_LLH[1]
+
+        delta_lat = lat - 37.0
+        delta_lon = lon - 138.0
+        mag_dec = (7.0 + 57.201 / 60.0)	+ (18.750 / 60.0) * delta_lat - (6.761 / 60.0) * delta_lon - (0.059 / 60.0) * delta_lat ** 2 - (0.014 / 60.0) * delta_lat * delta_lon - (0.579 / 60.0) * delta_lon ** 2
+        return mag_dec
+
     def plot_kml(self, landing_points_ENU, name=''):
         coord = Coordinate()
         kml = simplekml.Kml()
@@ -63,10 +72,6 @@ class LaunchSite:
         for i in range(len(wind_limit_index_array)):
             txt.writelines([str(angle_wind_array[i]), ' [deg]: ', str(vel_wind_array[wind_limit_index_array[i]]), ' [m/s]\n'])
         txt.close()
-
-
-
-
 
 class NoshiroAsanai3rd:
     def __init__(self):
