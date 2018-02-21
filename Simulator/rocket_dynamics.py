@@ -36,14 +36,20 @@ class Rocket:
         self.Ij0_s_pitch = struct.get('Structure Inertia-Moment Pitch-Axis [kg*m^2]')
 
         para = json.get('Parachute')
+        self.timer_mode = para.get('Timer Mode')
         self.CdS1 = para.get('1st Parachute CdS [m2]')
+        self.t_1st = para.get('1st Timer [s]')
         para2_exist = para.get('2nd Parachute Exist')
         if para2_exist:
             self.CdS2 = para.get('2nd Parachute CdS [m2]')
             self.alt_sepa2 = para.get('2nd Parachute Opening Altitude [m]')
+            self.t_2nd_min = para.get('2nd Timer Min [s]')
+            self.t_2nd_max = para.get('2nd Timer Max [s]')
         else:
             self.CdS2 = 0.0
             self.alt_sepa2 = 0.0
+            self.t_2nd_min = 0.0
+            self.t_2nd_max = 0.0
 
         aero = json.get('Aero')
         Cd_file_exist = aero.get('Cd File Exist')
@@ -93,7 +99,7 @@ class Rocket:
         self.d_out_f = prop.get('Fuel Outside Diameter [m]')
         self.d_port_f = prop.get('Fuel Inside Diameter [m]')
         self.L_f = prop.get('Fuel Length [m]')
-        
+
         # Thrust, SL
         # 1st column : time [s]
         # 2nd column : thrust [N]
@@ -127,19 +133,19 @@ class Rocket:
         self.mdot_p = interpolate.interp1d(time_array, self.mdot_p_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
         self.mdot_f = interpolate.interp1d(time_array, np.array([self.mdot_f]*len(time_array)), kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
         self.mdot_ox_log = self.mdot_p_log - self.mdot_f(time_array)
-        self.mdot_ox = interpolate.interp1d(time_array, self.mdot_ox_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))        
-        
+        self.mdot_ox = interpolate.interp1d(time_array, self.mdot_ox_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+
         mf_log_ode = odeint(lambda x, t: -self.mdot_f(t), self.m0_f, time_array)
         self.mf_log = mf_log_ode[0][0]
         for mf in mf_log_ode[1:]:
             self.mf_log = np.append(self.mf_log, mf[0])
-        self.mf = interpolate.interp1d(time_array, self.mf_log, kind='linear', bounds_error=False, fill_value=(self.mf_log[0], self.mf_log[-1]))        
-        
+        self.mf = interpolate.interp1d(time_array, self.mf_log, kind='linear', bounds_error=False, fill_value=(self.mf_log[0], self.mf_log[-1]))
+
         mox_log_ode = odeint(lambda x, t: -self.mdot_ox(t), self.m0_ox, time_array)
         self.mox_log = mox_log_ode[0][0]
         for mox in mox_log_ode[1:]:
             self.mox_log = np.append(self.mox_log, mox[0])
-        self.mox = interpolate.interp1d(time_array, self.mox_log, kind='linear', bounds_error=False, fill_value=(self.mox_log[0], 0.0))        
+        self.mox = interpolate.interp1d(time_array, self.mox_log, kind='linear', bounds_error=False, fill_value=(self.mox_log[0], 0.0))
 
         self.Wind_refAltitude = json.get('Environment').get('Wind Mesurement Height [m]')
         self.Wind_power_exp = json.get('Environment').get('Wind Power Law Exponential Coefficient')
@@ -189,7 +195,7 @@ def dynamics(x, t, rocket, solver):
     u = Vel_air[0]
     v = Vel_air[1]
     w = Vel_air[2]
-    
+
     if Vel_air_abs < 0.0 or np.abs(u) < 0.0 or on_launcher:
         alpha = 0.0
         beta = 0.0
@@ -317,7 +323,13 @@ def parachute_dynamics(x, t, rocket, solver):
 
     g = np.array([0.0, 0.0, -env.gravity(altitude)])
     Ta, Pa, rho, Cs = env.std_atmo(altitude)
-    CdS = rocket.CdS1 + rocket.CdS2 if altitude <= rocket.alt_sepa2 else rocket.CdS1
+    if rocket.timer_mode:
+        if t > rocket.t_2nd_max or (altitude <= rocket.alt_sepa2 and t > rocket.t_2nd_min):
+            CdS = rocket.CdS1 + rocket.CdS2
+        else:
+            CdS = rocket.CdS1
+    else:
+        CdS = rocket.CdS1 + rocket.CdS2 if altitude <= rocket.alt_sepa2 else rocket.CdS1
     drag = 0.5 * rho * CdS * Vel_ENU[2] ** 2
     Acc = drag / m + g[2]
     dx = np.zeros(4)
@@ -410,7 +422,7 @@ class Solver:
         alpha_log = np.rad2deg(np.arctan2(Vel_air_log[:, 2], Vel_air_log[:, 0])) * on_launcher
         # alpha_log = np.array([np.rad2deg(np.arctan2(w, u)) for w, u in zip(Vel_air_log[:, 2], Vel_air_log[:, 0])])
         beta_log = np.rad2deg(np.arcsin(-Vel_air_log[:, 1] / Vel_air_abs_log)) * on_launcher
-        # beta_log = np.array([np.rad2deg(np.arcsin(-v / vel)) for v, vel in zip(Vel_air_log[:, 1], Vel_air_abs_log)])        
+        # beta_log = np.array([np.rad2deg(np.arcsin(-v / vel)) for v, vel in zip(Vel_air_log[:, 1], Vel_air_abs_log)])
         Mach_log = Vel_air_abs_log / env.get_std_soundspeed_array(altitude_log)
         dynamic_pressure_log = 0.5 * rho_air_log * Vel_air_abs_log * Vel_air_abs_log
         attitude_log = np.array(list(map(coord.quat2euler, DCM_ENU2Body_log)))
@@ -480,20 +492,29 @@ class Solver:
 
         #  パラシュート降下
         x0 = np.zeros(4)
-        x0[0:3] = self.Pos_ENU_apogee
-        x0[3] = self.Vel_ENU_apogee[2]
-        est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
-        time = np.arange(self.time_hard_landing, self.time_hard_landing+est_landing, 0.1)
+        if rocket.timer_mode:
+            index_1st = np.argmax(time_log > rocket.t_1st)
+            x0[0:3] = self.Pos_ENU_log[index_1st, :]
+            x0[3] = self.Vel_ENU_log[index_1st, 2]
+            est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
+            time = np.arange(rocket.t_1st, self.time_hard_landing+est_landing, 0.1)
+        else:
+            x0[0:3] = self.Pos_ENU_apogee
+            x0[3] = self.Vel_ENU_apogee[2]
+            est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
+            time = np.arange(self.time_apogee, self.time_hard_landing+est_landing, 0.1)
         ode_log = odeint(parachute_dynamics, x0, time, args=(rocket, self))
 
-        index_sepa2 = np.argmax(ode_log[:, 2] <= rocket.alt_sepa2)
+        dV_decent = (ode_log[:-1, 3] - ode_log[1:, 3]) / 0.1
+        index_sepa2 = np.argmin(dV_decent)
+        # index_sepa2 = np.argmax(ode_log[:, 2] <= rocket.alt_sepa2)
         index_soft_landing = np.argmax(ode_log[:, 2] <= 0.0)
         self.time_sepa2 = time[index_sepa2]
         self.time_soft_landing = time[index_soft_landing]
         self.soft_landing_point = ode_log[index_soft_landing, 0:2]
         self.downrange_soft_landing = np.linalg.norm(self.soft_landing_point)
-        self.Vel_descent_1st = np.average(ode_log[:index_sepa2, 3])
-        self.Vel_descent_2nd = np.average(ode_log[index_sepa2:index_soft_landing, 3])
+        self.Vel_descent_1st = ode_log[index_sepa2-1, 3]
+        self.Vel_descent_2nd = ode_log[index_soft_landing, 3]
 
         if self.multi_mode:
             return
@@ -516,6 +537,8 @@ class Solver:
         txt.writelines(['Apogee Air Velocity,', str(round(self.Vel_air_abs_apogee, 3)), '[m/s]\n'])
         txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
         txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing, 3)), '[m]\n'])
+        txt.writelines(['1st Parachute Opening X+,', str(round(time_log[index_1st], 3)), '[s]\n'])        
+        txt.writelines(['1st Parachute Opening Velocity,', str(round(Vel_air_abs_log[index_1st], 3)), '[m/s]\n'])
         txt.writelines(['1st Parachute Descent Velocity,', str(round(self.Vel_descent_1st, 3)), '[m/s]\n'])
         txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_sepa2, 3)), '[s]\n'])
         txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])
@@ -557,7 +580,7 @@ class Solver:
             Force_log,
             Vel_air_log,
             Vel_air_abs_log,
-            Mach_log,            
+            Mach_log,
             dynamic_pressure_log,
             q_conv_log,
             q_rad_log,
@@ -580,6 +603,7 @@ class Solver:
         plt.plot(time_log, m_log, label='mass all')
         plt.xlabel('Time [sec]')
         plt.ylabel('Mass [kg]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Mass.png')
@@ -589,6 +613,7 @@ class Solver:
         plt.plot(time_log, (Lcp_log / rocket.L) * 100.0, label='C.P.')
         plt.xlabel('Time [sec]')
         plt.ylabel('From Nose [%]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/CG_CP.png')
@@ -602,6 +627,7 @@ class Solver:
         plt.xlabel('Time [sec]')
         plt.ylabel('Attitude [deg]')
         plt.ylim(ymin=-180, ymax=180)
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Attitude.png')
@@ -612,6 +638,7 @@ class Solver:
         plt.plot(time_log, Force_log[:,1], label='normal')
         plt.xlabel('Time [sec]')
         plt.ylabel('Force [N]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Force.png')
@@ -622,6 +649,7 @@ class Solver:
         plt.plot(time_log, Vel_air_log[:, 2], label='V_air Z')
         plt.xlabel('Time [sec]')
         plt.ylabel('Air Velocity [m/s]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/VelocityAir.png')
@@ -630,6 +658,7 @@ class Solver:
         plt.plot(time_log, Mach_log, label='Mach number')
         plt.xlabel('Time [sec]')
         plt.ylabel('Mach Number [-]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Mach.png')
@@ -638,16 +667,18 @@ class Solver:
         plt.plot(time_log, dynamic_pressure_log / 1000.0, label='dynamic pressure')
         plt.xlabel('Time [sec]')
         plt.ylabel('Dynamic Pressure [kPa]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Dynamicpressure.png')
-        
+
         plt.figure('Aerodynamics Heating')
         plt.plot(time_log, q_conv_log / 10**6, label='convection heat')
         plt.plot(time_log, q_rad_log / 10**6, label='radiation heat')
         plt.plot(time_log, q_heat_log / 10**6, label='total heat')
         plt.xlabel('Time [sec]')
         plt.ylabel('q dot [MW/m^2]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/AerodynamicsHeating.png')
@@ -656,6 +687,7 @@ class Solver:
         plt.plot(time_log, T_surface_log, label='Surface Temperature')
         plt.xlabel('Time [sec]')
         plt.ylabel('Surface Temperature [K]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/SurfaceTemperature.png')
@@ -666,6 +698,7 @@ class Solver:
         plt.plot(time_log, Acc_Body_log[:, 2], label='Acc_Body Z')
         plt.xlabel('Time [sec]')
         plt.ylabel('Body Acceleration [m/s^2]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/AccelerationBody.png')
@@ -676,6 +709,7 @@ class Solver:
         plt.plot(time_log, Vel_Body_log[:, 2], label='V_Body Z')
         plt.xlabel('Time [sec]')
         plt.ylabel('Body Velocity [m/s]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/VelocityBody.png')
@@ -686,6 +720,7 @@ class Solver:
         plt.plot(time_log, Vel_ENU_log[:, 2], label='V_Up ')
         plt.xlabel('Time [sec]')
         plt.ylabel('ENU Velocity [m/s]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/VelocityENU.png')
@@ -696,6 +731,7 @@ class Solver:
         plt.plot(time_log, Pos_ENU_log[:, 2], label='Pos_Up')
         plt.xlabel('Time [sec]')
         plt.ylabel('ENU Position [m]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/PositionENU.png')
@@ -704,10 +740,28 @@ class Solver:
         plt.plot(downrange_log / 1000.0, altitude_log / 1000.0)
         plt.xlabel('Downrange [km]')
         plt.ylabel('Altitude [km]')
+        plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Trajectory.png')
 
+        plt.figure('Decent Velocity')
+        plt.plot(time[:index_soft_landing], ode_log[:index_soft_landing,3])
+        plt.xlabel('Time [sec]')
+        plt.ylabel('Velocity [m/s]')
+        plt.xlim(xmin=self.time_apogee)
+        plt.grid()
+        plt.legend()
+        plt.savefig(self.result_dir + '/DecentVel.png')
+
+        plt.figure('Decent Altitude')
+        plt.plot(time[:index_soft_landing], ode_log[:index_soft_landing,2])
+        plt.xlabel('Time [sec]')
+        plt.ylabel('Altitude [m]')
+        plt.xlim(xmin=self.time_apogee)
+        plt.grid()
+        plt.legend()
+        plt.savefig(self.result_dir + '/DecentAlt.png')
 
 class Mapper4Wind:
     def __init__(self, vel_wind_config, angle_wind_config, result_dir):
