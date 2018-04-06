@@ -459,7 +459,11 @@ class Solver:
 
         #  イベントでの値
         # apogee
-        index_apogee = np.argmax(altitude_log)
+        if rocket.timer_mode:
+            index_apogee = np.argmax(time_log > rocket.t_1st)
+        else:            
+            index_apogee = np.argmax(altitude_log)
+        
         self.time_apogee = time_log[index_apogee]
         self.altitude_apogee = altitude_log[index_apogee]
         self.Pos_ENU_apogee = Pos_ENU_log[index_apogee, :]
@@ -492,17 +496,10 @@ class Solver:
 
         #  パラシュート降下
         x0 = np.zeros(4)
-        if rocket.timer_mode:
-            index_1st = np.argmax(time_log > rocket.t_1st)
-            x0[0:3] = self.Pos_ENU_log[index_1st, :]
-            x0[3] = self.Vel_ENU_log[index_1st, 2]
-            est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
-            time = np.arange(rocket.t_1st, self.time_hard_landing+est_landing, 0.1)
-        else:
-            x0[0:3] = self.Pos_ENU_apogee
-            x0[3] = self.Vel_ENU_apogee[2]
-            est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
-            time = np.arange(self.time_apogee, self.time_hard_landing+est_landing, 0.1)
+        x0[0:3] = self.Pos_ENU_apogee
+        x0[3] = self.Vel_ENU_apogee[2]
+        est_landing = self.altitude_apogee / np.sqrt(2.0 * self.m_apogee * env.gravity(0.0) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
+        time = np.arange(self.time_apogee, self.time_hard_landing+est_landing, 0.1)
         ode_log = odeint(parachute_dynamics, x0, time, args=(rocket, self))
 
         dV_decent = (ode_log[:-1, 3] - ode_log[1:, 3]) / 0.1
@@ -537,8 +534,7 @@ class Solver:
         txt.writelines(['Apogee Air Velocity,', str(round(self.Vel_air_abs_apogee, 3)), '[m/s]\n'])
         txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
         txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing, 3)), '[m]\n'])
-        txt.writelines(['1st Parachute Opening X+,', str(round(time_log[index_1st], 3)), '[s]\n'])        
-        txt.writelines(['1st Parachute Opening Velocity,', str(round(Vel_air_abs_log[index_1st], 3)), '[m/s]\n'])
+        txt.writelines(['1st Parachute Opening X+,', str(round(time_log[index_apogee], 3)), '[s]\n'])        
         txt.writelines(['1st Parachute Descent Velocity,', str(round(self.Vel_descent_1st, 3)), '[m/s]\n'])
         txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_sepa2, 3)), '[s]\n'])
         txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])

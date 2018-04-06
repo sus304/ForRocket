@@ -77,18 +77,27 @@ class NoshiroAsanai3rd:
     def __init__(self):
         self.launch_point_LLH = np.array([40.138633, 139.984850, 0.0])
         points = []
-        points.append([40.139816, 139.983804, 0.0])
-        points.append([40.137125, 139.982444, 0.0])
-        points.append([40.135588, 139.981298, 0.0])
-        points.append([40.134917, 139.981260, 0.0])
-        points.append([40.134614, 139.981351, 0.0])
-        points.append([40.134459, 139.981516, 0.0])
-        points.append([40.134877, 139.982257, 0.0])
-        points.append([40.135198, 139.982698, 0.0])
-        points.append([40.135512, 139.983439, 0.0])
-        points.append([40.136940, 139.984687, 0.0])
-        points.append([40.137521, 139.985506, 0.0])
-        points.append([40.137521, 139.985506, 0.0])
+        # points.append([40.139816, 139.983804, 0.0])
+        # points.append([40.137125, 139.982444, 0.0])
+        # points.append([40.135588, 139.981298, 0.0])
+        # points.append([40.134917, 139.981260, 0.0])
+        # points.append([40.134614, 139.981351, 0.0])
+        # points.append([40.134459, 139.981516, 0.0])
+        # points.append([40.134877, 139.982257, 0.0])
+        # points.append([40.135198, 139.982698, 0.0])
+        # points.append([40.135512, 139.983439, 0.0])
+        # points.append([40.136940, 139.984687, 0.0])
+        # points.append([40.137521, 139.985506, 0.0])
+        # points.append([40.137521, 139.985506, 0.0])
+        points.append([40.139725, 139.983939, 0.0])
+        points.append([40.136127, 139.982133, 0.0])
+        points.append([40.135607, 139.981753, 0.0])
+        points.append([40.134911, 139.981451, 0.0])
+        points.append([40.134821, 139.981692, 0.0])
+        points.append([40.135639, 139.983324, 0.0])
+        points.append([40.137052, 139.984608, 0.0])
+        points.append([40.138053, 139.985781, 0.0])
+        points.append([40.139075, 139.986297, 0.0])
 
         self.judge_poly = Judge_inside_poly(self.launch_point_LLH, points)
     
@@ -103,7 +112,7 @@ class NoshiroOchiai3km:
     def __init__(self):
         self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
         self.center_point_LLH = np.array([40.248855, 139.975967, 0.0])
-        self.radius = 3000.0
+        self.radius = 1500.0
 
         self.judge_circle = Judge_inside_circle(self.launch_point_LLH, self.center_point_LLH, self.radius)
         self.judge_border = Judge_inside_border(self.launch_point_LLH, np.array([40.243015, 140.007566, 0.0]), np.array([40.235585, 140.005619, 0.0]), [1, -1])

@@ -2,10 +2,10 @@
 import BarrowmanFlow as bmf
 
 ################## User Input ###################
-length_body = 1.743 # [m] from nose tip to body. without tail
+length_body = 1.735 # [m] from nose tip to body. without tail
 diameter_body = 0.154 # [m]
-mass_body = 12.3694  # [kg]
-length_cg = 1.0407 # [m] from nose tip
+mass_body = 14.77  # [kg]
+length_cg = 1.0704793 # [m] from nose tip
 
 shape_nose = 'double' # 'ogive' or 'double' or 'parabolic' or 'ellipse'
 length_nose = 0.2412 # [m]
@@ -21,7 +21,8 @@ span = 130.0 # [mm]
 thickness_fin = 2.0 # [mm]
 young_modulus = 69.0 # [GPa]
 poisson_ratio = 0.3 # [-]
-rho_fin = 1380  # [kg/m3]
+# rho_fin = 1380  # [kg/m3]
+rho_fin = 0.0  # [kg/m3]
 altitude = 700.0 # [m]
 #################################################
 
