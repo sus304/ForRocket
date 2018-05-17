@@ -111,7 +111,7 @@ class NoshiroAsanai3rd:
 class NoshiroOchiai3km:
     def __init__(self):
         self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
-        self.center_point_LLH = np.array([40.248855, 139.975967, 0.0])
+        self.center_point_LLH = np.array([40.245567, 139.993297, 0.0])
         self.radius = 1500.0
 
         self.judge_circle = Judge_inside_circle(self.launch_point_LLH, self.center_point_LLH, self.radius)

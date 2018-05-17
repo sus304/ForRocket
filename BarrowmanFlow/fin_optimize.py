@@ -5,10 +5,10 @@ import BarrowmanFlow as bmf
 class Config:
     def __init__(self):
         ################## User Input ###################
-        self.length_body = 1.743 # [m] from nose tip to body. without tail
+        self.length_body = 2.3 # [m] from nose tip to body. without tail
         self.diameter_body = 0.154 # [m]
-        self.mass_body = 13.238  # [kg]
-        self.length_cg = 1.07216 # [m] from nose tip
+        self.mass_body = 12.9  # [kg]
+        self.length_cg = 1.294 # [m] from nose tip
 
         self.shape_nose = 'double' # 'ogive' or 'double' or 'parabolic' or 'ellipse'
         self.length_nose = 0.2412 # [m]
@@ -17,7 +17,7 @@ class Config:
         self.length_tail = 0.0 # [m]
 
         self.offset_fin = 0.0 / 1000.0 # [m] from body end to fin end
-        self.root_chord = 190.0 / 1000.0 # [m]
+        self.root_chord = 150.0 / 1000.0 # [m]
 
         self.tip_chord_max = 500.0 / 1000.0 # [m]
         self.tip_chord_min = 50.0 / 1000.0 # [m]
