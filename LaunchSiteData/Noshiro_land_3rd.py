@@ -2,11 +2,16 @@ import numpy as np
 from LaunchSiteData.judge_inside import judge_inside_border
 from LaunchSiteData.judge_inside import judge_inside_circle
 from LaunchSiteData.judge_inside import judge_inside_poly
+from LaunchSiteData.LaunchSite import LaunchSite
 
 
-class NoshiroAsanai3rd:
+class NoshiroAsanai(LaunchSite):
     def __init__(self):
+        self.name = 'Noshiro Asanai'
         self.launch_point_LLH = np.array([40.138633, 139.984850, 0.0])
+        self.wind_power_exp = 4.5        
+
+        # 保安範囲
         self.points = []
         # ギリギリVer
         # self.points.append([40.139816, 139.983804, 0.0])
@@ -35,6 +40,6 @@ class NoshiroAsanai3rd:
     def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]
         y = landing_point_ENU[1]
-        judge = self.judge_inside_poly([x, y], self.launch_point_LLH, self.points)
+        judge = judge_inside_poly([x, y], self.launch_point_LLH, self.points)
         return judge
         

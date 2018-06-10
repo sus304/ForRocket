@@ -1,22 +1,33 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import re
 import json
 import numpy as np
-from scipy import interpolate
-import matplotlib.pyplot as plt
+import pandas as pd
 
-from LaunchSiteData import LLHProvider as LaunchSiteProvider
-from Simulator import rocket_dynamics as Simulator
+from LaunchSiteData.Noshiro_land_3rd import NoshiroAsanai
+from LaunchSiteData.Noshiro_sea import NoshiroOchiai
+from LaunchSiteData.Taiki_land import TaikiLand
 
+from Simulator.rocket_param import Rocket
+from Simulator.solver import Solver
+from Simulator.solver import WindMapSolver
 
+# config file arg
 argv = sys.argv
 if len(argv) < 2:
-    print ('Argument is missing')
-    print ('Usage: python ForRocket.py configFileName.json')
+    print('Error!! config file is missing')
+    print('Usage: python ForRocket.py configFileName.json run_mode')
     sys.exit()
+elif len(argv) < 3:
+    print('Error!! run mode is missing')
+    print('Usage: python ForRocket.py configFileName.json run_mode')
+    sys.exit()        
 config_file = argv[1]
+run_mode = argv[2]
 
+# config file to json
 config = open(config_file)
 json_config = json.load(config)
 config.close()
@@ -26,39 +37,83 @@ json_engine = json.load(config)
 config.close()
 print('Config File: ', json_config.get('System').get('Engine Config json'))
 
-# Make Result Directory
-model_name = json_config.get('System').get('Name')
-result_dir = json_config.get('System').get('Result Directory') + '_' + model_name
-if os.path.exists(result_dir):
-    resultdir_org = result_dir
-    i = 1
-    while os.path.exists(result_dir):
-        result_dir = resultdir_org + '_%02d' % (i)
-        i = i + 1
-os.mkdir(result_dir)
-print ('Created Result Directory: ', result_dir)
-
-# Simulation
-single_condition = json_config.get('Wind').get('Single Condition Simulation')
+# make launch site instance
 launch_site_name = json_config.get('Launch Pad').get('Site')
-launch_site = LaunchSiteProvider.LaunchSite(launch_site_name, result_dir)
-mag_dec = launch_site.magnetic_declination()
+noshiro = True if re.search(r'noshiro|nosiro', launch_site_name, re.IGNORECASE) else False
+taiki = True if re.search(r'taiki', launch_site_name, re.IGNORECASE) else False
+land = True if re.search(r'land', launch_site_name, re.IGNORECASE) else False
+sea = True if re.search(r'sea', launch_site_name, re.IGNORECASE) else False
+asanai = True if re.search(r'asanai|asauchi|asauti', launch_site_name, re.IGNORECASE) else False
+field3rd = True if re.search(r'3rd', launch_site_name, re.IGNORECASE) else False
+ochiai = True if re.search(r'ochiai|otiai', launch_site_name, re.IGNORECASE) else False
 
-# Make Flight Object Instance
-rocket = Simulator.Rocket(json_config, json_engine)
-rocket.azimuth0 += mag_dec
-
-if single_condition:
-    vel_wind = json_config.get('Wind').get('Wind Velocity [m/s]')
-    angle_wind = json_config.get('Wind').get('Wind Direction [deg]') + mag_dec
-    solver = Simulator.Solver(vel_wind, angle_wind, result_dir)
-    solver.solve(rocket)
+if noshiro and (land or asanai or field3rd):
+    launch_site = NoshiroAsanai()
+elif noshiro and (sea or oshiai):
+    launch_site = NoshiroOchiai(3000.0)
+elif taiki:
+    launch_site = TaikiLand()
 else:
-    wind = json_config.get('Wind')
-    vel_wind_config = [wind.get('Wind Velocity Mini [m/s]'), wind.get('Wind Velocity Max [m/s]'), wind.get('Wind Velocity Step [m/s]')]
-    angle_wind_config = [wind.get('Wind Direction Mini [deg]') + mag_dec, wind.get('Wind Direction Max [deg]') + mag_dec, wind.get('Wind Direction Step [deg]')]
-    mappper = Simulator.Mapper4Wind(vel_wind_config, angle_wind_config, result_dir)
-    vel_wind_array, angle_wind_array, hard_landing_points, soft_landing_points = mappper.mapping(rocket)
-    launch_site.wind_limit(vel_wind_array, angle_wind_array - mag_dec, hard_landing_points, soft_landing_points)
+    print('Error!! Not found launch site: ', launch_site_name)
+    sys.exit()
+print('Launch Site: ', launch_site.name)
+
+# make rocket instance
+model_name = json_config.get('System').get('Name')
+rocket = Rocket(json_config, json_engine)
+print('Model: ', model_name)
 
 
+if run_mode == '1' or run_mode == 'single':
+    # Make Result Directory
+    result_dir = './Result_single_' + model_name
+    if os.path.exists(result_dir):
+        resultdir_org = result_dir
+        i = 1
+        while os.path.exists(result_dir):
+            result_dir = resultdir_org + '_%02d' % (i)
+            i = i + 1
+    os.mkdir(result_dir)
+    print('Created Result Directory: ', result_dir)
+
+    # make solver instance
+    solver = Solver(json_config, launch_site, result_dir)
+
+    # run solver
+    print('Running Solver...')
+    solver.solve_dynamics(rocket)
+    print('Completed solve!')
+    print('Output Result Directory: ', result_dir)    
+
+elif run_mode == '2' or run_mode == 'wind_map':
+    # Make Result Directory
+    result_dir = './Result_WindMap_' + model_name
+    if os.path.exists(result_dir):
+        resultdir_org = result_dir
+        i = 1
+        while os.path.exists(result_dir):
+            result_dir = resultdir_org + '_%02d' % (i)
+            i = i + 1
+    os.mkdir(result_dir)
+    print('Created Result Directory: ', result_dir)
+
+    # make solver instance    
+    vel_wind_config = [0.0, 7.0, 1.0]
+    angle_wind_config = [0.0, 315.0, 45.0]
+    single_solver = Solver(json_config, launch_site, '')
+    solver = WindMapSolver(vel_wind_config, angle_wind_config, single_solver, result_dir)
+
+    # run solver    
+    print('Running Solver...')    
+    solver.solve_map(rocket)
+    print('Completed solve!')
+    print('Output Result Directory: ', result_dir)
+
+# elif run_mode == '3' or run_mode == 'wind_var':
+
+else:
+    print('Error!! run mode is out of range(1 or 2): ', run_mode)
+    print('Usage:')
+    print('single trajectory solve: 1 or single')
+    print('mapping for wind  solve: 2 or wind_map')
+    sys.exit()

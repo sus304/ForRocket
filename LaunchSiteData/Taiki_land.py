@@ -2,11 +2,15 @@ import numpy as np
 from LaunchSiteData.judge_inside import judge_inside_border
 from LaunchSiteData.judge_inside import judge_inside_circle
 from LaunchSiteData.judge_inside import judge_inside_poly
+from LaunchSiteData.LaunchSite import LaunchSite
 
 
-class TaikiLand:
+class TaikiLand(LaunchSite):
     def __init__(self):
+        self.name = 'Taiki Land'
         self.launch_point_LLH = np.array([42.514320, 143.439793, 0.0])
+        self.wind_power_exp = 7.4                
+
         self.points = []
         self.points.append([42.514340, 143.439894, 0.0])
         self.points.append([42.520564, 143.437342, 0.0])

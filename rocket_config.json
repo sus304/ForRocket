@@ -12,8 +12,7 @@
 
 	"System": {
 		"Name": "A",	
-		"Engine Config json": "EngineConfig.json",
-		"Result Directory": "./Result"
+		"Engine Config json": "EngineConfig.json"
 	},
 
 	"Solver": {
@@ -22,18 +21,11 @@
 	},
 
 	"Wind":{
-		"Single Condition Simulation": false,
-		"Wind File Exist": false,
-		"Wind File": "Wind_nominal.csv",
+		"Wind File Exist": true,
+		"Wind File": "wind.csv",
 		"Wind Velocity [m/s]": 2.5,
 		"Wind Direction [deg]": 125.0,
-		"multi mode": "comment",
-		"Wind Velocity Mini [m/s]": 1.0,
-		"Wind Velocity Max [m/s]": 7.0,
-		"Wind Velocity Step [m/s]": 1.0,
-		"Wind Direction Mini [deg]": 0.0,
-		"Wind Direction Max [deg]": 315.0,
-		"Wind Direction Step [deg]": 45.0
+		"Wind Mesurement Height [m]": 5.0
 	},
 
 	"Launch Pad": {
@@ -53,14 +45,20 @@
 		"Fuel Length-C.G. FromEnd [m]": 0.142,
 		"Length End-to-Tank [m]": 0.3,
 		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
-		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091
+		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
+		"Upper Launch Lug FromNoseTip [m]": 1.2,
+		"Lower Launch Lug FromNoseTip [m]": 1.5
 	},
 
 	"Parachute": {
+		"Timer Mode": false,
 		"1st Parachute CdS [m2]": 0.3,
+		"1st Timer [s]": 0.0,
 		"2nd Parachute Exist": false,
 		"2nd Parachute CdS [m2]": 0.6,
-		"2nd Parachute Opening Altitude [m]": 150.0
+		"2nd Parachute Opening Altitude [m]": 150.0,
+		"2nd Timer Min [s]": 0.0,		
+		"2nd Timer Max [s]": 0.0		
 	},
 
 	"Aero":{
@@ -75,11 +73,6 @@
 		"Constant Normal Coefficient CNa": 10.523,
 		"Roll Dumping Moment Coefficient Clp": 0.136,
 		"Pitch Dumping Moment Coefficient Cmq": 2.26
-	},
-
-	"Environment": {
-		"Wind Mesurement Height [m]": 5.0,
-		"Wind Power Law Exponential Coefficient": 7.4
 	},
 
 	"Aerodynamics Heating Parameter":{

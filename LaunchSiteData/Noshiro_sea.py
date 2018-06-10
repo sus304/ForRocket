@@ -2,13 +2,16 @@ import numpy as np
 from LaunchSiteData.judge_inside import judge_inside_border
 from LaunchSiteData.judge_inside import judge_inside_circle
 from LaunchSiteData.judge_inside import judge_inside_poly
+from LaunchSiteData.LaunchSite import LaunchSite
 
 
-class NoshiroOchiai3km:
-    def __init__(self):
+class NoshiroOchiai(LaunchSite):
+    def __init__(self, range_diameter):
+        self.name = 'Noshiro Ochiai'
         self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
         self.center_point_LLH = np.array([40.245567, 139.993297, 0.0])
-        self.radius = 1500.0
+        self.radius = range_diameter * 0.5
+        self.wind_power_exp = 6.0        
 
     def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]
