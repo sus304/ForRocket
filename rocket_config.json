@@ -22,7 +22,9 @@
 	},
 
 	"Wind":{
-		"Single Condition Simulation": true,
+		"Single Condition Simulation": false,
+		"Wind File Exist": false,
+		"Wind File": "Wind_nominal.csv",
 		"Wind Velocity [m/s]": 2.5,
 		"Wind Direction [deg]": 125.0,
 		"multi mode": "comment",

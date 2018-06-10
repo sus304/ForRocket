@@ -1,6 +1,6 @@
 {
 	"Engine": {
-		"Thrust File": "thrust.csv",
+		"Thrust File": "Thrust.csv",
 		"File Exist": true,
 		"Constant Thrust [N]": 0.0,
 		"Burn Time [sec]": 0.0,

@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import re
 import simplekml
 
+from LaunchSiteData.Noshiro_land_3rd import NoshiroAsanai3rd
+from LaunchSiteData.Noshiro_sea import NoshiroOchiai3km
+from LaunchSiteData.Taiki_land import TaikiLand
+
 
 class LaunchSite:
     def __init__(self, launch_site_name, result_dir):
@@ -72,98 +76,6 @@ class LaunchSite:
         for i in range(len(wind_limit_index_array)):
             txt.writelines([str(angle_wind_array[i]), ' [deg]: ', str(vel_wind_array[wind_limit_index_array[i]]), ' [m/s]\n'])
         txt.close()
-
-class NoshiroAsanai3rd:
-    def __init__(self):
-        self.launch_point_LLH = np.array([40.138633, 139.984850, 0.0])
-        points = []
-        # points.append([40.139816, 139.983804, 0.0])
-        # points.append([40.137125, 139.982444, 0.0])
-        # points.append([40.135588, 139.981298, 0.0])
-        # points.append([40.134917, 139.981260, 0.0])
-        # points.append([40.134614, 139.981351, 0.0])
-        # points.append([40.134459, 139.981516, 0.0])
-        # points.append([40.134877, 139.982257, 0.0])
-        # points.append([40.135198, 139.982698, 0.0])
-        # points.append([40.135512, 139.983439, 0.0])
-        # points.append([40.136940, 139.984687, 0.0])
-        # points.append([40.137521, 139.985506, 0.0])
-        # points.append([40.137521, 139.985506, 0.0])
-        points.append([40.139725, 139.983939, 0.0])
-        points.append([40.136127, 139.982133, 0.0])
-        points.append([40.135607, 139.981753, 0.0])
-        points.append([40.134911, 139.981451, 0.0])
-        points.append([40.134821, 139.981692, 0.0])
-        points.append([40.135639, 139.983324, 0.0])
-        points.append([40.137052, 139.984608, 0.0])
-        points.append([40.138053, 139.985781, 0.0])
-        points.append([40.139075, 139.986297, 0.0])
-
-        self.judge_poly = Judge_inside_poly(self.launch_point_LLH, points)
-    
-    def in_range(self, landing_point_ENU):
-        x = landing_point_ENU[0]
-        y = landing_point_ENU[1]
-        judge = self.judge_poly([x, y])
-        return judge
-        
-
-class NoshiroOchiai3km:
-    def __init__(self):
-        self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
-        self.center_point_LLH = np.array([40.245567, 139.993297, 0.0])
-        self.radius = 1500.0
-
-        self.judge_circle = Judge_inside_circle(self.launch_point_LLH, self.center_point_LLH, self.radius)
-        self.judge_border = Judge_inside_border(self.launch_point_LLH, np.array([40.243015, 140.007566, 0.0]), np.array([40.235585, 140.005619, 0.0]), [1, -1])
-        
-    def in_range(self, landing_point_ENU):
-        x = landing_point_ENU[0]
-        y = landing_point_ENU[1]
-        judge = self.judge_circle([x, y]) and self.judge_border([x, y])
-        return judge
-
-
-class TaikiLand:
-    def __init__(self):
-        self.launch_point_LLH = np.array([42.514320, 143.439793, 0.0])
-        points = []
-        points.append([42.514340, 143.439894, 0.0])
-        points.append([42.520564, 143.437342, 0.0])
-        points.append([42.520939, 143.437916, 0.0])
-        points.append([42.521376, 143.438037, 0.0])
-        points.append([42.521869, 143.437817, 0.0])
-        points.append([42.522543, 143.437870, 0.0])
-        points.append([42.522637, 143.440032, 0.0])
-        points.append([42.522326, 143.442730, 0.0])
-        points.append([42.522068, 143.446304, 0.0])
-        points.append([42.519429, 143.449155, 0.0])
-        points.append([42.518901, 143.446610, 0.0])
-        points.append([42.516320, 143.447509, 0.0])
-        points.append([42.516170, 143.446469, 0.0])
-        points.append([42.519668, 143.444919, 0.0])
-        points.append([42.520032, 143.443932, 0.0])
-        points.append([42.519811, 143.443460, 0.0])
-        points.append([42.518823, 143.443395, 0.0])
-        points.append([42.518657, 143.442861, 0.0])
-        points.append([42.517423, 143.443108, 0.0])
-        points.append([42.516827, 143.444292, 0.0])
-        points.append([42.516107, 143.444170, 0.0])
-        points.append([42.515663, 143.445209, 0.0])
-        points.append([42.515714, 143.446207, 0.0])
-        points.append([42.513618, 143.447081, 0.0])
-        points.append([42.513342, 143.445773, 0.0])
-        points.append([42.514024, 143.444927, 0.0])
-        points.append([42.513465, 143.444155, 0.0])
-        points.append([42.513221, 143.440440, 0.0])
-
-        self.judge_poly = Judge_inside_poly(self.launch_point_LLH, points)
-
-    def in_range(self, landing_point_ENU):
-        x = landing_point_ENU[0]
-        y = landing_point_ENU[1]
-        judge = self.judge_poly([x, y])
-        return judge
 
 
 class Judge_inside_circle:

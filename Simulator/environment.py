@@ -85,7 +85,7 @@ def gravity(altitude):
     gravity = g0 * (Re / (Re + altitude)) ** 2 # [m/s^2]
     return gravity
 
-def Wind_ENU(WindSpeed, WindDirection, altitude, refaltitude, power_exp):
+def Wind_ENU(WindSpeed, WindDirection, altitude, ref_altitude, power_exp):
     # WindSpeed [m/s]
     # WindDirection [deg]
     # 負にすることで風向"からの"風にしてる
@@ -94,8 +94,8 @@ def Wind_ENU(WindSpeed, WindDirection, altitude, refaltitude, power_exp):
         altitude = 0.0
 
     Wind_ENU = np.zeros(3)
-    Wind_ENU[0] = -WindSpeed * np.cos(np.radians(WindDirection)) * (altitude / refaltitude) ** (1.0 / power_exp)
-    Wind_ENU[1] = -WindSpeed * np.sin(np.radians(WindDirection)) * (altitude / refaltitude) ** (1.0 / power_exp)
+    Wind_ENU[0] = -WindSpeed * np.cos(np.radians(WindDirection)) * (altitude / ref_altitude) ** (1.0 / power_exp)
+    Wind_ENU[1] = -WindSpeed * np.sin(np.radians(WindDirection)) * (altitude / ref_altitude) ** (1.0 / power_exp)
     Wind_ENU[2] = 0.0
     return Wind_ENU
 
