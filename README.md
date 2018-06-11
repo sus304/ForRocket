@@ -1,5 +1,7 @@
 # ForRocket
-6DoF Rocket Flight Simulator for Fortran  
+6DoF Rocket Flight Simulator
+
+ForRocket calculate 3-dimention rocket trajectory.
 
 
 

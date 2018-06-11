@@ -1,0 +1,89 @@
+{
+	"Define Comment": {
+		"Default_Unit": "m_kg_sec",
+		"Fuel": "Fuel-Grain-Cartridge",
+		"Structure": "AllLoad - Oxidizer - Fuel",
+		"C.G.": "Center of Gravity",
+		"C.P.": "Center of Pressure",
+		"LLH":"Latitude, Longitude, Height",
+		"Elevation": "Ground to Top _ 0deg 90deg",
+		"Azimuth": "East to North _ 0deg 360deg"
+	},
+
+	"System": {
+		"Name": "A",	
+		"Engine Config json": "EngineConfig.json"
+	},
+
+	"Solver": {
+		"Auto End Time": true,
+		"End Time [sec]": 50.0
+	},
+
+	"Wind":{
+		"Wind File Exist": true,
+		"Wind File": "wind.csv",
+		"Wind Velocity [m/s]": 2.5,
+		"Wind Direction [deg]": 125.0,
+		"Wind Mesurement Height [m]": 5.0
+	},
+
+	"Launch Pad": {
+		"Site": "Taiki Land",
+		"Launch Azimuth [deg]": 25.0,
+		"Launch Elevation [deg]": -85.0,
+		"Launch Roll Angle [deg]": 0.0,
+		"Launcher Rail Length [m]": 5.0
+	},
+
+	"Structure": {
+		"Length [m]": 1.5087,
+		"Diameter [m]": 0.154,
+		"Structure Mass [kg]": 6.217,
+		"Structure Length-C.G. FormNoseTip [m]": 0.886,
+		"Initial Oxidizer Length-C.G. FromEnd [m]": 0.213,
+		"Fuel Length-C.G. FromEnd [m]": 0.142,
+		"Length End-to-Tank [m]": 0.3,
+		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
+		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
+		"Upper Launch Lug FromNoseTip [m]": 1.2,
+		"Lower Launch Lug FromNoseTip [m]": 1.5
+	},
+
+	"Parachute": {
+		"Timer Mode": false,
+		"1st Parachute CdS [m2]": 0.3,
+		"1st Timer [s]": 0.0,
+		"2nd Parachute Exist": false,
+		"2nd Parachute CdS [m2]": 0.6,
+		"2nd Parachute Opening Altitude [m]": 150.0,
+		"2nd Timer Min [s]": 0.0,		
+		"2nd Timer Max [s]": 0.0		
+	},
+
+	"Aero":{
+		"Cd File": "Cd.csv",
+		"Cd File Exist":true,
+		"Constant Cd":0.55,
+		"Lcp File": "Lcp.csv",
+		"Lcp File Exist":false,
+		"Constant Length-C.P. [m]": 1.122,
+		"CNa File": "CNa.csv",
+		"CNa File Exist":false,
+		"Constant Normal Coefficient CNa": 10.523,
+		"Roll Dumping Moment Coefficient Clp": 0.136,
+		"Pitch Dumping Moment Coefficient Cmq": 2.26
+	},
+
+	"Aerodynamics Heating Parameter":{
+		"Initial Surface Temperature [K]": 298.15,
+		"Blunt Radius Tip [m]": 0.2,
+		"Thickness Tip [m]": 0.03,
+		"Material Dencity [kg/m^3]": 1270.0,
+		"Material Specific Heat [J/kg-K]": 1592.0,
+		"Matrial Surface Emissivity": 0.8,
+		"Ablation Temperature [K]": 600.0,
+		"Vaporization Heat [kJ/kg]": 9288.48
+	}
+
+}
