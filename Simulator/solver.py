@@ -17,7 +17,7 @@ class Solver:
         wind = json.get('Wind')
         launch_pad = json.get('Launch Pad')
 
-        self.auto_end = json.get('Solver').get('Auto End time')
+        self.auto_end = json.get('Solver').get('Auto End Time')
         self.end_time = json.get('Solver').get('End Time [sec]')
 
 
