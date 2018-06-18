@@ -50,6 +50,21 @@
 		"Lower Launch Lug FromNoseTip [m]": 1.5
 	},
 
+	"Launch Lug": {
+		"Tip-Off Calculation Exist": true,
+		"Height [m]": 0.003,
+		"Upper": {
+			"Position from Nose Tip [m]": 0.5
+		},
+		"Middle": {
+			"Exist": true,
+			"Position from Nose Tip [m]": 1.2
+		},
+		"Lower": {
+			"Position from Nose Tip [m]": 1.5
+		}
+	},
+
 	"Parachute": {
 		"Timer Mode": false,
 		"1st Parachute CdS [m2]": 0.3,

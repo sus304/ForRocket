@@ -9,6 +9,7 @@ import Simulator.heating as heating
 class Rocket:
     def __init__(self, json, json_engine):
         struct = json.get('Structure')
+        lug = json.get('Launch Lug')
         para = json.get('Parachute')
         aero = json.get('Aero')
         engine = json_engine.get('Engine')
@@ -20,8 +21,6 @@ class Rocket:
         self.L = struct.get('Length [m]')
         self.d = struct.get('Diameter [m]')
         self.A = 0.25 * np.pi * self.d ** 2
-        self.lower_lug = struct.get('Lower Launch Lug FromNoseTip [m]')
-        self.upper_lug = struct.get('Upper Launch Lug FromNoseTip [m]')
 
         self.dth = engine.get('Nozzle Throat Diameter [m]')
         self.eps = engine.get('Nozzle Expansion Ratio')
@@ -31,6 +30,21 @@ class Rocket:
         self.d_out_f = prop.get('Fuel Outside Diameter [m]')
         self.d_port_f = prop.get('Fuel Inside Diameter [m]')
         self.L_f = prop.get('Fuel Length [m]')
+
+        self.tipoff_exist = lug.get('Tip-Off Calculation Exist')
+        if self.tipoff_exist:
+            self.height_lug = lug.get('Height [m]')
+            self.pos_upper_lug = lug.get('Upper').get('Position from Nose Tip [m]')
+            self.middle_lug_exist = lug.get('Middle').get('Exist')
+            self.pos_middle_lug = lug.get('Middle').get('Position from Nose Tip [m]')
+            self.pos_lower_lug = lug.get('Lower').get('Position from Nose Tip [m]')
+            if self.middle_lug_exist:
+                self.pos_lug_list = np.array([self.pos_upper_lug, self.pos_lower_lug])
+            else:
+                self.pos_lug_list = np.array([self.pos_upper_lug, self.pos_middle_lug, self.pos_lower_lug])
+        else:
+            self.pos_lower_lug = self.L  # 機体後端に下端ラグがある仮定
+	},
         ############################################################
 
 

@@ -78,7 +78,7 @@ def dynamics(x, t, rocket, launch_site):
     Lcg = rocket.Lcg(t)
     Lcp = rocket.Lcp(Mach)
 
-    # Fuel Inertia Moment
+    # Inertia Moment
     Ij_pitch = rocket.Ij_pitch(t)
     Ij_roll = rocket.Ij_roll(t)
     Ij = np.array([Ij_roll, Ij_pitch, Ij_pitch])
@@ -185,6 +185,85 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
     dx[3:6] = Vel_Body  # distance_Body
     dx[6:9] = Acc_ENU  # Vel_ENU
     dx[9:12] = Acc_Body  # Vel_Body
+
+    return dx
+
+def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
+    Pos_ENU = x[0:3]
+    altitude = Pos_ENU[2]
+    distance_Body = x[3]
+    Vel_ENU = x[6:9]
+    Vel_Body = x[9:12]
+    omega_pitch = x[12]
+    elevation = x[13]
+
+    mf = rocket.mf(t)
+    mox = rocket.mox(t)
+    mp = mf + mox
+    m = rocket.ms + mp
+
+    # Translation coordinate
+    DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat0)
+    DCM_Body2ENU = DCM_ENU2Body.transpose()
+
+    # alpha beta Vel_Air
+    wind_ENU = env.Wind_ENU(launch_site.wind_speed(altitude), launch_site.wind_direction(altitude))
+    Vel_air = DCM_ENU2Body.dot(Vel_ENU - wind_ENU)
+    Vel_air_abs = np.linalg.norm(Vel_air)
+    u = Vel_air[0]
+    v = Vel_air[1]
+    w = Vel_air[2]
+
+    # Air Condition
+    g0 = 9.80665
+    g = np.array([0.0, 0.0, -env.gravity(altitude)])
+    Ta0, Pa0, rho0, Cs0 = env.std_atmo(0.0)
+    Ta, Pa, rho, Cs = env.std_atmo(altitude)
+    Mach = Vel_air_abs / Cs
+    dynamic_pressure = 0.5 * rho * Vel_air_abs ** 2
+
+    # Mass
+    mdot_p = rocket.mdot_p(t)
+    mdot_f = rocket.mdot_f(t)
+    mdot_ox = rocket.mdot_ox(t)
+    pressure_thrust = (Pa0 - Pa) * rocket.Ae
+    thrust = np.array([rocket.thrust(t) + pressure_thrust, 0.0, 0.0])
+    Isp = rocket.Isp + pressure_thrust / (mdot_p * g0)
+
+    # Aero Force
+    drag = dynamic_pressure * rocket.Cd(Mach) * rocket.A
+    normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
+    F_aero = np.array([-drag, 0.0, 0.0])
+
+    # Newton Equation
+    Force = (thrust + F_aero)
+    Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
+    Acc_ENU = DCM_Body2ENU.dot(Force) / m + g
+
+    # Center of Gravity
+    Lcg = rocket.Lcg(t)
+
+    # Fuel Inertia Moment
+    Ij_pitch = rocket.Ij_pitch(t)
+
+    # search clear lug
+    pos_lug_lcg_list = rocket.pos_lug_list - Lcg
+    distance_lug_list = distance_Body - pos_lug_lcg_list
+    launch_clear_lug_list = distance_lug_list > launcer_rail
+
+
+    # search pivot point
+
+        distance_lower_lug_log = (rocket.L - rocket.pos_lower_lug) + distance_Body_log[:, 0]
+    
+
+    dx = np.zeros(14)
+    dx[0:3] = Vel_ENU  # Pos_ENU
+    dx[3:6] = Vel_Body  # distance_Body
+    dx[6:9] = Acc_ENU  # Vel_ENU
+    dx[9:12] = Acc_Body  # Vel_Body
+    dx[12] = omega_dot  # omega_pitch
+    dx[13] = omega  # elevation
 
     return dx
 

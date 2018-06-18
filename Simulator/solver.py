@@ -62,8 +62,8 @@ class Solver:
         quat0 = coord.euler2quat(self.azimuth0, self.elevation0, self.roll0)        
 
         # on Launcher ##################################################
-        # upper launch lugが抜けるまでは姿勢が固定されている
-        # upper lugが抜けた時点での重心各値をメインのソルバへ渡す
+        # lower launch lugがランチャレール長を越した時点でランチクリア
+        # lower lugが抜けた時点での重心各値をメインのソルバへ渡す
         time = np.arange(0.0, 1.0, 0.001)
         x0 = np.zeros(12)
         x0[0:3] = Pos0_ENU
@@ -75,8 +75,8 @@ class Solver:
         distance_Body_log = ode_log[:, 3:6]
         Vel_ENU_log = ode_log[:, 6:9]
         Vel_Body_log = ode_log[:, 9:12]
-        distance_upper_lug_log = (rocket.L - rocket.upper_lug) + distance_Body_log[:, 0]
-        index_launch_clear = np.argmax(distance_upper_lug_log >= self.launcher_rail)
+        distance_lower_lug_log = (rocket.L - rocket.pos_lower_lug) + distance_Body_log[:, 0]
+        index_launch_clear = np.argmax(distance_lower_lug_log >= self.launcher_rail)
         self.time_launch_clear = time[index_launch_clear]
         self.vel_launch_clear = Vel_Body_log[index_launch_clear, 0]
         self.acc_launch_clear = rocket.thrust(self.time_launch_clear) / rocket.m(self.time_launch_clear)
