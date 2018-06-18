@@ -19,13 +19,13 @@ argv = sys.argv
 if len(argv) < 2:
     print('Error!! config file is missing')
     print('Usage: python ForRocket.py configFileName.json run_mode')
-    sys.exit()
-elif len(argv) < 3:
-    print('Error!! run mode is missing')
-    print('Usage: python ForRocket.py configFileName.json run_mode')
-    sys.exit()        
+    sys.exit()   
 config_file = argv[1]
-run_mode = argv[2]
+try:
+    run_mode = argv[2]
+except IndexError:
+    run_mode = '1'
+
 
 # config file to json
 config = open(config_file)
