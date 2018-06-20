@@ -21,10 +21,10 @@
 	},
 
 	"Wind":{
-		"Wind File Exist": true,
+		"Wind File Exist": false,
 		"Wind File": "wind.csv",
 		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 125.0,
+		"Wind Direction [deg]": 25.0,
 		"Wind Mesurement Height [m]": 5.0
 	},
 
@@ -46,8 +46,9 @@
 		"Length End-to-Tank [m]": 0.3,
 		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
 		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
+		"Tip-Off Calculation Exist": true,		
 		"Upper Launch Lug FromNoseTip [m]": 1.2,
-		"Lower Launch Lug FromNoseTip [m]": 1.5
+		"Lower Launch Lug FromNoseTip [m]": 1.5087
 	},
 
 	"Parachute": {
