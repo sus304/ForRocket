@@ -251,6 +251,7 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
     Acc_ENU = DCM_Body2ENU.dot(Force) / m + g
 
     # Center of Gravity
+    Lcg_p = rocket.Lcg_p(t)    
     Lcg = rocket.Lcg(t)
     Lcp = rocket.Lcp(Mach)
 

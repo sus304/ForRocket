@@ -21,10 +21,10 @@
 	},
 
 	"Wind":{
-		"Wind File Exist": true,
+		"Wind File Exist": false,
 		"Wind File": "wind.csv",
 		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 125.0,
+		"Wind Direction [deg]": 25.0,
 		"Wind Mesurement Height [m]": 5.0
 	},
 

@@ -86,7 +86,7 @@ class Solver:
             x0[9:12] = np.zeros((1, 3))
             ode_log = odeint(dynamics.onlauncher_dynamics, x0, time, args=(rocket, self.launch_site, quat0))
             omega_onLauncher_log = np.zeros((len(ode_log[:, 0]) , 3))
-            quat_onLauncher_log = np.zeros((len(ode_log[:, 0]), 3)) + quat0
+            quat_onLauncher_log = np.zeros((len(ode_log[:, 0]), 4)) + np.array([quat0] * len(ode_log[:, 0]))
 
         Pos_onLauncher_ENU_log = ode_log[:, 0:3]
         distance_Body_log = ode_log[:, 3:6]
@@ -100,8 +100,8 @@ class Solver:
         index_launch_clear = np.argmax(distance_lower_lug_log >= self.launcher_rail)
 
         time_onLauncher_log = time[:index_launch_clear]
-        Pos_onLauncher_ENU_log = Pos_ENU_log[:index_launch_clear, :]
-        Vel_onLauncher_ENU_log = Vel_ENU_log[:index_launch_clear, :]
+        Pos_onLauncher_ENU_log = Pos_onLauncher_ENU_log[:index_launch_clear, :]
+        Vel_onLauncher_ENU_log = Vel_onLauncher_ENU_log[:index_launch_clear, :]
         omega_onLauncher_log = omega_onLauncher_log[:index_launch_clear, :]
         quat_onLauncher_log = quat_onLauncher_log[:index_launch_clear, :]
 
@@ -112,13 +112,16 @@ class Solver:
         roll_onLauncher_log = attitude_onLauncher_log[:, 2]
 
         # イベントでの値
-        self.time_launch_clear = time[index_launch_clear]
+        self.time_launch_clear = time_onLauncher_log[-1]
         self.altitude_launch_clear = Pos_onLauncher_ENU_log[-1, 2]
         self.vel_launch_clear = Vel_Body_log[index_launch_clear, 0]
         self.acc_launch_clear = rocket.thrust(self.time_launch_clear) / rocket.m(self.time_launch_clear)
 
         if rocket.tipoff_exist:
-            omega_mass_tipoff = rocket.m(time_onLauncher_log) * env.gravity(self.altitude_launch_clear) * np.cos()
+            moment_mass_tipoff = rocket.m(self.time_launch_clear) * env.gravity(self.altitude_launch_clear) * np.cos(np.deg2rad(elevation_onLauncher_log[-1])) * (rocket.lower_lug - rocket.Lcg(self.time_launch_clear))
+            omegadot_mass_tipoff = moment_mass_tipoff / rocket.Ij_pitch(self.time_launch_clear)
+        else:
+            omegadot_mass_tipoff = 0.0
 
 
         ################################################################
@@ -140,10 +143,10 @@ class Solver:
         time = np.arange(start_time, end_time, time_step)
 
         x0 = np.zeros(13)
-        x0[0:3] = Pos_ENU_log[index_launch_clear]
-        x0[3:6] = Vel_ENU_log[index_launch_clear]  # Vel_ENU
-        x0[6:9] =  np.zeros((1, 3))  # omega_Body
-        x0[9:13] = quat0  # quat
+        x0[0:3] = Pos_onLauncher_ENU_log[-1]
+        x0[3:6] = Vel_onLauncher_ENU_log[-1]  # Vel_ENU
+        x0[6:9] =  omega_onLauncher_log[-1] + np.array([0.0, omegadot_mass_tipoff * time_step, 0.0])  # omega_Body
+        x0[9:13] = quat_onLauncher_log[-1]  # quat
         
         ode_log = odeint(dynamics.dynamics, x0, time, args=(rocket, self.launch_site))
 
