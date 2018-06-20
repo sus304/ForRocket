@@ -188,14 +188,16 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
 
     return dx
 
-def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
+def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
     Pos_ENU = x[0:3]
     altitude = Pos_ENU[2]
     distance_Body = x[3]
     Vel_ENU = x[6:9]
     Vel_Body = x[9:12]
-    omega_pitch = x[12]
-    elevation = x[13]
+    omega_Body = x[12:15]
+    quat = x[15:19]
+
+    quat = coord.quat_normalize(quat)
 
     mf = rocket.mf(t)
     mox = rocket.mox(t)
@@ -203,7 +205,7 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
     m = rocket.ms + mp
 
     # Translation coordinate
-    DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat0)
+    DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat)
     DCM_Body2ENU = DCM_ENU2Body.transpose()
 
     # alpha beta Vel_Air
@@ -213,6 +215,13 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
     u = Vel_air[0]
     v = Vel_air[1]
     w = Vel_air[2]
+
+    if Vel_air_abs < 0.0 or np.abs(u) < 0.0:
+        alpha = 0.0
+        beta = 0.0
+    else:
+        alpha = np.arctan2(w, u)
+        beta = np.arcsin(-v / Vel_air_abs)
 
     # Air Condition
     g0 = 9.80665
@@ -233,7 +242,8 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
     # Aero Force
     drag = dynamic_pressure * rocket.Cd(Mach) * rocket.A
     normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
-    F_aero = np.array([-drag, 0.0, 0.0])
+    F_aero = np.array([-drag, normal * beta, -normal * alpha])
+
 
     # Newton Equation
     Force = (thrust + F_aero)
@@ -242,28 +252,69 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, quat0, launcer_rail):
 
     # Center of Gravity
     Lcg = rocket.Lcg(t)
+    Lcp = rocket.Lcp(Mach)
 
-    # Fuel Inertia Moment
-    Ij_pitch = rocket.Ij_pitch(t)
+    # omega
+    p = omega_Body[0]
+    q = omega_Body[1]
+    r = omega_Body[2]
+    omegadot = np.zeros(3)  # 0埋めしてるので上部ラグがレール上では0のまま
 
-    # search clear lug
-    pos_lug_lcg_list = rocket.pos_lug_list - Lcg
-    distance_lug_list = distance_Body - pos_lug_lcg_list
-    launch_clear_lug_list = distance_lug_list > launcer_rail
+    distance_upper_lug = (rocket.L - rocket.upper_lug) + distance_Body  # 下端ラグの機体後端からのオフセット
+    distance_lower_lug = (rocket.L - rocket.lower_lug) + distance_Body
+    if distance_upper_lug > launcher_rail:
+        if distance_lower_lug > launcher_rail: 
+            pivot_point = rocket.lower_lug  # ランチクリア後
+        else:
+            pivot_point = Lcg  # 上部ラグがランチクリア
+        
+        # Inertia Moment
+        Ij_pitch = rocket.Ij_pitch(t) + m * np.abs(Lcg - pivot_point) ** 2
+        Ij_roll = rocket.Ij_roll(t)
+        Ij = np.array([Ij_roll, Ij_pitch, Ij_pitch])
+
+        Ijdot_f_pitch = rocket.Ijdot_f_pitch(t) + m * np.abs(Lcg - pivot_point) ** 2
+        Ijdot_f_roll = rocket.Ijdot_f_roll(t)
+        Ijdot_f = np.array([Ijdot_f_roll, Ijdot_f_pitch, Ijdot_f_pitch])
+
+        # Aero Moment
+        moment_aero = np.array([0.0, F_aero[2] * (Lcp - pivot_point), -F_aero[1] * (Lcp - pivot_point)])
+
+        # Aero Dumping Moment
+        moment_aero_dumping = np.zeros(3)
+        moment_aero_dumping[0] = dynamic_pressure * rocket.Clp * rocket.A * rocket.d ** 2 * 0.5 / Vel_air_abs * omega_Body[0]
+        moment_aero_dumping[1] = dynamic_pressure * rocket.Cmq * rocket.A * rocket.L ** 2 * 0.5 / Vel_air_abs * omega_Body[1]
+        moment_aero_dumping[2] = dynamic_pressure * rocket.Cnr * rocket.A * rocket.L ** 2 * 0.5 / Vel_air_abs * omega_Body[2]
+
+        # Jet Dumping Moment
+        moment_jet_dumping = np.zeros(3)
+        moment_jet_dumping[0] = (-Ijdot_f[0] + mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
+        moment_jet_dumping[1] = (-Ijdot_f[1] + mdot_p * ((pivot_point - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
+        moment_jet_dumping[2] = (-Ijdot_f[2] + mdot_p * ((pivot_point - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
+
+        # Euler Equation
+        moment = moment_aero + moment_aero_dumping + moment_jet_dumping
+
+        omegadot[0] = ((Ij[1] - Ij[2]) * q * r + moment[0]) / Ij[0]
+        omegadot[1] = ((Ij[2] - Ij[0]) * p * r + moment[1]) / Ij[1]
+        omegadot[2] = ((Ij[0] - Ij[1]) * p * q + moment[2]) / Ij[2]
+
+    # Kinematic Equation
+    tersor_0 = [0.0, r, -q, p]
+    tersor_1 = [-r, 0.0, p, q]
+    tersor_2 = [q, -p, 0.0, r]
+    tersor_3 = [-p, -q, -r, 0.0]
+    tersor = np.array([tersor_0, tersor_1, tersor_2, tersor_3])
+    quatdot = 0.5 * tersor.dot(quat)
 
 
-    # search pivot point
-
-        distance_lower_lug_log = (rocket.L - rocket.pos_lower_lug) + distance_Body_log[:, 0]
-    
-
-    dx = np.zeros(14)
+    dx = np.zeros(19)
     dx[0:3] = Vel_ENU  # Pos_ENU
     dx[3:6] = Vel_Body  # distance_Body
     dx[6:9] = Acc_ENU  # Vel_ENU
     dx[9:12] = Acc_Body  # Vel_Body
-    dx[12] = omega_dot  # omega_pitch
-    dx[13] = omega  # elevation
+    dx[12:15] = omegadot  # omega_Body
+    dx[15:19] = quatdot  # quat
 
     return dx
 

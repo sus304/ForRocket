@@ -64,22 +64,63 @@ class Solver:
         # on Launcher ##################################################
         # lower launch lugがランチャレール長を越した時点でランチクリア
         # lower lugが抜けた時点での重心各値をメインのソルバへ渡す
-        time = np.arange(0.0, 1.0, 0.001)
-        x0 = np.zeros(12)
-        x0[0:3] = Pos0_ENU
-        x0[3:6] = np.zeros((1, 3))
-        x0[6:9] = np.zeros((1, 3))
-        x0[9:12] = np.zeros((1, 3))
-        ode_log = odeint(dynamics.onlauncher_dynamics, x0, time, args=(rocket, self.launch_site, quat0))
-        Pos_ENU_log = ode_log[:, 0:3]
+        time = np.arange(0.0, 1.0 + np.sqrt(2.0 * self.launcher_rail * rocket.m(0.0) / rocket.ref_thrust), 0.0001)
+
+        if rocket.tipoff_exist:
+            x0 = np.zeros(19)
+            x0[0:3] = Pos0_ENU  # Pos_ENU
+            x0[3:6] = np.zeros((1, 3))  # distance_Body
+            x0[6:9] = np.zeros((1, 3))  # Vel_ENU
+            x0[9:12] = np.zeros((1, 3))  # Vel_Body
+            x0[12:15] = np.zeros((1, 3))  # omega_Body
+            x0[15:19] = quat0  # quat
+            ode_log = odeint(dynamics.onlauncher_tipoff_dynamics, x0, time, args=(rocket, self.launch_site, self.launcher_rail))
+            omega_onLauncher_log = ode_log[:, 12:15]
+            quat_onLauncher_log = ode_log[:, 15:19]
+            quat_onLauncher_log = np.array(list(map(coord.quat_normalize, quat_onLauncher_log)))
+        else:
+            x0 = np.zeros(12)
+            x0[0:3] = Pos0_ENU
+            x0[3:6] = np.zeros((1, 3))
+            x0[6:9] = np.zeros((1, 3))
+            x0[9:12] = np.zeros((1, 3))
+            ode_log = odeint(dynamics.onlauncher_dynamics, x0, time, args=(rocket, self.launch_site, quat0))
+            omega_onLauncher_log = np.zeros((len(ode_log[:, 0]) , 3))
+            quat_onLauncher_log = np.zeros((len(ode_log[:, 0]), 3)) + quat0
+
+        Pos_onLauncher_ENU_log = ode_log[:, 0:3]
         distance_Body_log = ode_log[:, 3:6]
-        Vel_ENU_log = ode_log[:, 6:9]
+        Vel_onLauncher_ENU_log = ode_log[:, 6:9]
         Vel_Body_log = ode_log[:, 9:12]
-        distance_lower_lug_log = (rocket.L - rocket.pos_lower_lug) + distance_Body_log[:, 0]
+        ################################################################
+
+        # on Launcher post #############################################
+        # ランチクリアまででカット
+        distance_lower_lug_log = (rocket.L - rocket.lower_lug) + distance_Body_log[:, 0]  # 下端ラグの機体後端からのオフセット
         index_launch_clear = np.argmax(distance_lower_lug_log >= self.launcher_rail)
+
+        time_onLauncher_log = time[:index_launch_clear]
+        Pos_onLauncher_ENU_log = Pos_ENU_log[:index_launch_clear, :]
+        Vel_onLauncher_ENU_log = Vel_ENU_log[:index_launch_clear, :]
+        omega_onLauncher_log = omega_onLauncher_log[:index_launch_clear, :]
+        quat_onLauncher_log = quat_onLauncher_log[:index_launch_clear, :]
+
+        DCM_ENU2Body_onLauncher_log = np.array(list(map(coord.DCM_ENU2Body_quat, quat_onLauncher_log)))
+        attitude_onLauncher_log = np.array(list(map(coord.quat2euler, DCM_ENU2Body_onLauncher_log)))
+        azimuth_onLauncher_log = attitude_onLauncher_log[:, 0]
+        elevation_onLauncher_log = attitude_onLauncher_log[:, 1]
+        roll_onLauncher_log = attitude_onLauncher_log[:, 2]
+
+        # イベントでの値
         self.time_launch_clear = time[index_launch_clear]
+        self.altitude_launch_clear = Pos_onLauncher_ENU_log[-1, 2]
         self.vel_launch_clear = Vel_Body_log[index_launch_clear, 0]
         self.acc_launch_clear = rocket.thrust(self.time_launch_clear) / rocket.m(self.time_launch_clear)
+
+        if rocket.tipoff_exist:
+            omega_mass_tipoff = rocket.m(time_onLauncher_log) * env.gravity(self.altitude_launch_clear) * np.cos()
+
+
         ################################################################
         
         # main flight ##################################################
@@ -106,7 +147,6 @@ class Solver:
         
         ode_log = odeint(dynamics.dynamics, x0, time, args=(rocket, self.launch_site))
 
-        time_log = time
         Pos_ENU_log = ode_log[:, 0:3]
         Vel_ENU_log = ode_log[:, 3:6]
         omega_log = ode_log[:, 6:9]
@@ -116,7 +156,7 @@ class Solver:
         # main flight post #############################################
         # 着地後の分をカット
         index_hard_landing = np.argmax(Pos_ENU_log[:, 2] <= 0.0)
-        time_log = time_log[:index_hard_landing+1]
+        time_log = time[:index_hard_landing+1]
         Pos_ENU_log = Pos_ENU_log[:index_hard_landing+1, :]
         Vel_ENU_log = Vel_ENU_log[:index_hard_landing+1, :]
         omega_log = omega_log[:index_hard_landing+1, :]

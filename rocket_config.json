@@ -46,23 +46,9 @@
 		"Length End-to-Tank [m]": 0.3,
 		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
 		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
+		"Tip-Off Calculation Exist": true,		
 		"Upper Launch Lug FromNoseTip [m]": 1.2,
 		"Lower Launch Lug FromNoseTip [m]": 1.5
-	},
-
-	"Launch Lug": {
-		"Tip-Off Calculation Exist": true,
-		"Height [m]": 0.003,
-		"Upper": {
-			"Position from Nose Tip [m]": 0.5
-		},
-		"Middle": {
-			"Exist": true,
-			"Position from Nose Tip [m]": 1.2
-		},
-		"Lower": {
-			"Position from Nose Tip [m]": 1.5
-		}
 	},
 
 	"Parachute": {
