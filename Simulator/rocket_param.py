@@ -14,7 +14,6 @@ class Rocket:
         aero = json.get('Aero')
         engine = json_engine.get('Engine')
         prop = json_engine.get('Propellant')
-        heat_param = json.get('Aerodynamics Heating Parameter')
 
 
         # geometory ################################################
@@ -202,15 +201,3 @@ class Rocket:
         ############################################################
 
         
-        # Aero Heating parameter ###################################
-        self.heat_obj = heating.NoseCone()
-        self.heat_obj.T_surface_init = heat_param.get('Initial Surface Temperature [K]')
-        self.heat_obj.R_nosetip = heat_param.get('Blunt Radius Tip [m]')
-        self.heat_obj.thickness = heat_param.get('Thickness Tip [m]')
-        self.heat_obj.rho = heat_param.get('Material Dencity [kg/m^3]')
-        self.heat_obj.c = heat_param.get('Material Specific Heat [J/kg-K]')
-        self.heat_obj.epsilon = heat_param.get('Matrial Surface Emissivity')
-        self.heat_obj.T_ablation = heat_param.get('Ablation Temperature [K]')
-        self.heat_obj.h_vaporization = heat_param.get('Vaporization Heat [kJ/kg]') / 1000.0
-        ############################################################
-

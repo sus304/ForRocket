@@ -6,7 +6,6 @@ from scipy.integrate import odeint
 import Simulator.coordinate as coord
 import Simulator.environment as env
 import Simulator.dynamics as dynamics
-import Simulator.heating as heating
 
 
 class Solver:
@@ -211,14 +210,6 @@ class Solver:
         Force_log = np.c_[thrust_log - drag_log, normal_log * np.deg2rad(beta_log), -normal_log * np.deg2rad(alpha_log)]
         Acc_Body_log = np.array([Force / m + DCM.dot(g) for Force, m, DCM, g in zip(Force_log, m_log, DCM_ENU2Body_log, np.c_[np.zeros_like(g_log), np.zeros_like(g_log), -g_log])])
 
-        heater = heating.FlightHeating(time_log, Vel_air_abs_log, altitude_log)
-        heater.heating(rocket.heat_obj)
-        q_conv_log = heater.q_conv
-        q_rad_log = heater.q_rad
-        q_heat_log = q_conv_log + q_rad_log
-        T_surface_log = heater.T_surface
-        thickness_log = heater.thickness
-
         # イベントでの値
         # apogee
         if rocket.timer_mode:
@@ -310,8 +301,6 @@ class Solver:
         txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])
         txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
         txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing, 3)), '[m]\n'])
-        txt.writelines(['Max Tip Temperature,', str(round(max(T_surface_log), 2)), '[K]\n'])
-        txt.writelines(['Terminal Tip Thickness,', str(round(thickness_log[-1], 2)), '[mm]\n'])
         txt.close()
 
         output_array = np.c_[
@@ -348,11 +337,6 @@ class Solver:
             Vel_air_abs_log,
             Mach_log,
             dynamic_pressure_log,
-            q_conv_log,
-            q_rad_log,
-            q_heat_log,
-            T_surface_log,
-            thickness_log,
             Acc_Body_log,
             Vel_ENU_log,
             Pos_ENU_log,
@@ -363,7 +347,6 @@ class Solver:
                  'quat0,quat1,quat2,quat3,azimuth,elevation,roll,'\
                  'thrust,Isp,drag,normal,Force_X,Force_Y,Force_Z,'\
                  'Vel_air_X,Vel_air_Y,Vel_air_Z,Vel_air_abs,Mach,dynamic_pressure,'\
-                 'q_conv,q_rad,q_heat,T_surface,tip_thickness,'\
                  'Acc_Body_X,Acc_Body_Y,Acc_Body_Z,Vel_East,Vel_North,Vel_Up,Pos_East,Pos_North,Pos_Up'
         np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header=header, fmt='%0.6f', comments='')
 
@@ -443,26 +426,6 @@ class Solver:
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Dynamicpressure.png')
-
-        plt.figure('Aerodynamics Heating')
-        plt.plot(time_log, q_conv_log / 10**6, label='convection heat')
-        plt.plot(time_log, q_rad_log / 10**6, label='radiation heat')
-        plt.plot(time_log, q_heat_log / 10**6, label='total heat')
-        plt.xlabel('Time [sec]')
-        plt.ylabel('q dot [MW/m^2]')
-        plt.xlim(xmin=0.0)
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.result_dir + '/AerodynamicsHeating.png')
-
-        plt.figure('Surface Temperature')
-        plt.plot(time_log, T_surface_log, label='Surface Temperature')
-        plt.xlabel('Time [sec]')
-        plt.ylabel('Surface Temperature [K]')
-        plt.xlim(xmin=0.0)
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.result_dir + '/SurfaceTemperature.png')
 
         plt.figure('Body Acceleration')
         plt.plot(time_log, Acc_Body_log[:, 0], label='Acc_Body X')
