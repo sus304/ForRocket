@@ -48,7 +48,7 @@
 		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
 		"Tip-Off Calculation Exist": true,		
 		"Upper Launch Lug FromNoseTip [m]": 1.2,
-		"Lower Launch Lug FromNoseTip [m]": 1.5
+		"Lower Launch Lug FromNoseTip [m]": 1.5087
 	},
 
 	"Parachute": {

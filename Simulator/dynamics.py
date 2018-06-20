@@ -263,8 +263,8 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
 
     distance_upper_lug = (rocket.L - rocket.upper_lug) + distance_Body  # 下端ラグの機体後端からのオフセット
     distance_lower_lug = (rocket.L - rocket.lower_lug) + distance_Body
-    if distance_upper_lug > launcher_rail:
-        if distance_lower_lug > launcher_rail: 
+    if distance_upper_lug >= launcher_rail:
+        if distance_lower_lug >= launcher_rail: 
             pivot_point = rocket.lower_lug  # ランチクリア後
         else:
             pivot_point = Lcg  # 上部ラグがランチクリア
@@ -283,22 +283,22 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
 
         # Aero Dumping Moment
         moment_aero_dumping = np.zeros(3)
-        moment_aero_dumping[0] = dynamic_pressure * rocket.Clp * rocket.A * rocket.d ** 2 * 0.5 / Vel_air_abs * omega_Body[0]
-        moment_aero_dumping[1] = dynamic_pressure * rocket.Cmq * rocket.A * rocket.L ** 2 * 0.5 / Vel_air_abs * omega_Body[1]
+        # moment_aero_dumping[0] = dynamic_pressure * rocket.Clp * rocket.A * rocket.d ** 2 * 0.5 / Vel_air_abs * omega_Body[0]
+        # moment_aero_dumping[1] = dynamic_pressure * rocket.Cmq * rocket.A * rocket.L ** 2 * 0.5 / Vel_air_abs * omega_Body[1]
         moment_aero_dumping[2] = dynamic_pressure * rocket.Cnr * rocket.A * rocket.L ** 2 * 0.5 / Vel_air_abs * omega_Body[2]
 
         # Jet Dumping Moment
         moment_jet_dumping = np.zeros(3)
-        moment_jet_dumping[0] = (-Ijdot_f[0] + mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
-        moment_jet_dumping[1] = (-Ijdot_f[1] + mdot_p * ((pivot_point - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
+        # moment_jet_dumping[0] = (-Ijdot_f[0] + mdot_p * 0.5 * (0.25 * rocket.de ** 2)) * omega_Body[0]
+        # moment_jet_dumping[1] = (-Ijdot_f[1] + mdot_p * ((pivot_point - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[1]
         moment_jet_dumping[2] = (-Ijdot_f[2] + mdot_p * ((pivot_point - Lcg_p) ** 2 - (rocket.L - Lcg_p) ** 2)) * omega_Body[2]
 
         # Euler Equation
         moment = moment_aero + moment_aero_dumping + moment_jet_dumping
 
-        omegadot[0] = ((Ij[1] - Ij[2]) * q * r + moment[0]) / Ij[0]
-        omegadot[1] = ((Ij[2] - Ij[0]) * p * r + moment[1]) / Ij[1]
-        omegadot[2] = ((Ij[0] - Ij[1]) * p * q + moment[2]) / Ij[2]
+        # omegadot[0] = ((Ij[1] - Ij[2]) * q * r + moment[0]) / Ij[0]  # ランチクリア後はpitch回転も許容するがランチクリア後はsolverでカットするため計算せず
+        # omegadot[1] = ((Ij[2] - Ij[0]) * p * r + moment[1]) / Ij[1]
+        omegadot[2] = ((Ij[0] - Ij[1]) * p * q + moment[2]) / Ij[2]  # Yawのみ許容
 
     # Kinematic Equation
     tersor_0 = [0.0, r, -q, p]
