@@ -9,7 +9,6 @@ import Simulator.heating as heating
 class Rocket:
     def __init__(self, json, json_engine):
         struct = json.get('Structure')
-        lug = json.get('Launch Lug')
         para = json.get('Parachute')
         aero = json.get('Aero')
         engine = json_engine.get('Engine')
