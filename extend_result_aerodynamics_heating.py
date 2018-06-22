@@ -11,8 +11,8 @@ import Simulator.heating as heating
 result_dir = './Result_single_A'
 
 T_surface_init = 298.15  # Initial Surface Temperature [K]
-R_nosetip = 0.2  # Blunt Radius Tip [m]
-thickness = 0.03  # Thickness Tip [m]
+R_nosetip = 0.0086  # Blunt Radius Tip [m]
+thickness = 0.002  # Thickness Tip [m]
 rho_nosetip = 1270.0  # Material Dencity [kg/m^3]
 c = 1592.0  # Material Specific Heat [J/kg-K]
 epsilon = 0.8  # Matrial Surface Emissivity

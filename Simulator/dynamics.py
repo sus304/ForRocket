@@ -146,6 +146,8 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
     DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat0)
     DCM_Body2ENU = DCM_ENU2Body.transpose()
 
+    azimuth, elevation, roll = coord.quat2euler(DCM_ENU2Body)
+
     # alpha beta Vel_Air
     wind_ENU = env.Wind_ENU(launch_site.wind_speed(altitude), launch_site.wind_direction(altitude))
     Vel_air = DCM_ENU2Body.dot(Vel_ENU - wind_ENU)
@@ -173,12 +175,13 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
     # Aero Force
     drag = dynamic_pressure * rocket.Cd(Mach) * rocket.A
     normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
-    F_aero = np.array([-drag, 0.0, 0.0])
+    F_aero = np.array([-drag, normal * beta, -normal * alpha])
 
     # Newton Equation
     Force = (thrust + F_aero)
-    Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
-    Acc_ENU = DCM_Body2ENU.dot(Force) / m + g
+    # Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
+    Acc_Body = np.array([Force[0] / m + g[2] / np.sin(np.deg2rad(elevation)), 0.0, 0.0])
+    Acc_ENU = DCM_Body2ENU.dot(Acc_Body)
 
     dx = np.zeros(12)
     dx[0:3] = Vel_ENU  # Pos_ENU
@@ -207,6 +210,8 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
     # Translation coordinate
     DCM_ENU2Body = coord.DCM_ENU2Body_quat(quat)
     DCM_Body2ENU = DCM_ENU2Body.transpose()
+
+    azimuth, elevation, roll = coord.quat2euler(DCM_ENU2Body)
 
     # alpha beta Vel_Air
     wind_ENU = env.Wind_ENU(launch_site.wind_speed(altitude), launch_site.wind_direction(altitude))
@@ -244,11 +249,11 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
     normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
     F_aero = np.array([-drag, normal * beta, -normal * alpha])
 
-
     # Newton Equation
     Force = (thrust + F_aero)
-    Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
-    Acc_ENU = DCM_Body2ENU.dot(Force) / m + g
+    # Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
+    Acc_Body = np.array([Force[0] / m + g[2] / np.sin(np.deg2rad(elevation)), 0.0, 0.0])
+    Acc_ENU = DCM_Body2ENU.dot(Acc_Body)
 
     # Center of Gravity
     Lcg_p = rocket.Lcg_p(t)    
@@ -268,7 +273,7 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
             pivot_point = rocket.lower_lug  # ランチクリア後
         else:
             pivot_point = Lcg  # 上部ラグがランチクリア
-        
+
         # Inertia Moment
         Ij_pitch = rocket.Ij_pitch(t) + m * np.abs(Lcg - pivot_point) ** 2
         Ij_roll = rocket.Ij_roll(t)
@@ -280,7 +285,7 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
 
         # Aero Moment
         moment_aero = np.array([0.0, F_aero[2] * (Lcp - pivot_point), -F_aero[1] * (Lcp - pivot_point)])
-
+        
         # Aero Dumping Moment
         moment_aero_dumping = np.zeros(3)
         # moment_aero_dumping[0] = dynamic_pressure * rocket.Clp * rocket.A * rocket.d ** 2 * 0.5 / Vel_air_abs * omega_Body[0]
