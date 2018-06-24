@@ -21,10 +21,10 @@
 	},
 
 	"Wind":{
-		"Wind File Exist": true,
+		"Wind File Exist": false,
 		"Wind File": "wind.csv",
 		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 125.0,
+		"Wind Direction [deg]": 25.0,
 		"Wind Mesurement Height [m]": 5.0
 	},
 
@@ -46,8 +46,9 @@
 		"Length End-to-Tank [m]": 0.3,
 		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
 		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
-		"Upper Launch Lug FromNoseTip [m]": 1.2,
-		"Lower Launch Lug FromNoseTip [m]": 1.5
+		"Tip-Off Calculation Exist": true,		
+		"Upper Launch Lug FromNoseTip [m]": 0.6,
+		"Lower Launch Lug FromNoseTip [m]": 0.8
 	},
 
 	"Parachute": {
@@ -73,17 +74,6 @@
 		"Constant Normal Coefficient CNa": 10.523,
 		"Roll Dumping Moment Coefficient Clp": 0.136,
 		"Pitch Dumping Moment Coefficient Cmq": 2.26
-	},
-
-	"Aerodynamics Heating Parameter":{
-		"Initial Surface Temperature [K]": 298.15,
-		"Blunt Radius Tip [m]": 0.2,
-		"Thickness Tip [m]": 0.03,
-		"Material Dencity [kg/m^3]": 1270.0,
-		"Material Specific Heat [J/kg-K]": 1592.0,
-		"Matrial Surface Emissivity": 0.8,
-		"Ablation Temperature [K]": 600.0,
-		"Vaporization Heat [kJ/kg]": 9288.48
 	}
 
 }

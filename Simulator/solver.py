@@ -6,7 +6,6 @@ from scipy.integrate import odeint
 import Simulator.coordinate as coord
 import Simulator.environment as env
 import Simulator.dynamics as dynamics
-import Simulator.heating as heating
 
 
 class Solver:
@@ -23,7 +22,7 @@ class Solver:
 
         # Wind #########################################
         self.ref_alt = wind.get('Wind Mesurement Height [m]')
-        self.wind_file_exist = wind.get('Wind File Exist')  
+        self.wind_file_exist = wind.get('Wind File Exist')
         if self.wind_file_exist:
             wind_file = wind.get('Wind File')
             self.wind_array = np.loadtxt(wind_file, delimiter=',', skiprows=1)
@@ -49,8 +48,8 @@ class Solver:
         self.roll0 = launch_pad.get('Launch Roll Angle [deg]')
         self.launcher_rail = launch_pad.get('Launcher Rail Length [m]')
         ################################################
-        
-        
+
+
     def solve_dynamics(self, rocket):
         # initial postion
         length = (rocket.L - rocket.Lcg0) * np.cos(np.deg2rad(self.elevation0))
@@ -59,29 +58,71 @@ class Solver:
         Z0_ENU = (rocket.L - rocket.Lcg0) * np.sin(np.deg2rad(np.abs(self.elevation0)))
         Pos0_ENU = np.array([X0_ENU, Y0_ENU, Z0_ENU])
         # initial attitude
-        quat0 = coord.euler2quat(self.azimuth0, self.elevation0, self.roll0)        
+        quat0 = coord.euler2quat(self.azimuth0, self.elevation0, self.roll0)
 
         # on Launcher ##################################################
-        # upper launch lugが抜けるまでは姿勢が固定されている
-        # upper lugが抜けた時点での重心各値をメインのソルバへ渡す
-        time = np.arange(0.0, 1.0, 0.001)
-        x0 = np.zeros(12)
-        x0[0:3] = Pos0_ENU
-        x0[3:6] = np.zeros((1, 3))
-        x0[6:9] = np.zeros((1, 3))
-        x0[9:12] = np.zeros((1, 3))
-        ode_log = odeint(dynamics.onlauncher_dynamics, x0, time, args=(rocket, self.launch_site, quat0))
-        Pos_ENU_log = ode_log[:, 0:3]
+        # lower launch lugがランチャレール長を越した時点でランチクリア
+        # lower lugが抜けた時点での重心各値をメインのソルバへ渡す
+        time = np.arange(0.0, 1.0 + np.sqrt(2.0 * self.launcher_rail * rocket.m(0.0) / rocket.ref_thrust), 0.001)
+
+        if rocket.tipoff_exist:
+            x0 = np.zeros(19)
+            x0[0:3] = Pos0_ENU  # Pos_ENU
+            x0[3:6] = np.zeros((1, 3))  # distance_Body
+            x0[6:9] = np.zeros((1, 3))  # Vel_ENU
+            x0[9:12] = np.zeros((1, 3))  # Vel_Body
+            x0[12:15] = np.zeros((1, 3))  # omega_Body
+            x0[15:19] = quat0  # quat
+            ode_log = odeint(dynamics.onlauncher_tipoff_dynamics, x0, time, args=(rocket, self.launch_site, self.launcher_rail))
+            omega_onLauncher_log = ode_log[:, 12:15]
+            quat_onLauncher_log = ode_log[:, 15:19]
+            quat_onLauncher_log = np.array(list(map(coord.quat_normalize, quat_onLauncher_log)))
+        else:
+            x0 = np.zeros(12)
+            x0[0:3] = Pos0_ENU
+            x0[3:6] = np.zeros((1, 3))
+            x0[6:9] = np.zeros((1, 3))
+            x0[9:12] = np.zeros((1, 3))
+            ode_log = odeint(dynamics.onlauncher_dynamics, x0, time, args=(rocket, self.launch_site, quat0))
+            omega_onLauncher_log = np.zeros((len(ode_log[:, 0]) , 3))
+            quat_onLauncher_log = np.zeros((len(ode_log[:, 0]), 4)) + np.array([quat0] * len(ode_log[:, 0]))
+
+        Pos_onLauncher_ENU_log = ode_log[:, 0:3]
         distance_Body_log = ode_log[:, 3:6]
-        Vel_ENU_log = ode_log[:, 6:9]
+        Vel_onLauncher_ENU_log = ode_log[:, 6:9]
         Vel_Body_log = ode_log[:, 9:12]
-        distance_upper_lug_log = (rocket.L - rocket.upper_lug) + distance_Body_log[:, 0]
-        index_launch_clear = np.argmax(distance_upper_lug_log >= self.launcher_rail)
-        self.time_launch_clear = time[index_launch_clear]
+        ################################################################
+
+        # on Launcher post #############################################
+        # ランチクリアまででカット
+        distance_lower_lug_log = (rocket.L - rocket.lower_lug) + distance_Body_log[:, 0]  # 下端ラグの機体後端からのオフセット
+        index_launch_clear = np.argmax(distance_lower_lug_log >= self.launcher_rail)
+
+        time_onLauncher_log = time[:index_launch_clear]
+        Pos_onLauncher_ENU_log = Pos_onLauncher_ENU_log[:index_launch_clear, :]
+        Vel_onLauncher_ENU_log = Vel_onLauncher_ENU_log[:index_launch_clear, :]
+        omega_onLauncher_log = omega_onLauncher_log[:index_launch_clear, :]
+        quat_onLauncher_log = quat_onLauncher_log[:index_launch_clear, :]
+
+        DCM_ENU2Body_onLauncher_log = np.array(list(map(coord.DCM_ENU2Body_quat, quat_onLauncher_log)))
+        attitude_onLauncher_log = np.array(list(map(coord.quat2euler, DCM_ENU2Body_onLauncher_log)))
+        azimuth_onLauncher_log = attitude_onLauncher_log[:, 0]
+        elevation_onLauncher_log = attitude_onLauncher_log[:, 1]
+        roll_onLauncher_log = attitude_onLauncher_log[:, 2]
+
+        # イベントでの値
+        self.time_launch_clear = time_onLauncher_log[-1]
+        self.altitude_launch_clear = Pos_onLauncher_ENU_log[-1, 2]
         self.vel_launch_clear = Vel_Body_log[index_launch_clear, 0]
         self.acc_launch_clear = rocket.thrust(self.time_launch_clear) / rocket.m(self.time_launch_clear)
+
+        if rocket.tipoff_exist:
+            moment_mass_tipoff = rocket.m(self.time_launch_clear) * env.gravity(self.altitude_launch_clear) * np.cos(np.deg2rad(elevation_onLauncher_log[-1])) * (rocket.lower_lug - rocket.Lcg(self.time_launch_clear))
+            omegadot_mass_tipoff = moment_mass_tipoff / rocket.Ij_pitch(self.time_launch_clear)  # 下部ラグを支点とした質量でのチップオフ角加速度。あとで角速度に変換する
+        else:
+            omegadot_mass_tipoff = 0.0
         ################################################################
-        
+
         # main flight ##################################################
         def estimate_end():
             It_digits = len(str(int(rocket.total_impulse)))
@@ -93,38 +134,37 @@ class Solver:
             digit += round(int(str(time)[0])) // 10
             return 0.00001 * 10.0 ** digit
 
-        start_time = self.time_launch_clear        
+        start_time = self.time_launch_clear
         end_time = estimate_end() if self.auto_end else self.end_time
         time_step = dicide_timestep(end_time)
         time = np.arange(start_time, end_time, time_step)
 
         x0 = np.zeros(13)
-        x0[0:3] = Pos_ENU_log[index_launch_clear]
-        x0[3:6] = Vel_ENU_log[index_launch_clear]  # Vel_ENU
-        x0[6:9] =  np.zeros((1, 3))  # omega_Body
-        x0[9:13] = quat0  # quat
-        
+        x0[0:3] = Pos_onLauncher_ENU_log[-1]
+        x0[3:6] = Vel_onLauncher_ENU_log[-1]  # Vel_ENU
+        x0[6:9] =  omega_onLauncher_log[-1] + np.array([0.0, omegadot_mass_tipoff * time_step, 0.0])  # omega_Body
+        x0[9:13] = quat_onLauncher_log[-1]  # quat
+
         ode_log = odeint(dynamics.dynamics, x0, time, args=(rocket, self.launch_site))
 
-        time_log = time
         Pos_ENU_log = ode_log[:, 0:3]
         Vel_ENU_log = ode_log[:, 3:6]
         omega_log = ode_log[:, 6:9]
         quat_log = ode_log[:, 9:13]
         ################################################################
-        
+
         # main flight post #############################################
         # 着地後の分をカット
         index_hard_landing = np.argmax(Pos_ENU_log[:, 2] <= 0.0)
-        time_log = time_log[:index_hard_landing+1]
-        Pos_ENU_log = Pos_ENU_log[:index_hard_landing+1, :]
-        Vel_ENU_log = Vel_ENU_log[:index_hard_landing+1, :]
-        omega_log = omega_log[:index_hard_landing+1, :]
-        quat_log = quat_log[:index_hard_landing+1, :]
+        time_log = np.r_[time_onLauncher_log, time[:index_hard_landing+1]]
+        Pos_ENU_log = np.r_[Pos_onLauncher_ENU_log, Pos_ENU_log[:index_hard_landing+1, :]]
+        Vel_ENU_log = np.r_[Vel_onLauncher_ENU_log, Vel_ENU_log[:index_hard_landing+1, :]]
+        omega_log = np.r_[omega_onLauncher_log, omega_log[:index_hard_landing+1, :]]
+        quat_log = np.r_[quat_onLauncher_log, quat_log[:index_hard_landing+1, :]]
 
         quat_log = np.array(list(map(coord.quat_normalize, quat_log)))
         DCM_ENU2Body_log = np.array(list(map(coord.DCM_ENU2Body_quat, quat_log)))
-        
+
         # odeint外をあとから計算
         mox_log = rocket.mox(time_log)
         mf_log = rocket.mf(time_log)
@@ -154,8 +194,8 @@ class Solver:
         dynamic_pressure_log = 0.5 * rho_air_log * Vel_air_abs_log ** 2
         drag_log = dynamic_pressure_log * rocket.Cd(Mach_log) * rocket.A
         normal_log = dynamic_pressure_log * rocket.CNa(Mach_log) * rocket.A
-        
-        Lcp_log = rocket.Lcp(Mach_log)        
+
+        Lcp_log = rocket.Lcp(Mach_log)
         Fst_log = (Lcp_log - Lcg_log) / rocket.L * 100  # [%]
 
         attitude_log = np.array(list(map(coord.quat2euler, DCM_ENU2Body_log)))
@@ -166,25 +206,17 @@ class Solver:
         pressure_thrust_log = (P_air_log[0] - P_air_log) * rocket.Ae
         thrust_log = np.array([thrust_SL + pressure_thrust if thrust_SL > 0.0 else 0.0 for thrust_SL, pressure_thrust in zip(thrust_SL_log, pressure_thrust_log)])
         Isp_log = rocket.Isp + np.array([pressure_thrust / (mdot_p * 9.80665) if mdot_p > 0.0 else 0.0 for pressure_thrust, mdot_p in zip(pressure_thrust_log, mdot_p_log)])
-        
+
         Force_log = np.c_[thrust_log - drag_log, normal_log * np.deg2rad(beta_log), -normal_log * np.deg2rad(alpha_log)]
         Acc_Body_log = np.array([Force / m + DCM.dot(g) for Force, m, DCM, g in zip(Force_log, m_log, DCM_ENU2Body_log, np.c_[np.zeros_like(g_log), np.zeros_like(g_log), -g_log])])
-        
-        heater = heating.FlightHeating(time_log, Vel_air_abs_log, altitude_log)
-        heater.heating(rocket.heat_obj)
-        q_conv_log = heater.q_conv
-        q_rad_log = heater.q_rad
-        q_heat_log = q_conv_log + q_rad_log
-        T_surface_log = heater.T_surface
-        thickness_log = heater.thickness
 
         # イベントでの値
         # apogee
         if rocket.timer_mode:
             index_apogee = np.argmax(time_log > rocket.t_1st)
-        else:            
+        else:
             index_apogee = np.argmax(altitude_log)
-        
+
         self.time_apogee = time_log[index_apogee]
         self.altitude_apogee = altitude_log[index_apogee]
         self.Pos_ENU_apogee = Pos_ENU_log[index_apogee, :]
@@ -214,7 +246,7 @@ class Solver:
         self.hard_landing_point = Pos_ENU_log[-1, 0:2]
         self.downrange_hard_landing = np.linalg.norm(self.hard_landing_point)
         ################################################################
-        
+
 
         #  パラシュート降下 ############################################
         x0 = np.zeros(4)
@@ -245,7 +277,7 @@ class Solver:
 
         # Result post ##################################################
         txt = open(self.result_dir + '/result.txt', mode='w')
-        txt.writelines(['Launcher Clear X+,', str(round(self.time_launch_clear, 3)), '[s]\n'])        
+        txt.writelines(['Launcher Clear X+,', str(round(self.time_launch_clear, 3)), '[s]\n'])
         txt.writelines(['Launcher Clear Acceleration,', str(round(self.acc_launch_clear / 9.80665, 3)), '[G]\n'])
         txt.writelines(['Launcher Clear Velocity,', str(round(self.vel_launch_clear, 3)), '[m/s]\n'])
         txt.writelines(['Max Q X+,', str(round(self.time_maxQ, 3)), '[s]\n'])
@@ -263,14 +295,12 @@ class Solver:
         txt.writelines(['Apogee Air Velocity,', str(round(self.Vel_air_abs_apogee, 3)), '[m/s]\n'])
         txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
         txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing, 3)), '[m]\n'])
-        txt.writelines(['1st Parachute Opening X+,', str(round(time_log[index_apogee], 3)), '[s]\n'])        
+        txt.writelines(['1st Parachute Opening X+,', str(round(time_log[index_apogee], 3)), '[s]\n'])
         txt.writelines(['1st Parachute Descent Velocity,', str(round(self.Vel_descent_1st, 3)), '[m/s]\n'])
         txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_sepa2, 3)), '[s]\n'])
         txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.Vel_descent_2nd, 3)), '[m/s]\n'])
         txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
         txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing, 3)), '[m]\n'])
-        txt.writelines(['Max Tip Temperature,', str(round(max(T_surface_log), 2)), '[K]\n'])
-        txt.writelines(['Terminal Tip Thickness,', str(round(thickness_log[-1], 2)), '[mm]\n'])
         txt.close()
 
         output_array = np.c_[
@@ -307,11 +337,6 @@ class Solver:
             Vel_air_abs_log,
             Mach_log,
             dynamic_pressure_log,
-            q_conv_log,
-            q_rad_log,
-            q_heat_log,
-            T_surface_log,
-            thickness_log,
             Acc_Body_log,
             Vel_ENU_log,
             Pos_ENU_log,
@@ -322,9 +347,8 @@ class Solver:
                  'quat0,quat1,quat2,quat3,azimuth,elevation,roll,'\
                  'thrust,Isp,drag,normal,Force_X,Force_Y,Force_Z,'\
                  'Vel_air_X,Vel_air_Y,Vel_air_Z,Vel_air_abs,Mach,dynamic_pressure,'\
-                 'q_conv,q_rad,q_heat,T_surface,tip_thickness,'\
                  'Acc_Body_X,Acc_Body_Y,Acc_Body_Z,Vel_East,Vel_North,Vel_Up,Pos_East,Pos_North,Pos_Up'
-        np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header=header)
+        np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header=header, fmt='%0.6f', comments='')
 
         plt.close('all')
 
@@ -402,26 +426,6 @@ class Solver:
         plt.grid()
         plt.legend()
         plt.savefig(self.result_dir + '/Dynamicpressure.png')
-
-        plt.figure('Aerodynamics Heating')
-        plt.plot(time_log, q_conv_log / 10**6, label='convection heat')
-        plt.plot(time_log, q_rad_log / 10**6, label='radiation heat')
-        plt.plot(time_log, q_heat_log / 10**6, label='total heat')
-        plt.xlabel('Time [sec]')
-        plt.ylabel('q dot [MW/m^2]')
-        plt.xlim(xmin=0.0)
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.result_dir + '/AerodynamicsHeating.png')
-
-        plt.figure('Surface Temperature')
-        plt.plot(time_log, T_surface_log, label='Surface Temperature')
-        plt.xlabel('Time [sec]')
-        plt.ylabel('Surface Temperature [K]')
-        plt.xlim(xmin=0.0)
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.result_dir + '/SurfaceTemperature.png')
 
         plt.figure('Body Acceleration')
         plt.plot(time_log, Acc_Body_log[:, 0], label='Acc_Body X')
@@ -533,14 +537,14 @@ class WindMapSolver:
             for angle_wind in self.angle_wind_array:
                 # run solver
                 self.single_solver.result_dir = self.result_dir + '/Result_single_' + str(int(Vel_wind)) + str(int(angle_wind))
-                os.mkdir(self.single_solver.result_dir)  
-                if self.single_solver.wind_file_exist:                    
-                    alt_array = self.single_solver.wind_array[:, 0]          
+                os.mkdir(self.single_solver.result_dir)
+                if self.single_solver.wind_file_exist:
+                    alt_array = self.single_solver.wind_array[:, 0]
                 else:
-                    alt_array = np.arange(0.0, 20005.0, 5.0)    
+                    alt_array = np.arange(0.0, 20005.0, 5.0)
                     wind_speed_array = self.single_solver.launch_site.wind_law(alt_array, Vel_wind, self.single_solver.ref_alt)
                     self.single_solver.launch_site.wind_speed = interpolate.interp1d(alt_array, wind_speed_array, kind='linear', bounds_error=False, fill_value=(wind_speed_array[0], wind_speed_array[-1]))
-                wind_direction_array = np.array([angle_wind] * alt_array.size)                            
+                wind_direction_array = np.array([angle_wind] * alt_array.size)
                 self.single_solver.launch_site.wind_direction = interpolate.interp1d(alt_array, wind_direction_array + self.single_solver.launch_site.magnetic_declination(), kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
                 self.single_solver.solve_dynamics(rocket)
 

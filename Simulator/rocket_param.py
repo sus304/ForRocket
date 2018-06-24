@@ -13,15 +13,12 @@ class Rocket:
         aero = json.get('Aero')
         engine = json_engine.get('Engine')
         prop = json_engine.get('Propellant')
-        heat_param = json.get('Aerodynamics Heating Parameter')
 
 
         # geometory ################################################
         self.L = struct.get('Length [m]')
         self.d = struct.get('Diameter [m]')
         self.A = 0.25 * np.pi * self.d ** 2
-        self.lower_lug = struct.get('Lower Launch Lug FromNoseTip [m]')
-        self.upper_lug = struct.get('Upper Launch Lug FromNoseTip [m]')
 
         self.dth = engine.get('Nozzle Throat Diameter [m]')
         self.eps = engine.get('Nozzle Expansion Ratio')
@@ -31,6 +28,13 @@ class Rocket:
         self.d_out_f = prop.get('Fuel Outside Diameter [m]')
         self.d_port_f = prop.get('Fuel Inside Diameter [m]')
         self.L_f = prop.get('Fuel Length [m]')
+
+        self.tipoff_exist = struct.get('Tip-Off Calculation Exist')
+        if self.tipoff_exist:
+            self.upper_lug = struct.get('Upper Launch Lug FromNoseTip [m]')
+            self.lower_lug = struct.get('Lower Launch Lug FromNoseTip [m]')
+        else:
+            self.lower_lug = self.L  # 機体後端に下端ラグがある仮定
         ############################################################
 
 
@@ -57,11 +61,13 @@ class Rocket:
             index = (thrust_array > (self.ms + self.m0_f + self.m0_ox) * 9.80665).argmax()
             thrust_array = thrust_array[index:]
             time_array = time_array[index:] - time_array[index]
+            self.ref_thrust = np.max(thrust_array)
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
             self.total_impulse = round(np.sum(thrust_array) * np.sum(time_array) / len(time_array))
         else:
             time_array = np.arange(0.0, engine.get('Burn Time [sec]') + 0.01, 0.01)
             thrust_array = np.array([engine.get('Constant Thrust [N]')] * time_array.size)
+            self.ref_thrust = engine.get('Constant Thrust [N]')
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
             self.total_impulse = round(engine.get('Constant Thrust [N]') * engine.get('Burn Time [sec]'))
         self.Isp = engine.get('Isp [sec]')
@@ -122,8 +128,8 @@ class Rocket:
         Ij_f_pitch_log = mf_log * ((self.d_port_f ** 2 + self.d_out_f ** 2) / 4.0 + self.L_f / 3.0) / 4.0
         Ij_f_roll_log = mf_log * (self.d_port_f ** 2 + self.d_out_f ** 2) / 8.0
         # Offset
-        Ij_s_pitch_log = self.Ij0_s_pitch + self.ms * (Lcg_log - self.Lcg_s) ** 2
-        Ij_f_pitch_log += mf_log * (Lcg_log - self.Lcg_f) ** 2
+        Ij_s_pitch_log = self.Ij0_s_pitch + self.ms * np.abs(Lcg_log - self.Lcg_s) ** 2
+        Ij_f_pitch_log += mf_log * np.abs(Lcg_log - self.Lcg_f) ** 2
         Ij_pitch_log = Ij_s_pitch_log + Ij_f_pitch_log
         Ij_roll_log = self.Ij0_s_roll + Ij_f_roll_log
         self.Ij_pitch = interpolate.interp1d(time_array, Ij_pitch_log, kind='linear', bounds_error=False, fill_value=(Ij_pitch_log[0], Ij_pitch_log[-1]))
@@ -194,15 +200,3 @@ class Rocket:
         ############################################################
 
         
-        # Aero Heating parameter ###################################
-        self.heat_obj = heating.NoseCone()
-        self.heat_obj.T_surface_init = heat_param.get('Initial Surface Temperature [K]')
-        self.heat_obj.R_nosetip = heat_param.get('Blunt Radius Tip [m]')
-        self.heat_obj.thickness = heat_param.get('Thickness Tip [m]')
-        self.heat_obj.rho = heat_param.get('Material Dencity [kg/m^3]')
-        self.heat_obj.c = heat_param.get('Material Specific Heat [J/kg-K]')
-        self.heat_obj.epsilon = heat_param.get('Matrial Surface Emissivity')
-        self.heat_obj.T_ablation = heat_param.get('Ablation Temperature [K]')
-        self.heat_obj.h_vaporization = heat_param.get('Vaporization Heat [kJ/kg]') / 1000.0
-        ############################################################
-
