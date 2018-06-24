@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 # =====↓↓↓↓ USER INPUT ↓↓↓↓====
 config_file = 'rocket_config.json'
 result_dir = './Result_single_A'
+# config_file = 'rocket_config_H-49CDR.json'
+# result_dir = './Result_single_H-49_CDR'
 
 lug_clearance = 4.0  # [mm]
 lug_clearance /= 1e3  # [mm => m]
