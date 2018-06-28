@@ -1,23 +1,33 @@
 # -*- coding: utf-8 -*-
+import sys
 import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # =====↓↓↓↓ USER INPUT ↓↓↓↓====
-config_file = 'rocket_config.json'
-result_dir = './Result_single_A'
-# config_file = 'rocket_config_H-49CDR.json'
-# result_dir = './Result_single_H-49_CDR'
-
 lug_clearance = 4.0  # [mm]
 lug_clearance /= 1e3  # [mm => m]
 
-width_launcher = 70.0  # [mm]
-width_launcher /= 1e3  # [mm => m]
-fin_span = 150.0  # [mm]
-fin_span /= 1e3  # [mm => m]
+# width_launcher = 70.0  # [mm]
+# width_launcher /= 1e3  # [mm => m]
+# fin_span = 150.0  # [mm]
+# fin_span /= 1e3  # [mm => m]
 # =====↑↑↑↑ USER INPUT ↑↑↑↑====
+
+
+# config file arg
+argv = sys.argv
+if len(argv) < 3:
+    print('Error!! argument is missing')
+    print('Usage: python ForRocket.py configFileName.json ResultDirectory')
+    sys.exit()   
+if '.json' in argv[1]: 
+    config_file = argv[1]
+    result_dir = argv[2]
+elif '.json' in argv[2]:
+    config_file = argv[2]
+    result_dir = argv[1]
 
 # config file to json
 json = json.load(open(config_file))
