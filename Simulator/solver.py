@@ -36,12 +36,12 @@ class Solver:
             wind_speed_array = self.launch_site.wind_law(alt_array, ref_speed, self.ref_alt)
             wind_direction_array = np.array([ref_direction] * alt_array.size)
         self.launch_site.wind_speed = interpolate.interp1d(alt_array, wind_speed_array, kind='linear', bounds_error=False, fill_value=(wind_speed_array[0], wind_speed_array[-1]))
-        self.launch_site.wind_direction = interpolate.interp1d(alt_array, wind_direction_array - self.launch_site.magnetic_declination(), kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
+        self.launch_site.wind_direction = interpolate.interp1d(alt_array, wind_direction_array + self.launch_site.magnetic_declination(), kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
         ################################################
 
 
         # Initial Attitude #############################
-        self.azimuth0 = launch_pad.get('Launch Azimuth [deg]') - self.launch_site.magnetic_declination()
+        self.azimuth0 = launch_pad.get('Launch Azimuth [deg]') + self.launch_site.magnetic_declination()
         self.elevation0 = launch_pad.get('Launch Elevation [deg]')
         if self.elevation0 > 0.0:
             self.elevation0 *= -1.0
