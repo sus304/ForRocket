@@ -28,13 +28,6 @@ class Rocket:
         self.d_out_f = prop.get('Fuel Outside Diameter [m]')
         self.d_port_f = prop.get('Fuel Inside Diameter [m]')
         self.L_f = prop.get('Fuel Length [m]')
-
-        self.tipoff_exist = struct.get('Tip-Off Calculation Exist')
-        if self.tipoff_exist:
-            self.upper_lug = struct.get('Upper Launch Lug FromNoseTip [m]')
-            self.lower_lug = struct.get('Lower Launch Lug FromNoseTip [m]')
-        else:
-            self.lower_lug = self.L  # 機体後端に下端ラグがある仮定
         ############################################################
 
 
@@ -197,6 +190,16 @@ class Rocket:
             self.alt_sepa2 = 0.0
             self.t_2nd_min = 0.0
             self.t_2nd_max = 0.0
+        ############################################################
+
+
+        # Launcher lug parameter ######################################
+        self.tipoff_exist = struct.get('Tip-Off Calculation Exist')
+        if self.tipoff_exist:
+            self.upper_lug = struct.get('Upper Launch Lug FromNoseTip [m]')
+            self.lower_lug = struct.get('Lower Launch Lug FromNoseTip [m]')
+        else:
+            self.lower_lug = self.Lcg0  # 初期重心→簡易的なモデルと大体揃うはず
         ############################################################
 
         

@@ -175,7 +175,7 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
     # Aero Force
     drag = dynamic_pressure * rocket.Cd(Mach) * rocket.A
     normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
-    F_aero = np.array([-drag, normal * beta, -normal * alpha])
+    F_aero = np.array([-drag, 0.0, 0.0])
 
     # Newton Equation
     Force = (thrust + F_aero)
