@@ -98,7 +98,7 @@ elif run_mode == '2' or run_mode == 'wind_map':
     print('Created Result Directory: ', result_dir)
 
     # make solver instance    
-    vel_wind_config = [0.0, 7.0, 1.0]
+    vel_wind_config = [1.0, 7.0, 1.0]
     angle_wind_config = [0.0, 315.0, 45.0]
     single_solver = Solver(json_config, launch_site, '')
     solver = WindMapSolver(vel_wind_config, angle_wind_config, single_solver, result_dir)

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from scipy.integrate import odeint
@@ -348,7 +349,7 @@ class Solver:
                  'thrust,Isp,drag,normal,Force_X,Force_Y,Force_Z,'\
                  'Vel_air_X,Vel_air_Y,Vel_air_Z,Vel_air_abs,Mach,dynamic_pressure,'\
                  'Acc_Body_X,Acc_Body_Y,Acc_Body_Z,Vel_East,Vel_North,Vel_Up,Pos_East,Pos_North,Pos_Up'
-        np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header=header, fmt='%0.6f', comments='')
+        np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header= header, fmt='%0.6f', comments='')
 
         plt.close('all')
 
@@ -470,7 +471,7 @@ class Solver:
         plt.savefig(self.result_dir + '/Trajectory.png')
 
         plt.figure('Decent Velocity')
-        plt.plot(time_decent_log[:index_soft_landing], Pos_ENU_decent_log[:index_soft_landing, 2])
+        plt.plot(time_decent_log[:index_soft_landing], Vel_descent_log[:index_soft_landing])
         plt.xlabel('Time [sec]')
         plt.ylabel('Velocity [m/s]')
         plt.xlim(xmin=self.time_apogee)
@@ -479,7 +480,7 @@ class Solver:
         plt.savefig(self.result_dir + '/DecentVel.png')
 
         plt.figure('Decent Altitude')
-        plt.plot(time_decent_log[:index_soft_landing], Vel_descent_log[:index_soft_landing])
+        plt.plot(time_decent_log[:index_soft_landing], Pos_ENU_decent_log[:index_soft_landing, 2])
         plt.xlabel('Time [sec]')
         plt.ylabel('Altitude [m]')
         plt.xlim(xmin=self.time_apogee)
@@ -505,6 +506,9 @@ class WindMapSolver:
 
         self.Vel_wind_array = np.arange(Vel_wind_min, Vel_wind_max + Vel_wind_step, Vel_wind_step)
         self.angle_wind_array = np.arange(angle_wind_min, angle_wind_max + angle_wind_step, angle_wind_step)
+
+        self.header = (self.angle_wind_array)
+        self.index = (self.Vel_wind_array)
 
     def solve_map(self, rocket):
         time_apogee_array = np.empty((0, len(self.angle_wind_array)))
@@ -579,19 +583,21 @@ class WindMapSolver:
             time_soft_landing_array = np.append(time_soft_landing_array, np.array([time_soft_landing_array_angle]), axis=0)
             soft_landing_points.append(soft_landing_points_angle)
 
-        np.savetxt(self.result_dir + '/time_apogee.csv', time_apogee_array, delimiter=',')
-        np.savetxt(self.result_dir + '/vel_apogee.csv', Vel_air_apogee_array, delimiter=',')
-        np.savetxt(self.result_dir + '/altitude_apogee.csv', altitude_apogee_array, delimiter=',')
-        np.savetxt(self.result_dir + '/downrange_hard.csv', downrange_hard_array, delimiter=',')
-        np.savetxt(self.result_dir + '/downrange_soft.csv', downrange_soft_array, delimiter=',')
-        np.savetxt(self.result_dir + '/vel_max.csv', Vel_air_max_array, delimiter=',')
-        np.savetxt(self.result_dir + '/mach_max.csv', Mach_max_array, delimiter=',')
-        np.savetxt(self.result_dir + '/maxQ.csv', MaxQ_array, delimiter=',')
-        np.savetxt(self.result_dir + '/time_hard_landing.csv', time_hard_landing_array, delimiter=',')
-        np.savetxt(self.result_dir + '/time_sepa_2nd.csv', time_sepa2_array, delimiter=',')
-        np.savetxt(self.result_dir + '/time_soft_landing.csv', time_soft_landing_array, delimiter=',')
+        pd.DataFrame(time_apogee_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/time_apogee.csv')
+        pd.DataFrame(Vel_air_apogee_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/vel_apogee.csv')
+        pd.DataFrame(altitude_apogee_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/altitude_apogee.csv')
+        pd.DataFrame(downrange_hard_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/downrange_hard.csv')
+        pd.DataFrame(downrange_soft_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/downrange_soft.csv')
+        pd.DataFrame(Vel_air_max_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/vel_max.csv')
+        pd.DataFrame(Mach_max_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/mach_max.csv')
+        pd.DataFrame(MaxQ_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/maxQ.csv')
+        pd.DataFrame(time_hard_landing_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/time_hard_landing.csv')
+        pd.DataFrame(time_sepa2_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/time_sepa_2nd.csv')
+        pd.DataFrame(time_soft_landing_array, index=self.index, columns=self.header).to_csv(self.result_dir + '/time_soft_landing.csv')
 
         # self.single_solver.launch_site.wind_limit(self.Vel_wind_array, self.angle_wind_array - self.single_solver.launch_site.magnetic_declination(), hard_landing_points, soft_landing_points, self.result_dir)
         self.single_solver.launch_site.wind_limit(self.Vel_wind_array, self.angle_wind_array, hard_landing_points, soft_landing_points, self.result_dir)
         self.single_solver.launch_site.plot_kml(hard_landing_points, self.result_dir, name='hard')
         self.single_solver.launch_site.plot_kml(soft_landing_points, self.result_dir, name='soft')
+
+        pd.DataFrame(soft_landing_points, index=self.index, columns=self.header).to_csv(self.result_dir + '/posENU_soft.csv')

@@ -56,38 +56,68 @@ lat0 = launch_site.launch_point_LLH[0]
 lon0 = launch_site.launch_point_LLH[1]
 h0 = 0.0
 
-# read log
-df = pd.read_csv(result_dir+'/log.csv', index_col=False)
+# Ballistic Log ##########################################
+try:
+    # read log
+    df = pd.read_csv(result_dir+'/log.csv', index_col=False)
 
-pos_east = df['Pos_East']
-pos_north = df['Pos_North']
-pos_up = df['Pos_Up']
-lat, lon, h = pm.enu2geodetic(pos_east, pos_north, pos_up, lat0, lon0, h0)
+    pos_east = df['Pos_East']
+    pos_north = df['Pos_North']
+    pos_up = df['Pos_Up']
+    lat, lon, h = pm.enu2geodetic(pos_east, pos_north, pos_up, lat0, lon0, h0)
 
-az, el, range = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
+    az, el, range = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
 
-df = df.assign(dist_Receive = range)
-df = df.assign(azi_Receive = az)
-df = df.assign(elv_Receive = el)
-df.to_csv(result_dir+'/log.csv')
+    df = df.assign(dist_Receive = range)
+    df = df.assign(azi_Receive = az)
+    df = df.assign(elv_Receive = el)
+    df.to_csv(result_dir+'/log.csv')
 
-plt.figure()
-plt.plot(df['time'], range)
-plt.xlabel('Time [sec]')
-plt.ylabel('Distance - 3D [m]')
-plt.grid()
-plt.savefig(result_dir + '/Distance_ReceivePoint.png')
+    plt.figure()
+    plt.plot(df['time'], range)
+    plt.xlabel('Time [sec]')
+    plt.ylabel('Distance - 3D [m]')
+    plt.grid()
+    plt.savefig(result_dir + '/Distance_ReceivePoint.png')
 
-plt.figure()
-plt.plot(df['time'], el)
-plt.xlabel('Time [sec]')
-plt.ylabel('Elevation [deg]')
-plt.grid()
-plt.savefig(result_dir + '/Elevation_ReceivePoint.png')
+    plt.figure()
+    plt.plot(df['time'], el)
+    plt.xlabel('Time [sec]')
+    plt.ylabel('Elevation [deg]')
+    plt.grid()
+    plt.savefig(result_dir + '/Elevation_ReceivePoint.png')
 
-plt.figure()
-plt.plot(df['time'], az)
-plt.xlabel('Time [sec]')
-plt.ylabel('Azimuth [deg]')
-plt.grid()
-plt.savefig(result_dir + '/Azimuth_ReceivePoint.png')
+    plt.figure()
+    plt.plot(df['time'], az)
+    plt.xlabel('Time [sec]')
+    plt.ylabel('Azimuth [deg]')
+    plt.grid()
+    plt.savefig(result_dir + '/Azimuth_ReceivePoint.png')
+except:
+    pass
+
+# Table Log ##########################################
+try:
+    df = pd.read_csv(result_dir+'/posENU_soft.csv', index_col=0)
+    array = df.values
+    posENU_landing = []
+    for raw in range(len(array[:])):
+        array_raw = []
+        for col in range(len(array[:][0])):
+            value = array[raw][col][1:-1].split()
+            value = [float(value[0]), float(value[1])]
+            array_raw.append(value)
+        posENU_landing.append(array_raw)
+
+    range_landing = []
+    for raw in range(len(posENU_landing[:])):
+        range_landing_raw = []
+        for col in range(len(posENU_landing[0])):
+            lat, lon, h = pm.enu2geodetic(posENU_landing[raw][col][0], posENU_landing[raw][col][1], 0.0, lat0, lon0, h0)
+            az, el, ran = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
+            range_landing_raw.append(ran)
+        range_landing.append(range_landing_raw)
+    pd.DataFrame(range_landing, index=df.index, columns=df.columns).to_csv(result_dir+'/distances_ReceivePoint.csv')
+
+except:
+    pass
