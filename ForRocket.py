@@ -19,12 +19,14 @@ argv = sys.argv
 if len(argv) < 2:
     print('Error!! config file is missing')
     print('Usage: python ForRocket.py configFileName.json run_mode')
+    print('-s, --single :    single trajectory')
+    print('-m, --multi  :    map by multi trajectory for wind')
     sys.exit()   
 config_file = argv[1]
 try:
     run_mode = argv[2]
 except IndexError:
-    run_mode = '1'
+    run_mode = '-s'
 
 
 # config file to json
@@ -64,7 +66,7 @@ rocket = Rocket(json_config, json_engine)
 print('Model: ', model_name)
 
 
-if run_mode == '1' or run_mode == 'single':
+if run_mode == '1' or run_mode == '-s' or run_mode == '--single':
     # Make Result Directory
     result_dir = './Result_single_' + model_name
     if os.path.exists(result_dir):
@@ -85,7 +87,7 @@ if run_mode == '1' or run_mode == 'single':
     print('Completed solve!')
     print('Output Result Directory: ', result_dir)    
 
-elif run_mode == '2' or run_mode == 'wind_map':
+elif run_mode == '2' or run_mode == '-m' or run_mode == '--multi':
     # Make Result Directory
     result_dir = './Result_WindMap_' + model_name
     if os.path.exists(result_dir):
@@ -112,8 +114,8 @@ elif run_mode == '2' or run_mode == 'wind_map':
 # elif run_mode == '3' or run_mode == 'wind_var':
 
 else:
-    print('Error!! run mode is out of range(1 or 2): ', run_mode)
+    print('Error!! run mode is undefined: ', run_mode)
     print('Usage:')
-    print('single trajectory solve: 1 or single')
-    print('mapping for wind  solve: 2 or wind_map')
+    print('-s, --single :    single trajectory')
+    print('-m, --multi  :    map by multi trajectory for wind')
     sys.exit()
