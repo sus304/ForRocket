@@ -174,13 +174,12 @@ def onlauncher_dynamics(x, t, rocket, launch_site, quat0):
 
     # Aero Force
     drag = dynamic_pressure * rocket.Cd(Mach) * rocket.A
-    normal = dynamic_pressure * rocket.CNa(Mach) * rocket.A
     F_aero = np.array([-drag, 0.0, 0.0])
 
     # Newton Equation
     Force = (thrust + F_aero)
     # Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
-    Acc_Body = np.array([Force[0] / m + g[2] / np.sin(np.deg2rad(elevation)), 0.0, 0.0])
+    Acc_Body = np.array([Force[0] / m + np.abs(g[2]) * np.sin(np.deg2rad(elevation)), 0.0, 0.0])
     Acc_ENU = DCM_Body2ENU.dot(Acc_Body)
 
     dx = np.zeros(12)
@@ -252,7 +251,7 @@ def onlauncher_tipoff_dynamics(x, t, rocket, launch_site, launcher_rail):
     # Newton Equation
     Force = (thrust + F_aero)
     # Acc_Body =  Force / m + DCM_ENU2Body.dot(g)
-    Acc_Body = np.array([Force[0] / m + g[2] / np.sin(np.deg2rad(elevation)), 0.0, 0.0])
+    Acc_Body = np.array([Force[0] / m + np.abs(g[2]) * np.sin(np.deg2rad(elevation)), 0.0, 0.0])
     Acc_ENU = DCM_Body2ENU.dot(Acc_Body)
 
     # Center of Gravity
