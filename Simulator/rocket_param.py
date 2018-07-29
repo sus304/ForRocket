@@ -56,7 +56,7 @@ class Rocket:
             time_array = time_array[index:] - time_array[index]
             self.ref_thrust = np.max(thrust_array)
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
-            self.total_impulse = round(np.sum(thrust_array) * np.sum(time_array) / len(time_array))
+            self.total_impulse = np.sum(thrust_array[1:] * (time_array[1:] - time_array[:-1]))
         else:
             time_array = np.arange(0.0, engine.get('Burn Time [sec]') + 0.01, 0.01)
             thrust_array = np.array([engine.get('Constant Thrust [N]')] * time_array.size)
