@@ -126,18 +126,18 @@ class Solver:
 
         # main flight ##################################################
         def estimate_end():
-            It_digits = len(str(int(rocket.total_impulse)))
-            return rocket.total_impulse / (10 ** (It_digits - 3))
+            It_order = len(str(int(rocket.total_impulse))) - 1
+            tf = rocket.total_impulse / (10 ** (It_order - 2))
+            tf_order = len(str(int(tf))) - 1
+            dt = 10.0 ** (tf_order - 5)
+            return tf, dt
 
-        def dicide_timestep(end_time):
-            time = int(end_time)
-            digit = len(str(time))
-            digit += round(int(str(time)[0])) // 10
-            return 0.00001 * 10.0 ** digit
-
-        start_time = self.time_launch_clear
-        end_time = estimate_end() if self.auto_end else self.end_time
-        time_step = dicide_timestep(end_time)
+        if self.auto_end:
+            end_time, time_step = estimate_end() 
+        else:
+            end_time = self.end_time
+            dt = 0.01
+        start_time = self.time_launch_clear + time_step
         time = np.arange(start_time, end_time, time_step)
 
         x0 = np.zeros(13)
