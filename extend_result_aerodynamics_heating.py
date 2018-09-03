@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
+import sys
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import Simulator.heating as heating
 
-
-
 # =====↓↓↓↓ USER INPUT ↓↓↓↓====
-result_dir = './Result_single_A'
-
 T_surface_init = 298.15  # Initial Surface Temperature [K]
 R_nosetip = 0.0086  # Blunt Radius Tip [m]
 thickness = 0.002  # Thickness Tip [m]
@@ -20,6 +18,20 @@ T_ablation = 600.0  # Ablation Temperature [K]
 h_vaporization = 9288.48  # Vaporization Heat [kJ/kg]
 # =====↑↑↑↑ USER INPUT ↑↑↑↑====
 
+# config file arg
+argv = sys.argv
+if len(argv) < 3:
+    print('Error!! argument is missing')
+    print('Usage: python ForRocket.py configFileName.json ResultDirectory')
+    sys.exit()   
+if '.json' in argv[1]: 
+    config_file = argv[1]
+    result_dir = argv[2]
+elif '.json' in argv[2]:
+    config_file = argv[2]
+    result_dir = argv[1]
+
+# config file to json
 json = json.load(open(config_file))
 
 heat_obj = heating.NoseCone()
