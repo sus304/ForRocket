@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pymap3d as pm
+import simplekml
 
 from LaunchSiteData.Noshiro_land_3rd import NoshiroAsanai
 from LaunchSiteData.Noshiro_sea import NoshiroOchiai
 from LaunchSiteData.Taiki_land import TaikiLand
 
 # =====↓↓↓↓ USER INPUT ↓↓↓↓====
-receiving_point_LLH = np.array([40.249892, 140.012233, 0.0])
+receiving_point_LLH = np.array([40.248872, 140.012000, 0.0])
 
 # =====↑↑↑↑ USER INPUT ↑↑↑↑====
 
@@ -66,15 +67,15 @@ try:
     pos_up = df['Pos_Up']
     lat, lon, h = pm.enu2geodetic(pos_east, pos_north, pos_up, lat0, lon0, h0)
 
-    az, el, range = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
+    az, el, ran = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
 
-    df = df.assign(dist_Receive = range)
+    df = df.assign(dist_Receive = ran)
     df = df.assign(azi_Receive = az)
     df = df.assign(elv_Receive = el)
     df.to_csv(result_dir+'/log.csv')
 
     plt.figure()
-    plt.plot(df['time'], range)
+    plt.plot(df['time'], ran)
     plt.xlabel('Time [sec]')
     plt.ylabel('Distance - 3D [m]')
     plt.grid()
@@ -93,6 +94,21 @@ try:
     plt.ylabel('Azimuth [deg]')
     plt.grid()
     plt.savefig(result_dir + '/Azimuth_ReceivePoint.png')
+
+    kml = simplekml.Kml(open=1)
+    Log_LLH = []
+    for i in range(len(np.array(lat))):
+        if 0 == i % 10:
+            Log_LLH.append([np.array(lon)[i], np.array(lat)[i], np.array(h)[i]])
+    line = kml.newlinestring()
+    line.style.linestyle.width = 5
+    line.style.linestyle.color = simplekml.Color.red
+    line.extrude = 1
+    line.altitudemode = simplekml.AltitudeMode.absolute
+    line.coords = Log_LLH
+    line.style.linestyle.colormode = simplekml.ColorMode.random
+    kml.save(result_dir + '/trajectory.kml')
+
 except:
     pass
 

@@ -274,6 +274,8 @@ class Solver:
         self.downrange_soft_landing = np.linalg.norm(self.soft_landing_point)
         self.Vel_descent_1st = Vel_descent_log[index_sepa2-1]
         self.Vel_descent_2nd = Vel_descent_log[index_soft_landing]
+
+        # np.savetxt(self.result_dir + '/test.csv', np.c_[time_decent_log, Pos_ENU_decent_log], delimiter=',', fmt='%0.04f')
         ################################################################
 
         # Result post ##################################################
