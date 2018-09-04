@@ -16,10 +16,10 @@ This tool works with Python3.x and is environment independent. That depends on t
 2. Make thrust file, drag curve etc.(optional. Fixed value can be specified with json file.)
 3. Script execution.
 ```
-python ForRocket.py rocket_config.json 1
+python ForRocket.py rocket_config.json -[s/m]
 ```
 * 1st argument: config json file name
-* 2nd argument: run mode number(default 1, 1: single trajectory, 2: table for wind)
+* 2nd argument: run mode number(default s, s: single trajectory, m: table for wind)
 
 4. Calculation result is stored in result directory.
 
