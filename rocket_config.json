@@ -1,37 +1,37 @@
 {
 	"Define Comment": {
 		"Default_Unit": "m_kg_sec",
+    "Length Base (STA)": "End",
 		"Fuel": "Fuel-Grain-Cartridge",
-		"Structure": "AllLoad - Oxidizer - Fuel",
+		"Dry": "Liftoff - Oxidizer",
 		"C.G.": "Center of Gravity",
 		"C.P.": "Center of Pressure",
 		"LLH":"Latitude, Longitude, Height",
-		"Elevation": "Ground to Top _ 0deg 90deg",
-		"Azimuth": "East to North _ 0deg 360deg"
+		"Elevation": "Ground to Up _ 0deg 90deg",
+		"Azimuth": "North to East _ 0deg 360deg"
 	},
 
 	"System": {
-		"Name": "A",	
+		"Name": "sample",	
 		"Engine Config json": "EngineConfig.json"
 	},
 
 	"Solver": {
 		"Auto End Time": true,
-		"End Time [sec]": 50.0
+		"End Time [sec]": 50.0,
+		"Time Step [sec]": 0.1
 	},
 
 	"Wind":{
 		"Wind File Exist": false,
-		"Wind File": "wind.csv",
-		"Wind Velocity [m/s]": 2.5,
-		"Wind Direction [deg]": 25.0,
-		"Wind Mesurement Height [m]": 5.0
+		"Wind File": "wind.csv"
 	},
 
 	"Launch Pad": {
-		"Site": "Noshiro Sea",
-		"Launch Azimuth [deg]": 160.0,
-		"Launch Elevation [deg]": -85.0,
+    "Date": "2018/2/2 12:00",
+		"Site": [40.242865, 140.010450, 0.0],
+		"Launch Azimuth [deg]": 0.0,
+		"Launch Elevation [deg]": 85.0,
 		"Launch Roll Angle [deg]": 0.0,
 		"Launcher Rail Length [m]": 5.0
 	},
@@ -39,16 +39,16 @@
 	"Structure": {
 		"Length [m]": 1.5087,
 		"Diameter [m]": 0.154,
-		"Structure Mass [kg]": 6.217,
-		"Structure Length-C.G. FormNoseTip [m]": 0.886,
-		"Initial Oxidizer Length-C.G. FromEnd [m]": 0.213,
-		"Fuel Length-C.G. FromEnd [m]": 0.142,
+		"Dry Mass [kg]": 6.217,
+		"Dry Length-C.G. [m]": 0.886,
+		"Initial Oxidizer Length-C.G. [m]": 0.213,
+		"Fuel Length-C.G. [m]": 0.142,
 		"Length End-to-Tank [m]": 0.3,
-		"Structure Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
-		"Structure Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
+		"Dry Inertia-Moment Roll-Axis [kg*m^2]": 0.022,
+		"Dry Inertia-Moment Pitch-Axis [kg*m^2]": 1.091,
 		"Tip-Off Calculation Exist": true,		
-		"Upper Launch Lug FromNoseTip [m]": 0.6,
-		"Lower Launch Lug FromNoseTip [m]": 0.8
+		"Upper Launch Lug [m]": 0.6,
+		"Lower Launch Lug [m]": 1.48
 	},
 
 	"Parachute": {
@@ -66,9 +66,9 @@
 		"Cd File": "Cd.csv",
 		"Cd File Exist":true,
 		"Constant Cd":0.55,
-		"Lcp File": "Lcp.csv",
-		"Lcp File Exist":false,
-		"Constant Length-C.P. [m]": 1.122,
+		"Length-C.P. File": "Lcp.csv",
+		"Length-C.P. File Exist":false,
+		"Constant Length-C.P. from Nosetip [m]": 1.122,
 		"CNa File": "CNa.csv",
 		"CNa File Exist":false,
 		"Constant Normal Coefficient CNa": 10.523,
