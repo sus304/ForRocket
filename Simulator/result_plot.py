@@ -109,7 +109,7 @@ class Result:
         self.time_maxQ = self.time_log[index]
         self.alt_maxQ = self.pos_LLH_log[index, 2]
         self.maxQ = self.dynamic_pressure_log[index]
-        index = np.argmax(self.vel_AIR_BODYframe_log[:index_apogee])
+        index = np.argmax(self.vel_AIR_BODYframe_log[:index_apogee, 0])
         self.time_vel_max = self.time_log[index]
         self.alt_vel_max = self.pos_LLH_log[index, 2]
         self.vel_max = self.vel_AIR_BODYframe_log[index, 0]
@@ -244,7 +244,7 @@ class Result:
             self.downrange_log,
             self.pos_NED_log
         ]
-        header = 'time,date,temp_air,press_air,rho_air,'\
+        header = 'time,temp_air,press_air,rho_air,'\
                  'mdot_propellant,mdot_fuel,mdot_oxidizer,mass_fuel,mass_oxidizer,mass_propellant,mass,C.G._propellant,C.G.,C.P.,inertia_moment_x,inertia_moment_y,inertia_moment_z,'\
                  'moment_aero_x,moment_aero_y,moment_aero_z,moment_aero_dumping_x,moment_aero_dumping_y,moment_aero_dumping_z,moment_jet-dumping_x,moment_jet-dumping_y,moment_jet-dumping_z,'\
                  'moment_x,moment_y,moment_z,omega_x,omega_y,omega_z,quat0,quat1,quat2,quat3,alpha,beta,azimuth,elevation,roll,'\

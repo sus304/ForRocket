@@ -28,9 +28,9 @@
 	},
 
 	"Launch Pad": {
-    "Date": "2018/2/2 12:00",
+    "Date": "2000/1/1 12:00",
 		"Site": [40.242865, 140.010450, 0.0],
-		"Launch Azimuth [deg]": 0.0,
+		"Launch Azimuth [deg]": 270.0,
 		"Launch Elevation [deg]": 85.0,
 		"Launch Roll Angle [deg]": 0.0,
 		"Launcher Rail Length [m]": 5.0

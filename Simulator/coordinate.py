@@ -95,7 +95,8 @@ def quat2euler(DCM_NED2BODY):
     return azimuth, elevation, roll
 
 def DCM_ECI2ECEF(t_sec):
-    omega_e = 7292115.1e-11  # [rad/s] for WGS84
+    omega_e = 7.2921151e-5  # [rad/s] for WGS84
+    # omega_e = 0.0  # [rad/s]
     xi = omega_e * t_sec
     DCM_0 = [np.cos(xi), np.sin(xi), 0]
     DCM_1 = [-np.sin(xi), np.cos(xi), 0]
@@ -117,7 +118,8 @@ def DCM_ECEF2NED(pos0_LLH):
     return DCM_ECEF2NED
 
 def vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI):
-    omega_e = 7292115.1e-11  # [rad/s] for WGS84
+    omega_e = 7.2921151e-5  # [rad/s] for WGS84
+    # omega_e = 0.0  # [rad/s]
     DCM_0 = [0, -omega_e, 0]
     DCM_1 = [omega_e, 0, 0]
     DCM_2 = [0, 0, 0]
@@ -126,7 +128,8 @@ def vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI):
     return vel_ECEF
 
 def vel_ECEF2ECI(vel_ECEF, DCM_ECI2ECEF, pos_ECI):
-    omega_e = 7292115.1e-11  # [rad/s] for WGS84
+    omega_e = 7.2921151e-5  # [rad/s] for WGS84
+    # omega_e = 0.0  # [rad/s]
     DCM_0 = [0, -omega_e, 0]
     DCM_1 = [omega_e, 0, 0]
     DCM_2 = [0, 0, 0]
