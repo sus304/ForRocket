@@ -72,7 +72,7 @@ def solve_trajectory(rocket):
         tf = 2.37 * It ** 0.37
         tf_order = len(str(int(tf))) - 1
         dt = 10.0 ** (tf_order - 4)
-        return 1.1*tf, dt
+        return 3.5*tf, dt
     if rocket.auto_end:
         rocket.end_time, rocket.time_step = estimate_end(rocket.total_impulse)
     start_time = time_launch_clear# + rocket.time_step
