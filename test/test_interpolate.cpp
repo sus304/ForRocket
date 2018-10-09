@@ -1,12 +1,14 @@
-#include "../src/interpolate.h"
+#include "../src/interpolate.hpp"
 
 
 int main()
 {
-    Vector3d x = Vector3d(1,3,5);
-    Vector3d y = Vector3d(2,6,10);
-    Interp1d inter(x, y, "same");
-    cout << inter(2) << endl;
+    namespace FR = ForRocket;
+
+    Eigen::Vector3d x = Eigen::Vector3d(1,3,5);
+    Eigen::Vector3d y = Eigen::Vector3d(2,6,10);
+    FR::Interp1d inter(x, y, "same");
+    std::cout << inter(6) << std::endl;
 
     return 0;
 }

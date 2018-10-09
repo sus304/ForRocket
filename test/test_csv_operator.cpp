@@ -1,12 +1,14 @@
-#include "../src/csv_operator.h"
+#include "../src/csv_operator.hpp"
 
 
 int main()
 {
-    string Cd_file_name = "../Cd.csv";
-    MatrixXd Cd_log = read_csv(Cd_file_name, 1);
+    namespace FR = ForRocket;
 
-    cout << Cd_log(0, 0) << endl;
+    std::string Cd_file_name = "../Cd.csv";
+    Eigen::MatrixXd Cd_log = FR::ReadCsv(Cd_file_name, 1);
+
+    std::cout << Cd_log(0, 0) << std::endl;
 
     return 0;
 }
