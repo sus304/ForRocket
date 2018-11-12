@@ -11,8 +11,8 @@ class NoshiroOchiai(LaunchSite):
         self.launch_point_LLH = np.array([40.242865, 140.010450, 0.0])
         self.center_point_LLH = np.array([40.245567, 139.993297, 0.0])
         self.radius = range_diameter * 0.5
-        self.wind_power_exp = 6.0        
-        # self.wind_power_exp = 3.1        
+        # self.wind_power_exp = 6.0        
+        self.wind_power_exp = 2.8        
 
     def in_range(self, landing_point_ENU):
         x = landing_point_ENU[0]

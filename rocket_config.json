@@ -1,7 +1,7 @@
 {
 	"Define Comment": {
 		"Default_Unit": "m_kg_sec",
-    "Length Base (STA)": "End",
+		"Length Base (STA)": "End",
 		"Fuel": "Fuel-Grain-Cartridge",
 		"Dry": "Liftoff - Oxidizer",
 		"C.G.": "Center of Gravity",
@@ -23,12 +23,12 @@
 	},
 
 	"Wind":{
-		"Wind File Exist": false,
+		"Wind File Exist": true,
 		"Wind File": "wind.csv"
 	},
 
 	"Launch Pad": {
-    "Date": "2000/1/1 12:00",
+		"Date": "2018/8/23 6:00",
 		"Site": [40.242865, 140.010450, 0.0],
 		"Launch Azimuth [deg]": 270.0,
 		"Launch Elevation [deg]": 85.0,
@@ -55,9 +55,9 @@
 		"Timer Mode": false,
 		"1st Parachute CdS [m2]": 0.3,
 		"1st Timer [s]": 0.0,
-		"2nd Parachute Exist": false,
-		"2nd Parachute CdS [m2]": 0.6,
-		"2nd Parachute Opening Altitude [m]": 150.0,
+		"2nd Parachute Exist": true,
+		"2nd Parachute CdS [m2]": 0.5,
+		"2nd Parachute Opening Altitude [m]": 100.0,
 		"2nd Timer Min [s]": 0.0,		
 		"2nd Timer Max [s]": 0.0		
 	},

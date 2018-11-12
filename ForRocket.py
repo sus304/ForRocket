@@ -15,10 +15,6 @@ if len(argv) < 2:
     print('Usage: python ForRocket.py configFileName.json')
     sys.exit()   
 config_file = argv[1]
-try:
-    run_mode = argv[2]
-except IndexError:
-    run_mode = '-s'
 
 time_start_calc = datetime.datetime.now()
 
@@ -52,4 +48,4 @@ print('Completed solve!')
 print('Output Result Directory: ', result_dir)    
 
 time_end_calc = datetime.datetime.now()
-print(time_end_calc - time_start_calc)
+print('Calculate Time: ', time_end_calc - time_start_calc)

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 import simplekml
@@ -25,7 +26,6 @@ class Result:
     # quat_log
     # attitude @ make_log
     # time_log
-    # date_log
     # pos_NED_log @ make_log
     # pos_ECEF_log
     # pos_LLH_log
@@ -83,8 +83,10 @@ class Result:
         DCM_NED2BODY_log = np.array([coord.DCM_NED2BODY_quat(quat) for quat in self.quat_log])
         self.attitude_log = np.array([coord.quat2euler(DCM) for DCM in DCM_NED2BODY_log])
         self.pos_NED_log = np.array([pm.ecef2ned(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2], rocket.pos0_LLH[0], rocket.pos0_LLH[1], rocket.pos0_LLH[2]) for pos_ECEF in self.pos_ECEF_log])
-        self.date_decent_log = rocket.launch_date + np.array([datetime.timedelta(seconds=sec) for sec in self.time_decent_log])
-        self.pos_decent_LLH_log = np.array([pm.eci2geodetic(pos_ECI, date) for pos_ECI, date in zip(self.pos_decent_ECI_log, self.date_decent_log)])
+
+        self.pos_decent_ECEF_log = np.array([coord.DCM_ECI2ECEF(t).dot(pos_ECI) for pos_ECI, t in zip(self.pos_decent_ECI_log, self.time_decent_log)])
+        self.pos_decent_LLH_log = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in self.pos_decent_ECEF_log])
+        self.vel_decent_NED_log = np.array([coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(vel_eci, coord.DCM_ECI2ECEF(t), pos_eci)) for vel_eci, t, pos_eci in zip(self.vel_decent_ECI_log, self.time_decent_log, self.pos_decent_ECI_log)])
         self.downrange_decent_log = np.array([pm.vincenty.vdist(rocket.pos0_LLH[0], rocket.pos0_LLH[1], pos[0], pos[1]) for pos in self.pos_decent_LLH_log])[:, 0]
 
         self.pos_hard_LLH_log = np.r_[self.pos_onlauncer_LLH_log, self.pos_LLH_log]
@@ -121,20 +123,24 @@ class Result:
         # Ballistic Landing
         self.time_hard_landing = self.time_log[-1]
         self.downrange_hard_landing = self.downrange_log[-1]
+        self.vel_hard_landing = np.linalg.norm(coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_log[-1]), self.pos_ECI_log[-1, :])))
 
         # Decent Landing
         self.time_soft_landing = self.time_decent_log[-1]
         self.downrange_soft_landing = self.downrange_decent_log[-1]
-        self.vel_decent_2nd = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_decent_log[-1]), self.pos_decent_LLH_log[-1, :]))[2]
+        self.vel_soft_landing = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_decent_log[-1]), self.pos_decent_ECI_log[-1, :]))[2]
 
         # 2nd Separation
-        index_sepa2 = np.argmax(self.time_decent_log > rocket.t_2nd_max or (self.pos_decent_LLH_log[:, 2] <= rocket.alt_sepa2 and self.time_decent_log > rocket.t_2nd_min))
+        if rocket.timer_mode:
+            index_sepa2 = np.min([np.argmax(self.time_decent_log > rocket.t_2nd_max), np.max([np.argmax(self.pos_decent_LLH_log[:, 2] <= rocket.alt_sepa2), np.argmax(self.time_decent_log > rocket.t_2nd_min)])])
+        else:
+            index_sepa2 = np.argmax(self.pos_decent_LLH_log[:, 2] <= rocket.alt_sepa2)
         self.time_separation_2nd = self.time_decent_log[index_sepa2]
-        self.vel_decent_1st = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[index_sepa2, :], coord.DCM_ECI2ECEF(self.time_decent_log[index_sepa2]), self.pos_decent_LLH_log[index_sepa2, :]))[2]
+        self.vel_decent_1st = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[index_sepa2, :], coord.DCM_ECI2ECEF(self.time_decent_log[index_sepa2]), self.pos_decent_ECI_log[index_sepa2, :]))[2]
 
         # 1st Separation
         self.time_separation_1st = self.time_decent_log[0]
-        self.vel_separation_1st = np.linalg.norm(coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[0, :], coord.DCM_ECI2ECEF(self.time_decent_log[0]), self.pos_decent_LLH_log[0, :])))
+        self.vel_separation_1st = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[0, :], coord.DCM_ECI2ECEF(self.time_decent_log[0]), self.pos_decent_ECI_log[0, :]))[2]
 
         txt = open(self.result_dir + '/result.txt', mode='w')
         txt.writelines(['Launcher Clear X+,', str(round(self.time_launch_clear, 3)), '[s]\n'])
@@ -155,15 +161,22 @@ class Result:
         txt.writelines(['Apogee Air Velocity,', str(round(self.vel_apogee, 3)), '[m/s]\n'])
         txt.writelines(['Hard Landing X+,', str(round(self.time_hard_landing, 3)), '[s]\n'])
         txt.writelines(['Hard Landing Downrange,', str(round(self.downrange_hard_landing, 3)), '[m]\n'])
+        txt.writelines(['Hard Landing Velocity,', str(round(self.vel_hard_landing, 3)), '[m/s]\n'])
+        txt.writelines(['Hard Landing Point,', str(self.pos_hard_LLH_log[-1, 0:2]), '\n'])
         txt.writelines(['1st Parachute Opening X+,', str(round(self.time_separation_1st, 3)), '[s]\n'])
-        txt.writelines(['1st Parachute Opening Velocity,', str(round(self.vel_separation_1st, 3)), '[m/s]\n'])
-        txt.writelines(['1st Parachute Descent Velocity,', str(round(self.vel_decent_1st, 3)), '[m/s]\n'])
         if rocket.para2_exist:
             txt.writelines(['2nd Parachute Opening X+,', str(round(self.time_separation_2nd, 3)), '[s]\n'])
-            txt.writelines(['2nd Parachute Descent Velocity,', str(round(self.vel_descent_2nd, 3)), '[m/s]\n'])
+            txt.writelines(['2nd Parachute Opening Velocity,', str(round(self.vel_decent_1st, 3)), '[m/s]\n'])
         txt.writelines(['Soft Landing X+,', str(round(self.time_soft_landing, 3)), '[s]\n'])
         txt.writelines(['Soft Landing Downrange,', str(round(self.downrange_soft_landing, 3)), '[m]\n'])
+        txt.writelines(['Soft Landing Velocity,', str(round(self.vel_soft_landing, 3)), '[m/s]\n'])
+        txt.writelines(['Soft Landing Point,', str(self.pos_soft_LLH_log[-1, 0:2]), '\n'])
         txt.close()
+
+        df = pd.DataFrame({'lat': [self.pos_hard_LLH_log[-1,0], self.pos_soft_LLH_log[-1,0]],
+                           'lon': [self.pos_hard_LLH_log[-1,1], self.pos_soft_LLH_log[-1,1]]},
+                            index=['hard', 'soft'])
+        df.to_csv(self.result_dir+'/landing_point.csv')
 
     def __post_kml(self):
         kml = simplekml.Kml(open=1)
@@ -196,7 +209,6 @@ class Result:
     def __post_log(self):
         output_array = np.c_[
             self.time_log,
-            # self.date_log,
             self.Ta_log,
             self.Pa_log,
             self.rho_log,
@@ -255,7 +267,7 @@ class Result:
                  'vel_ECI_x,vel_ECI_y,vel_ECI_z,vel_ECEF_x,vel_ECEF_y,vel_ECEF_z,vel_NED_x,vel_NED_y,vel_NED_z,'\
                  'pos_ECI_x,pos_ECI_y,pos_ECI_z,pos_ECEF_x,pos_ECEF_y,pos_ECEF_z,pos_LLH_x,pos_LLH_y,pos_LLH_z,downrange,pos_NED_x,pos_NED_y,pos_NED_z'
         np.savetxt(self.result_dir + '/log.csv', output_array, delimiter=',', header= header, comments='', fmt='%0.6f')
-    
+
     def __post_graph(self, rocket):
         plt.close('all')
 
@@ -438,17 +450,25 @@ class Result:
         plt.ylabel('Altitude [m]')
         plt.xlim(xmin=0.0)
         plt.grid()
-        plt.legend()
         plt.savefig(self.result_dir + '/Trajectory.png')
 
         plt.figure('Decent Trajectory')
         plt.plot(self.downrange_decent_log, self.pos_decent_LLH_log[:,2])
         plt.xlabel('Downrange [m]')
         plt.ylabel('Altitude [m]')
+        plt.grid()
+        plt.savefig(self.result_dir + '/DecentTrajectory.png')
+
+        plt.figure('NED Decent Velocity')
+        plt.plot(self.time_decent_log, self.vel_decent_NED_log[:, 0], label='NED-X')
+        plt.plot(self.time_decent_log, self.vel_decent_NED_log[:, 1], label='NED-Y')
+        plt.plot(self.time_decent_log, self.vel_decent_NED_log[:, 2], label='NED-Z')
+        plt.xlabel('Time [sec]')
+        plt.ylabel('Velocity [m/s]')
         plt.xlim(xmin=0.0)
         plt.grid()
         plt.legend()
-        plt.savefig(self.result_dir + '/DecentTrajectory.png')
+        plt.savefig(self.result_dir + '/DecentVelocity_NED.png')
 
     def output_full(self, rocket):
         self.__make_log(rocket)

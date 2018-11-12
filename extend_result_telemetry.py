@@ -61,14 +61,15 @@ h0 = 0.0
 try:
     # read log
     df = pd.read_csv(result_dir+'/log.csv', index_col=False)
-
+    # df = pd.read_csv(result_dir+'/log.csv')
+    
     pos_east = df['Pos_East']
     pos_north = df['Pos_North']
     pos_up = df['Pos_Up']
     lat, lon, h = pm.enu2geodetic(pos_east, pos_north, pos_up, lat0, lon0, h0)
-
+    
     az, el, ran = pm.geodetic2aer(lat, lon, h, receiving_point_LLH[0], receiving_point_LLH[1], receiving_point_LLH[2])
-
+    
     df = df.assign(dist_Receive = ran)
     df = df.assign(azi_Receive = az)
     df = df.assign(elv_Receive = el)

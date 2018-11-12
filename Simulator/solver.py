@@ -79,7 +79,7 @@ def solve_trajectory(rocket):
     time = np.arange(start_time, rocket.end_time, rocket.time_step)
 
     pos_launch_clear_ECEF = pm.ned2ecef(pos_launch_clear_NED[0], pos_launch_clear_NED[1], pos_launch_clear_NED[2], rocket.pos0_LLH[0], rocket.pos0_LLH[1], rocket.pos0_LLH[2])
-    pos_launch_clear_ECI = pm.ecef2eci(pos_launch_clear_ECEF, rocket.launch_date + datetime.timedelta(seconds=time_launch_clear))
+    pos_launch_clear_ECI = coord.DCM_ECI2ECEF(time_launch_clear).transpose().dot(pos_launch_clear_ECEF)
     DCM_NED2ECEF = coord.DCM_ECEF2NED(rocket.pos0_LLH).transpose()
     DCM_ECI2ECEF = coord.DCM_ECI2ECEF(time_launch_clear)
 
@@ -92,7 +92,9 @@ def solve_trajectory(rocket):
 
     # Main post ######
     date_array = rocket.launch_date + np.array([datetime.timedelta(seconds=sec) for sec in time])
-    pos_LLH = np.array([pm.eci2geodetic(pos, date) for pos, date in zip(ode_log[:, 0:3], date_array)])
+    pos_ECEF = np.array([coord.DCM_ECI2ECEF(t).dot(pos) for pos, t in zip(ode_log[:, 0:3], time)])
+    pos_LLH = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in pos_ECEF])
+
     # 着地後の分をカット
     index_hard_landing = np.argmax(pos_LLH[:, 2] <= 0.0)
     # log
@@ -112,6 +114,8 @@ def solve_trajectory(rocket):
     time_apogee = rocket.result.time_log[index_apogee]
     pos_apogee_ECI = rocket.result.pos_ECI_log[index_apogee]
     vel_apogee_ECI = rocket.result.vel_ECI_log[index_apogee]
+    vel_apogee_ned = np.array([0, 0, coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(vel_apogee_ECI, coord.DCM_ECI2ECEF(time_apogee), pos_apogee_ECI))[2]])
+    vel_apogee_ECI = coord.vel_ECEF2ECI(coord.DCM_ECEF2NED(rocket.pos0_LLH).transpose().dot(vel_apogee_ned), coord.DCM_ECI2ECEF(time_apogee), pos_apogee_ECI)
 
     est_landing = pos_LLH[index_apogee, 2] / np.sqrt(2.0 * rocket.result.m_log[index_apogee] * env.gravity(pos_LLH[index_apogee, 2]) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
     time = np.arange(time_apogee, time_apogee + 1.1 * est_landing, 0.1)
@@ -122,7 +126,9 @@ def solve_trajectory(rocket):
 
     # Decent post ######
     date_array = rocket.launch_date + np.array([datetime.timedelta(seconds=sec) for sec in time])
-    pos_LLH = np.array([pm.eci2geodetic(pos, date) for pos, date in zip(ode_log[:, 0:3], date_array)])
+    pos_ECEF = np.array([coord.DCM_ECI2ECEF(t).dot(pos) for pos, t in zip(ode_log[:, 0:3], time)])
+    pos_LLH = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in pos_ECEF])
+
     # 着地後の分をカット
     index_soft_landing = np.argmax(pos_LLH[:, 2] <= 0.0)
     # log

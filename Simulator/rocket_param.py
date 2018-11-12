@@ -196,18 +196,22 @@ class Rocket:
         # Parachute parameter ######################################
         self.timer_mode = para.get('Timer Mode')
         self.CdS1 = para.get('1st Parachute CdS [m2]')
-        self.t_1st = para.get('1st Timer [s]')
         self.para2_exist = para.get('2nd Parachute Exist')
         if self.para2_exist:
             self.CdS2 = para.get('2nd Parachute CdS [m2]')
             self.alt_sepa2 = para.get('2nd Parachute Opening Altitude [m]')
-            self.t_2nd_min = para.get('2nd Timer Min [s]')
-            self.t_2nd_max = para.get('2nd Timer Max [s]')
         else:
             self.CdS2 = 0.0
             self.alt_sepa2 = 0.0
+            
+        if self.timer_mode:
+            self.t_1st = para.get('1st Timer [s]')
+            self.t_2nd_min = para.get('2nd Timer Min [s]')
+            self.t_2nd_max = para.get('2nd Timer Max [s]')
+        else:
+            self.t_1st = 0.0
             self.t_2nd_min = 0.0
-            self.t_2nd_max = 0.0
+            self.t_2nd_max = 9999.0
         ############################################################
 
         # for Solver #########################################
@@ -224,9 +228,9 @@ class Rocket:
             wind_speed_array = wind_array[:, 1]
             wind_direction_array = wind_array[:, 2]
         else:
-            alt_array = [0.0, 20000.0]
-            wind_speed_array = [0.0, 0.0]
-            wind_direction_array = [0.0, 0.0]
+            alt_array = [0.0,10000.0, 20000.0]
+            wind_speed_array = [0.0, 0.0, 0.0]
+            wind_direction_array = [0.0, 0.0, 0.0]
         self.wind_speed = interpolate.interp1d(alt_array, wind_speed_array, kind='linear', bounds_error=False, fill_value=(wind_speed_array[0], wind_speed_array[-1]))
         self.wind_direction = interpolate.interp1d(alt_array, wind_direction_array, kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
         ################################################
@@ -234,8 +238,6 @@ class Rocket:
         # Initial Condition #############################
         self.azimuth0 = launch_pad.get('Launch Azimuth [deg]')
         self.elevation0 = launch_pad.get('Launch Elevation [deg]')
-        if self.elevation0 < 0.0:
-            self.elevation0 *= -1.0
         self.launch_date = pm.timeconv.str2dt(launch_pad.get('Date'))  # datetime
         self.pos0_LLH = launch_pad.get('Site')  # lat, lon, height
         self.launcher_rail = launch_pad.get('Launcher Rail Length [m]')
