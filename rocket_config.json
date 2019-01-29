@@ -8,7 +8,7 @@
 		"C.P.": "Center of Pressure",
 		"LLH":"Latitude, Longitude, Height",
 		"Elevation": "Ground to Up _ 0deg 90deg",
-		"Azimuth": "North to East _ 0deg 360deg"
+		"Azimuth": "North to East (clockwise) _ 0deg 360deg"
 	},
 
 	"System": {
@@ -24,16 +24,17 @@
 
 	"Wind":{
 		"Wind File Exist": true,
-		"Wind File": "wind.csv"
+		"Wind File": "wind_momo2.csv"
 	},
 
 	"Launch Pad": {
 		"Date": "2018/8/23 6:00",
 		"Site": [40.242865, 140.010450, 0.0],
-		"Launch Azimuth [deg]": 270.0,
+		"Launch Azimuth [deg]": 290.0,
 		"Launch Elevation [deg]": 85.0,
 		"Launch Roll Angle [deg]": 0.0,
-		"Launcher Rail Length [m]": 5.0
+		"Launcher Rail Length [m]": 5.0,
+		"Input Magnetic Azimuth": true
 	},
 
 	"Structure": {
@@ -55,7 +56,7 @@
 		"Timer Mode": false,
 		"1st Parachute CdS [m2]": 0.3,
 		"1st Timer [s]": 0.0,
-		"2nd Parachute Exist": true,
+		"2nd Parachute Exist": false,
 		"2nd Parachute CdS [m2]": 0.5,
 		"2nd Parachute Opening Altitude [m]": 100.0,
 		"2nd Timer Min [s]": 0.0,		

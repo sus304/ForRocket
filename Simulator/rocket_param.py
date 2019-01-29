@@ -4,6 +4,7 @@ from scipy.integrate import odeint
 import pymap3d as pm
 
 import Simulator.coordinate as coord
+import Simulator.environment as env
 from Simulator.result_plot import Result
 
 class Rocket:
@@ -85,7 +86,7 @@ class Rocket:
         if (mf_log[-1] - self.mf_after) / self.mf_after > 0.05:
             print('Warning!! fuel mass at burn out is not matching')
         self.mf = interpolate.interp1d(time_array, mf_log, kind='linear', bounds_error=False, fill_value=(mf_log[0], mf_log[-1]))
-
+        
         mox_log_ode = odeint(lambda x, t: -self.mdot_ox(t), self.m0_ox, time_array)
         mox_log = mox_log_ode[0][0]
         for mox in mox_log_ode[1:]:
@@ -220,6 +221,22 @@ class Rocket:
         self.time_step = json.get('Solver').get('Time Step [sec]')
         ################################################
 
+        # Initial Condition #############################
+        self.azimuth0 = launch_pad.get('Launch Azimuth [deg]')
+        self.elevation0 = launch_pad.get('Launch Elevation [deg]')
+        self.launch_date = pm.timeconv.str2dt(launch_pad.get('Date'))  # datetime
+        self.pos0_LLH = launch_pad.get('Site')  # lat, lon, height
+        self.launcher_rail = launch_pad.get('Launcher Rail Length [m]')
+
+        self.input_mag_dec = launch_pad.get('Input Magnetic Azimuth')
+        if self.input_mag_dec:
+            self.mag_dec = env.magnetic_declination(self.pos0_LLH[0], self.pos0_LLH[1])
+            if self.azimuth0 - self.mag_dec < 0.0:
+                self.azimuth0 = 360.0 + (self.azimuth0 - self.mag_dec)
+            else:
+                self.azimuth0 -= self.mag_dec
+        ################################################
+
         # Wind #########################################
         if json.get('Wind').get('Wind File Exist'):
             wind_file = json.get('Wind').get('Wind File')
@@ -231,14 +248,16 @@ class Rocket:
             alt_array = [0.0,10000.0, 20000.0]
             wind_speed_array = [0.0, 0.0, 0.0]
             wind_direction_array = [0.0, 0.0, 0.0]
+
+        if self.input_mag_dec:
+            for i in range(len(wind_direction_array)):
+                if self.azimuth0 - self.mag_dec < 0.0:
+                    wind_direction_array[i] = 360.0 + (wind_direction_array[i] - self.mag_dec)
+                else:
+                    wind_direction_array[i] = wind_direction_array[i] - self.mag_dec
+
         self.wind_speed = interpolate.interp1d(alt_array, wind_speed_array, kind='linear', bounds_error=False, fill_value=(wind_speed_array[0], wind_speed_array[-1]))
         self.wind_direction = interpolate.interp1d(alt_array, wind_direction_array, kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
         ################################################
 
-        # Initial Condition #############################
-        self.azimuth0 = launch_pad.get('Launch Azimuth [deg]')
-        self.elevation0 = launch_pad.get('Launch Elevation [deg]')
-        self.launch_date = pm.timeconv.str2dt(launch_pad.get('Date'))  # datetime
-        self.pos0_LLH = launch_pad.get('Site')  # lat, lon, height
-        self.launcher_rail = launch_pad.get('Launcher Rail Length [m]')
-        ################################################
+        
