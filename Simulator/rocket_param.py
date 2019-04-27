@@ -62,7 +62,7 @@ class Rocket:
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
             self.total_impulse = np.sum(thrust_array[1:] * (time_array[1:] - time_array[:-1]))
         else:
-            time_array = np.arange(0.0, engine.get('Burn Time [sec]') + 1.0, 1.0)
+            time_array = np.arange(0.0, engine.get('Burn Time [sec]'), 0.01)
             thrust_array = np.array([engine.get('Constant Thrust [N]')] * time_array.size)
             self.ref_thrust = engine.get('Constant Thrust [N]')
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
@@ -83,7 +83,7 @@ class Rocket:
         mf_log = mf_log_ode[0][0]
         for mf in mf_log_ode[1:]:
             mf_log = np.append(mf_log, mf[0])  # odeintの出力はndarrayに1要素ndarrayが入ってるので修正
-        if (mf_log[-1] - self.mf_after) / self.mf_after > 0.05:
+        if np.abs((mf_log[-1] - self.mf_after) / self.mf_after) > 0.05:
             print('Warning!! fuel mass at burn out is not matching')
         self.mf = interpolate.interp1d(time_array, mf_log, kind='linear', bounds_error=False, fill_value=(mf_log[0], mf_log[-1]))
         
