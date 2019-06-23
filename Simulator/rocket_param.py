@@ -7,6 +7,12 @@ import Simulator.coordinate as coord
 import Simulator.environment as env
 from Simulator.result_plot import Result
 
+class Payload:
+    def __init__(self, mass, CdS):
+        self.mass = mass
+        self.CdS = CdS
+
+
 class Rocket:
     def __init__(self, json, json_engine, result_dir):
         self.result = Result(result_dir)
@@ -260,4 +266,7 @@ class Rocket:
         self.wind_direction = interpolate.interp1d(alt_array, wind_direction_array, kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
         ################################################
 
-        
+        # Payload #########################################
+        self.payload_exist = json.get('Payload').get('Payload Exist'):
+        if self.payload_exist:
+            self.payload1 = Payload(json.get('Payload').get('Mass [kg]'), json.get('Payload').get('Parachute CdS [m2]'))
