@@ -6,6 +6,14 @@ import pymap3d as pm
 import Simulator.coordinate as coord
 import Simulator.environment as env
 from Simulator.result_plot import Result
+from Simulator.result_plot import PayloadResult
+
+class Payload:
+    def __init__(self, mass, CdS, result_dir):
+        self.result = PayloadResult(result_dir)
+        self.mass = mass
+        self.CdS = CdS
+
 
 class Rocket:
     def __init__(self, json, json_engine, result_dir):
@@ -260,4 +268,7 @@ class Rocket:
         self.wind_direction = interpolate.interp1d(alt_array, wind_direction_array, kind='linear', bounds_error=False, fill_value=(wind_direction_array[0], wind_direction_array[-1]))
         ################################################
 
-        
+        # Payload #########################################
+        self.payload_exist = json.get('Payload').get('Payload Exist')
+        if self.payload_exist:
+            self.payload = Payload(json.get('Payload').get('Mass [kg]'), json.get('Payload').get('Parachute CdS [m2]'), result_dir)

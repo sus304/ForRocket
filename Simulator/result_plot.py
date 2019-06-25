@@ -481,12 +481,53 @@ class Result:
         self.__post_log()
         self.__post_graph(rocket)
         self.__post_kml()
+        if rocket.payload_exist:
+            rocket.payload.result.output_full()
     
     def output(self, rocket):
         self.__make_log(rocket)
         self.__post_event(rocket)
         self.__post_log()
+        if rocket.payload_exist:
+            rocket.payload.result.output()
+
 
     def output_min(self, rocket):
         self.__make_log(rocket)
         self.__post_event(rocket)
+        if rocket.payload_exist:
+            rocket.payload.result.output()
+
+
+class PayloadResult:
+    def __init__(self, result_dir):
+        self.result_dir = result_dir
+        # pos_decent_LLH_log
+
+    def __post_event(self):
+        df = pd.DataFrame({'lat': [self.pos_decent_LLH_log[-1,0]],
+                           'lon': [self.pos_decent_LLH_log[-1,1]]},
+                            index=['soft'])
+        df.to_csv(self.result_dir+'/payload_landing_point.csv')
+
+    def __post_kml(self):
+        kml = simplekml.Kml(open=1)
+        log_LLH = []
+        for i in range(len(self.pos_decent_LLH_log[:,2])):
+            if 0 == i % 10:
+                log_LLH.append([self.pos_decent_LLH_log[i,1], self.pos_decent_LLH_log[i,0], self.pos_decent_LLH_log[i,2]])
+        line = kml.newlinestring()
+        line.style.linestyle.width = 5
+        line.style.linestyle.color = simplekml.Color.red
+        line.extrude = 1
+        line.altitudemode = simplekml.AltitudeMode.absolute
+        line.coords = log_LLH
+        line.style.linestyle.colormode = simplekml.ColorMode.random
+        kml.save(self.result_dir + '/payload_trajectory.kml')
+
+    def output_full(self):
+        self.__post_event()
+        self.__post_kml()
+    
+    def output(self):
+        self.__post_event()
