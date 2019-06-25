@@ -6,9 +6,11 @@ import pymap3d as pm
 import Simulator.coordinate as coord
 import Simulator.environment as env
 from Simulator.result_plot import Result
+from Simulator.result_plot import PayloadResult
 
 class Payload:
-    def __init__(self, mass, CdS):
+    def __init__(self, mass, CdS, result_dir):
+        self.result = PayloadResult(result_dir)
         self.mass = mass
         self.CdS = CdS
 
@@ -267,6 +269,6 @@ class Rocket:
         ################################################
 
         # Payload #########################################
-        self.payload_exist = json.get('Payload').get('Payload Exist'):
+        self.payload_exist = json.get('Payload').get('Payload Exist')
         if self.payload_exist:
-            self.payload1 = Payload(json.get('Payload').get('Mass [kg]'), json.get('Payload').get('Parachute CdS [m2]'))
+            self.payload = Payload(json.get('Payload').get('Mass [kg]'), json.get('Payload').get('Parachute CdS [m2]'), result_dir)

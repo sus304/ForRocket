@@ -60,9 +60,8 @@ def payload_parachute_dynamics(x, t, rocket):
     
     g_NED = np.array([0.0, 0.0, env.gravity(altitude)])
     Ta, Pa, rho, Cs = env.std_atmo(altitude)
-    CdS = rocket.payload.mass
     
-    drag_NED = np.array([0, 0, -0.5 * rho * vel_decent * np.abs(vel_decent) * CdS])
+    drag_NED = np.array([0, 0, -0.5 * rho * vel_decent * np.abs(vel_decent) * rocket.payload.CdS])
     acc_NED = drag_NED / rocket.payload.mass + g_NED
     acc_ECI = DCM_ECI2ECEF.transpose().dot(DCM_ECEF2NED.transpose().dot(acc_NED))
 

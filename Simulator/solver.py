@@ -120,6 +120,7 @@ def solve_trajectory(rocket):
 
     if rocket.payload_exist:
         rocket.m_burnout -= rocket.payload.mass
+        est_landing_payload = pos_LLH[index_apogee, 2] / np.sqrt(2.0 * rocket.payload.mass * env.gravity(pos_LLH[index_apogee, 2]) / (env.get_std_density(0.0) * rocket.payload.CdS))
     est_landing = pos_LLH[index_apogee, 2] / np.sqrt(2.0 * rocket.result.m_log[index_apogee] * env.gravity(pos_LLH[index_apogee, 2]) / (env.get_std_density(0.0) * (rocket.CdS1 + rocket.CdS2)))
     time = np.arange(time_apogee, time_apogee + 1.2 * est_landing, 0.1)
     x0 = np.zeros(6)
@@ -139,24 +140,22 @@ def solve_trajectory(rocket):
     rocket.result.pos_decent_ECI_log = ode_log[:index_soft_landing+1, 0:3]
     rocket.result.vel_decent_ECI_log = ode_log[:index_soft_landing+1, 3:6]
 
-    # Payload ##
+    # Payload ####
     if rocket.payload_exist:
-        est_landing = pos_LLH[index_apogee, 2] / np.sqrt(2.0 * rocket.payload.mass * env.gravity(pos_LLH[index_apogee, 2]) / (env.get_std_density(0.0) * rocket.payload.CdS))
-        time = np.arange(time_apogee, time_apogee + 1.1 * est_landing, 0.1)
+        time = np.arange(time_apogee, time_apogee + 1.2 * est_landing_payload, 0.01)
         x0 = np.zeros(6)
         x0[0:3] = pos_apogee_ECI
         x0[3:6] = vel_apogee_ECI
-        payload_ode_log = odeint(payload_parachute_dynamics, x0, time, args=(rocket, ))
+        ode_log = odeint(payload_parachute_dynamics, x0, time, args=(rocket, ))
 
         date_array = rocket.launch_date + np.array([datetime.timedelta(seconds=sec) for sec in time])
         pos_ECEF = np.array([coord.DCM_ECI2ECEF(t).dot(pos) for pos, t in zip(ode_log[:, 0:3], time)])
         pos_LLH = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in pos_ECEF])
 
         # 着地後の分をカット
-        index_soft_landing = np.argmax(pos_LLH[:, 2] <= 0.0)
+        index_payload_landing = np.argmax(pos_LLH[:, 2] <= 0.0)
         # log
-        rocket.result.time_decent_log = time[:index_soft_landing+1]
-        rocket.result.pos_decent_ECI_log = ode_log[:index_soft_landing+1, 0:3]
-        rocket.result.vel_decent_ECI_log = ode_log[:index_soft_landing+1, 3:6]
+        rocket.payload.result.time_decent_log = time[:index_payload_landing+1]
+        rocket.payload.result.pos_decent_LLH_log = pos_LLH[:index_payload_landing+1, :]
 
         
