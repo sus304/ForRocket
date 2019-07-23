@@ -77,7 +77,7 @@ Eigen::MatrixXd lib_fileio::read_csv(std::string filename, int skiprows=0) {
 
 // lib_array/////
 /////////////////////////////////////////
-template <class T> std::vector<T> lib_array::arange(const T start, const T stop, const T step=1) {
+template <class T> std::vector<T> lib_array::arange(const T start, const T stop, const T step) {
     std::vector<T> array;
     T value = start;
     while (value <= stop) {

@@ -20,12 +20,12 @@ namespace lib_fileio {
     // void save_csv(std::string filename, const Eigen::MatrixXd& X, std::string header);
     void save_csv(std::string filename, const Eigen::MatrixXd& X, std::vector<std::string> header_list);
 
-    std::vector<double> str2double_split(std::string& str, char delimiter=',');
-    Eigen::MatrixXd read_csv(std::string filename, int skiprows=0);
+    std::vector<double> str2double_split(std::string& str, char delimiter);
+    Eigen::MatrixXd read_csv(std::string filename, int skiprows);
 }
 
 namespace lib_array {
-    template <class T> std::vector<T> arange(const T start, const T stop, const T step=1);
+    template <class T> std::vector<T> arange(const T start, const T stop, const T step);
     template <class T> std::vector<T> linspace(const T start, const T stop, const int num);
 }
 

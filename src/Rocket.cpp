@@ -9,11 +9,11 @@
 #include "Rocket.hpp"
 
 ForRocket::Rocket::Rocket() {
-
+    std::cout << "Rocket" << std::endl;
 }
 
 ForRocket::Rocket::Rocket(std::vector<std::string> stage_json_filename) {
-
+    std::cout << "Rocket" << std::endl;
 }
 
 void ForRocket::Rocket::add_stage(ForRocket::Stage obj){

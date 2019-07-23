@@ -10,7 +10,7 @@
 #include <fstream>
 #include <vector>
 
-#include "picojson.h"
+#include "../lib/picojson.h"
 
 #include "Rocket.hpp"
 #include "DynamicsSolver.hpp"
@@ -59,7 +59,8 @@ int main(int argc, char* argv[]) {
 
     // make instance ////////
     ////////////////////////////////////////////////////////////////////
-    ForRocket::Rocket rocket(stage_json_file);
+    // ForRocket::Rocket rocket(stage_json_file);
+    ForRocket::Rocket rocket;
     ForRocket::solve_trajectory(rocket);
 
     return 0;

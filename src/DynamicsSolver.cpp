@@ -20,7 +20,7 @@ void ForRocket::solve_trajectory(ForRocket::Rocket& rocket) {
     double stop_time = 100.0;
     double step_time = 0.1;
 
-    odeint::integrate_const(stepper_RK4, solver, state0, start_time, stop_time, step_time);
+    // odeint::integrate_const(stepper_RK4, solver, state0, start_time, stop_time, step_time);
 }
 
 ForRocket::DynamicSolver::DynamicSolver() {

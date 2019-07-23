@@ -18,7 +18,7 @@ namespace ForRocket
 {
     class FlightDataRecorder{
         public:
-            FlightDataRecorder();
+            FlightDataRecorder() {};
         protected:
     };
 

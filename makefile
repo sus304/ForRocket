@@ -1,30 +1,42 @@
-FC=gfortran
+CXX = g++
+CXXFLAGS = -Wall -O2 -std=c++11
 
-TARGET=ForRocket_v4.exe
-TARGETPOST=ForRocketPost.exe
-FFLAGS=-Wall -O2
-TARGETDIR=./bin
-OBJDIR=./obj
-SRCDIR=./src
+TARGET = ForRocket
+TARGETDIR = ./bin
+OBJDIR = ./obj
+SRCDIR = ./src
+INCLUDES = -I ./lib
 
-SRCS=$(SRCDIR)/Standard_Collection.f90 $(SRCDIR)/atmos76.f90 $(SRCDIR)/Environment.f90 $(SRCDIR)/Rocket_Dynamics.f90 $(SRCDIR)/Simulation.f90
-OBJS=$(OBJDIR)/Standard_Collection.o $(OBJDIR)/atmos76.o $(OBJDIR)/Environment.o $(OBJDIR)/Rocket_Dynamics.o $(OBJDIR)/Simulation.o
-MODS=Standard_Collection.mod atmos76.mod Environment.mod Rocket_Dynamics.mod Simulation.mod
-SRCSPOST=$(SRCDIR)/Post.f90
-OBJSPOST=$(OBJDIR)/Post.o
+ifeq ($(OS),Windows_NT)
+    TARGET = ForRocket.exe
+endif
 
-.SUFFIXES: .f90
+SRCS = $(SRCDIR)/main.cpp
+SRCS += $(SRCDIR)/DynamicsSolver.cpp
+SRCS += $(SRCDIR)/Environment.cpp
+SRCS += $(SRCDIR)/FlightController.cpp
+SRCS += $(SRCDIR)/FlightDataRecorder.cpp
+SRCS += $(SRCDIR)/LibDataIO.cpp
+SRCS += $(SRCDIR)/Payload.cpp
+SRCS += $(SRCDIR)/Rocket.cpp
+SRCS += $(SRCDIR)/SOEHandler.cpp
+SRCS += $(SRCDIR)/Stage.cpp
 
-$(TARGETDIR)/$(TARGET): $(OBJS)
-	$(FC) -o $@ $^ $(FFLAGS)
-	rm -f $(OBJS) ./*.mod
-	$(FC) -o $(TARGETDIR)/$(TARGETPOST) $(SRCSPOST) $(FFLAGS)
+OBJS := $(SRCS:.cpp=.o)
 
-$(OBJDIR)/%.o $(OBJDIR)/%.mod: $(SRCDIR)/%.f90
-	@[ -d $(OBJDIR) ]
-	$(FC) -o $@ -c $<
+.PHONY: all clean
+.SUFFIXES: .c .cpp .o
 
-all: $(TARGET)
+all: $(TARGETDIR)/$(TARGET)
 
 clean:
-	rm -f $(OBJS) ./*.mod
+	$(RM) $(OBJS)
+
+$(TARGETDIR)/$(TARGET): $(OBJS)
+	$(CXX) -o $@ $(OBJS)
+	$(RM) $(OBJS)
+
+.cpp.o:
+	$(CXX) $(INCLUDES) $(CXXFLAGS) -o $@ -c $^
+.cpp:
+	$(CXX) $(INCLUDES) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)

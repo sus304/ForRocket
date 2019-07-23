@@ -17,8 +17,8 @@
 #include "Stage.hpp"
 #include "Payload.hpp"
 
-#include "FlightDataRecorder.hpp"
-#include "FlightController.hpp"
+// #include "FlightDataRecorder.hpp"
+// #include "FlightController.hpp"
 
 namespace ForRocket
 {
@@ -30,6 +30,7 @@ namespace ForRocket
             void add_stage(Stage obj);
             void add_payload(Payload obj);
 
+            // void jettison_booster();
             void separate_stage();
             void jettison_fairing();
             void ignition_engine();
@@ -41,8 +42,8 @@ namespace ForRocket
             std::vector<Stage> stages;
             std::vector<Payload> payloads;
 
-            FlightDataRecorder fdr;
-            FlightController fc;
+            // FlightDataRecorder fdr;
+            // FlightController fc;
 
             double mass;
             double mass_fairing;

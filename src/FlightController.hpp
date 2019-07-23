@@ -18,7 +18,7 @@ namespace ForRocket
 {
     class FlightController{
         public:
-            FlightController();
+            FlightController() {};
         protected:
 
     };
