@@ -60,10 +60,9 @@ class Rocket:
         if thrust_file_exist:
             thrust_file = engine.get('Thrust File')
             thrust_array = np.loadtxt(thrust_file, delimiter=',', skiprows=1)
-            # 1G Cut
             time_array = thrust_array[:,0]
             thrust_array = thrust_array[:,1]
-            index = (thrust_array > (self.ms + self.m0_f + self.m0_ox) * 9.80665).argmax()
+            index = (thrust_array > (self.ms + self.m0_f + self.m0_ox) * 9.80665).argmax()  # 1G Cut
             thrust_array = thrust_array[index:]
             time_array = time_array[index:] - time_array[index]
             self.ref_thrust = np.max(thrust_array)
@@ -75,17 +74,22 @@ class Rocket:
             self.ref_thrust = engine.get('Constant Thrust [N]')
             self.thrust = interpolate.interp1d(time_array, thrust_array, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
             self.total_impulse = round(engine.get('Constant Thrust [N]') * engine.get('Burn Time [sec]'))
+        self.burn_time = engine.get('Burn Time [sec]')
         self.Isp = engine.get('Isp [sec]')
         ############################################################
 
 
         # Mass interpolate #########################################
-        self.mdot_f = prop.get('Fuel Mass Flow Rate [kg/s]')        
+        self.mdot_f = prop.get('Fuel Mass Flow Rate [kg/s]')
         mdot_p_log = thrust_array / (self.Isp * 9.80665)
-        self.mdot_p = interpolate.interp1d(time_array, mdot_p_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))        
-        mdot_ox_log = mdot_p_log - self.mdot_f
+        self.mdot_p = interpolate.interp1d(time_array, mdot_p_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+        time_array_mdotf = np.arange(0.0, self.burn_time, 0.01)
+        mdot_f_log = np.array([self.mdot_f]*len(time_array_mdotf))
+        self.mdot_f = interpolate.interp1d(time_array_mdotf, mdot_f_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
+        mdot_ox_log = np.zeros_like(time_array)
+        for i in range(len(time_array)):
+            mdot_ox_log[i] = mdot_p_log[i] - self.mdot_f(time_array[i])
         self.mdot_ox = interpolate.interp1d(time_array, mdot_ox_log, kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
-        self.mdot_f = interpolate.interp1d(time_array, np.array([self.mdot_f]*len(time_array)), kind='linear', bounds_error=False, fill_value=(0.0, 0.0))
 
         mf_log_ode = odeint(lambda x, t: -self.mdot_f(t), self.m0_f, time_array)  # time_arrayは上のthrust部分参照
         mf_log = mf_log_ode[0][0]
@@ -94,7 +98,7 @@ class Rocket:
         if np.abs((mf_log[-1] - self.mf_after) / self.mf_after) > 0.05:
             print('Warning!! fuel mass at burn out is not matching')
         self.mf = interpolate.interp1d(time_array, mf_log, kind='linear', bounds_error=False, fill_value=(mf_log[0], mf_log[-1]))
-        
+
         mox_log_ode = odeint(lambda x, t: -self.mdot_ox(t), self.m0_ox, time_array)
         mox_log = mox_log_ode[0][0]
         for mox in mox_log_ode[1:]:
@@ -121,7 +125,7 @@ class Rocket:
         self.L_motor = struct.get('Length End-to-Tank [m]')
         self.Lcg0_p = (self.m0_ox * self.Lcg0_ox + self.m0_f * self.Lcg_f) / self.m0_p
         self.Lcg0 = (self.ms * self.Lcg_s + self.m0_p * self.Lcg0_p) / self.m0
-        
+
         Lcg_ox_log = self.L_motor + (mox_log / self.m0_ox) * (self.Lcg0_ox - self.L_motor)
         Lcg_p_log = (mf_log * self.Lcg_f + mox_log * Lcg_ox_log) / mp_log
         Lcg_log = (mp_log * Lcg_p_log + self.ms * self.Lcg_s) / m_log
@@ -200,7 +204,7 @@ class Rocket:
             self.Cmq *= -1.0
         self.Cnr = self.Cmq
         ############################################################
-        
+
 
         # Parachute parameter ######################################
         self.timer_mode = para.get('Timer Mode')
@@ -212,7 +216,7 @@ class Rocket:
         else:
             self.CdS2 = 0.0
             self.alt_sepa2 = 0.0
-            
+
         if self.timer_mode:
             self.t_1st = para.get('1st Timer [s]')
             self.t_2nd_min = para.get('2nd Timer Min [s]')

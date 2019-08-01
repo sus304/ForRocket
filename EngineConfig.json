@@ -3,7 +3,7 @@
 		"Thrust File": "Thrust.csv",
 		"File Exist": true,
 		"Constant Thrust [N]": 0.0,
-		"Burn Time [sec]": 0.0,
+		"Burn Time [sec]": 1.7,
 		"Isp [sec]": 138.3,
 		"Nozzle Throat Diameter [m]": 0.014,
 		"Nozzle Expansion Ratio": 3.49
