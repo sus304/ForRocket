@@ -144,8 +144,8 @@ class Result:
 
         txt = open(self.result_dir + '/result.txt', mode='w')
         if rocket.input_mag_dec:
-            txt.writelines(['Initial True Azimuth,', str(round(rocket.azimuth0 - rocket.mag_dec , 2)), '[deg]\n'])
-            txt.writelines(['Initial Magnetic Azimuth,', str(round(rocket.azimuth0 , 2)), '[deg]\n'])
+            txt.writelines(['Initial True Azimuth,', str(round(rocket.azimuth0, 2)), '[deg]\n'])
+            txt.writelines(['Initial Magnetic Azimuth,', str(round(rocket.azimuth0 +  rocket.mag_dec , 2)), '[deg]\n'])
         else:
             txt.writelines(['Initial True Azimuth,', str(round(rocket.azimuth0 , 2)), '[deg]\n'])
         txt.writelines(['Launcher Clear X+,', str(round(self.time_launch_clear, 3)), '[s]\n'])
