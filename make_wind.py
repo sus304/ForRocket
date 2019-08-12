@@ -15,7 +15,7 @@ def make_law_wind(height_ref, vel_ref, dir_ref, exp_a, alt_max):
     def law_method(alt):
         return vel_ref * (alt / height_ref) ** (1 / exp_a)
 
-    base = np.cos(np.arange(0.0, 0.5*np.pi, 0.1))
+    base = np.cos(np.arange(0.0, 0.5*np.pi, 0.005))
     alt_array = alt_max * (1 - base)
     vel_array = law_method(alt_array)
     dir_array = np.zeros_like(alt_array) + dir_ref
