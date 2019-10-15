@@ -1,26 +1,15 @@
-/*
-    Copyright 2009 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2009 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_RAW_DETAIL_IS_ALLOWED_HPP
 #define BOOST_GIL_EXTENSION_IO_RAW_DETAIL_IS_ALLOWED_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Olivier Tournaire \n
-///
-/// \date 2011 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
+#include <boost/gil/extension/io/raw/tags.hpp>
 #include <boost/gil/io/base.hpp>
-#include <iostream>
 
 namespace boost { namespace gil { namespace detail {
 
@@ -29,9 +18,9 @@ bool is_allowed( const image_read_info< raw_tag >& info
                , mpl::true_   // is read_and_no_convert
                )
 {
-    typedef typename get_pixel_type< View >::type pixel_t;
-    typedef typename num_channels< pixel_t >::value_type num_channel_t;
-    typedef typename channel_traits< typename element_type< typename View::value_type >::type >::value_type channel_t;
+    using pixel_t = typename get_pixel_type<View>::type;
+    using num_channel_t = typename num_channels<pixel_t>::value_type;
+    using channel_t = typename channel_traits<typename element_type<typename View::value_type>::type>::value_type;
 
     const num_channel_t dst_samples_per_pixel = num_channels< pixel_t >::value;
     const unsigned int  dst_bits_per_pixel    = detail::unsigned_integral_num_bits< channel_t >::value;

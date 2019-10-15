@@ -1,26 +1,19 @@
-/*
-    Copyright 2012 Chung-Lin Wen
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Chung-Lin Wen
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_LAB_HPP
 #define BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_LAB_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file lab.hpp
-/// \brief Support for CIE Lab color space
-/// \author Chung-Lin Wen \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/gil/gil_all.hpp> // FIXME: Include what you use, not everything, even in extensions!
 #include <boost/gil/extension/toolbox/color_spaces/xyz.hpp>
+
+#include <boost/gil/color_convert.hpp>
+#include <boost/gil.hpp> // FIXME: Include what you use, not everything, even in extensions!
+
+#include <boost/mpl/vector.hpp>
 
 namespace boost{ namespace gil {
 
@@ -29,22 +22,24 @@ namespace boost{ namespace gil {
 namespace lab_color_space
 {
 /// \brief Luminance
-struct luminance_t {};    
+struct luminance_t {};
 /// \brief a Color Component
 struct a_color_opponent_t {};
 /// \brief b Color Component
-struct b_color_opponent_t {}; 
+struct b_color_opponent_t {};
 }
 /// \}
 
 /// \ingroup ColorSpaceModel
-typedef mpl::vector3< lab_color_space::luminance_t
-                    , lab_color_space::a_color_opponent_t
-                    , lab_color_space::b_color_opponent_t
-                    > lab_t;
+using lab_t = mpl::vector3
+    <
+        lab_color_space::luminance_t,
+        lab_color_space::a_color_opponent_t,
+        lab_color_space::b_color_opponent_t
+    >;
 
 /// \ingroup LayoutModel
-typedef layout<lab_t> lab_layout_t;
+using lab_layout_t = layout<lab_t>;
 
 GIL_DEFINE_ALL_TYPEDEFS(32f, float32_t, lab)
 
@@ -175,4 +170,4 @@ struct default_color_converter_impl<lab_t,rgb_t>
 } // namespace gil
 } // namespace boost
 
-#endif // BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_LAB_HPP
+#endif

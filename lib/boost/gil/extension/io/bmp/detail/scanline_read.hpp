@@ -1,39 +1,28 @@
-/*
-    Copyright 2008 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2008 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_BMP_DETAIL_SCANLINE_READ_HPP
 #define BOOST_GIL_EXTENSION_IO_BMP_DETAIL_SCANLINE_READ_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2008 - 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <vector>
-
-#include <boost/function.hpp>
+#include <boost/gil/extension/io/bmp/detail/is_allowed.hpp>
+#include <boost/gil/extension/io/bmp/detail/reader_backend.hpp>
 
 #include <boost/gil/io/base.hpp>
 #include <boost/gil/io/bit_operations.hpp>
 #include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/row_buffer_helper.hpp>
-#include <boost/gil/io/reader_base.hpp>
 #include <boost/gil/io/device.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/row_buffer_helper.hpp>
 #include <boost/gil/io/scanline_read_iterator.hpp>
 #include <boost/gil/io/typedefs.hpp>
 
-#include <boost/gil/extension/io/bmp/detail/reader_backend.hpp>
-#include <boost/gil/extension/io/bmp/detail/is_allowed.hpp>
+#include <functional>
+#include <type_traits>
+#include <vector>
 
 namespace boost { namespace gil {
 
@@ -50,10 +39,10 @@ class scanline_reader< Device
 {
 public:
 
-    typedef bmp_tag tag_t;
-    typedef reader_backend < Device, tag_t > backend_t;
-    typedef scanline_reader< Device, tag_t > this_t;
-    typedef scanline_read_iterator< this_t > iterator_t;
+    using tag_t = bmp_tag;
+    using backend_t = reader_backend<Device, tag_t>;
+    using this_t = scanline_reader<Device, tag_t>;
+    using iterator_t = scanline_read_iterator<this_t>;
 
 public:
 
@@ -132,7 +121,7 @@ private:
                 read_palette();
                 _buffer.resize( _pitch );
 
-                _read_function = boost::mem_fn( &this_t::read_1_bit_row );
+                _read_function = std::mem_fn(&this_t::read_1_bit_row);
 
                 break;
             }
@@ -155,7 +144,7 @@ private:
                         read_palette();
                         _buffer.resize( _pitch );
 
-                        _read_function = boost::mem_fn( &this_t::read_4_bits_row );
+                        _read_function = std::mem_fn(&this_t::read_4_bits_row);
 
                         break;
                     }
@@ -186,7 +175,7 @@ private:
                         read_palette();
                         _buffer.resize( _pitch );
 
-                        _read_function = boost::mem_fn( &this_t::read_8_bits_row );
+                        _read_function = std::mem_fn(&this_t::read_8_bits_row);
 
                         break;
                     }
@@ -249,7 +238,7 @@ private:
                 }
 
 
-                _read_function = boost::mem_fn( &this_t::read_15_bits_row );
+                _read_function = std::mem_fn(&this_t::read_15_bits_row);
 
                 break;
             }
@@ -257,7 +246,7 @@ private:
             case 24:
             {
                 this->_scanline_length = ( this->_info._width * num_channels< rgb8_view_t >::value + 3 ) & ~3;
-                _read_function = boost::mem_fn( &this_t::read_row );
+                _read_function = std::mem_fn(&this_t::read_row);
 
                 break;
             }
@@ -265,7 +254,7 @@ private:
             case 32:
             {
                 this->_scanline_length = ( this->_info._width * num_channels< rgba8_view_t >::value + 3 ) & ~3;
-                _read_function = boost::mem_fn( &this_t::read_row );
+                _read_function = std::mem_fn(&this_t::read_row);
 
                 break;
             }
@@ -313,8 +302,8 @@ private:
     template< typename View >
     void read_bit_row( byte_t* dst )
     {
-        typedef View src_view_t;
-        typedef rgba8_image_t::view_t dst_view_t;
+        using src_view_t = View;
+        using dst_view_t = rgba8_image_t::view_t;
 
         src_view_t src_view = interleaved_view( this->_info._width
                                               , 1
@@ -371,7 +360,7 @@ private:
     /// Read 15 or 16 bits image.
     void read_15_bits_row( byte_t* dst )
     {
-        typedef rgb8_view_t dst_view_t;
+        using dst_view_t = rgb8_view_t;
 
         dst_view_t dst_view = interleaved_view( this->_info._width
                                               , 1
@@ -412,11 +401,11 @@ private:
     // the row pitch must be multiple of 4 bytes
     int _pitch;
 
-    std::vector< byte_t > _buffer;
-    detail::mirror_bits    < std::vector< byte_t >, mpl::true_ > _mirror_bits;
-    detail::swap_half_bytes< std::vector< byte_t >, mpl::true_ > _swap_half_bytes;
+    std::vector<byte_t> _buffer;
+    detail::mirror_bits <std::vector<byte_t>, std::true_type> _mirror_bits;
+    detail::swap_half_bytes<std::vector<byte_t>, std::true_type> _swap_half_bytes;
 
-    boost::function< void ( this_t*, byte_t* ) > _read_function;
+    std::function<void(this_t*, byte_t*)> _read_function;
 };
 
 } // namespace gil

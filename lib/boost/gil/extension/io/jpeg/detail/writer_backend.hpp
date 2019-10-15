@@ -1,23 +1,12 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_WRITER_BACKEND_HPP
 #define BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_WRITER_BACKEND_HPP
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
 
 #include <boost/gil/extension/io/jpeg/tags.hpp>
 #include <boost/gil/extension/io/jpeg/detail/base.hpp>
@@ -26,13 +15,13 @@
 
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
 
-namespace detail { 
+namespace detail {
 
 ///
 /// Wrapper for libjpeg's compress object. Implements value semantics.
@@ -66,7 +55,7 @@ private:
             jpeg_destroy_compress( jpeg_compress_ptr );
 
             delete jpeg_compress_ptr;
-            jpeg_compress_ptr = NULL;
+            jpeg_compress_ptr = nullptr;
         }
     }
 
@@ -90,7 +79,7 @@ struct writer_backend< Device
 {
 public:
 
-    typedef jpeg_tag format_tag_t;
+    using format_tag_t = jpeg_tag;
 
 public:
     ///
@@ -106,16 +95,16 @@ public:
         get()->client_data = this;
 
         // Error exit handler: does not return to caller.
-        _jerr.error_exit = &writer< Device, jpeg_tag >::error_exit;
+        _jerr.error_exit = &writer_backend< Device, jpeg_tag >::error_exit;
 
         // Fire exception in case of error.
         if( setjmp( _mark )) { raise_error(); }
 
         _dest._jdest.free_in_buffer      = sizeof( buffer );
         _dest._jdest.next_output_byte    = buffer;
-        _dest._jdest.init_destination    = reinterpret_cast< void(*)   ( j_compress_ptr ) >( &writer< Device, jpeg_tag >::init_device  );
-        _dest._jdest.empty_output_buffer = reinterpret_cast< boolean(*)( j_compress_ptr ) >( &writer< Device, jpeg_tag >::empty_buffer );
-        _dest._jdest.term_destination    = reinterpret_cast< void(*)   ( j_compress_ptr ) >( &writer< Device, jpeg_tag >::close_device );
+        _dest._jdest.init_destination    = reinterpret_cast< void(*)   ( j_compress_ptr ) >( &writer_backend< Device, jpeg_tag >::init_device  );
+        _dest._jdest.empty_output_buffer = reinterpret_cast< boolean(*)( j_compress_ptr ) >( &writer_backend< Device, jpeg_tag >::empty_buffer );
+        _dest._jdest.term_destination    = reinterpret_cast< void(*)   ( j_compress_ptr ) >( &writer_backend< Device, jpeg_tag >::close_device );
         _dest._this = this;
 
         jpeg_create_compress( get() );
@@ -154,7 +143,7 @@ protected:
                                   , buffer_size
                                   );
 
-        writer<Device,jpeg_tag>::init_device( cinfo );
+        writer_backend<Device,jpeg_tag>::init_device( cinfo );
         return static_cast<boolean>(TRUE);
     }
 
@@ -176,7 +165,7 @@ protected:
 
     static void error_exit( j_common_ptr cinfo )
     {
-        writer< Device, jpeg_tag >* mgr = reinterpret_cast< writer< Device, jpeg_tag >* >( cinfo->client_data );
+        writer_backend< Device, jpeg_tag >* mgr = reinterpret_cast< writer_backend< Device, jpeg_tag >* >( cinfo->client_data );
 
         longjmp( mgr->_mark, 1 );
     }
@@ -193,9 +182,9 @@ public:
     JOCTET buffer[buffer_size];
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

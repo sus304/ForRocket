@@ -1,43 +1,32 @@
-/*
-    Copyright 2007-2008 Christian Henning, Andreas Pokorny, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2008 Christian Henning, Andreas Pokorny, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_WRITE_HPP
 #define BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_WRITE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Andreas Pokorny, Lubomir Bourdev \n
-///
-/// \date   2007-2008 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <vector>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/device.hpp>
-
 #include <boost/gil/extension/io/jpeg/tags.hpp>
-
 #include <boost/gil/extension/io/jpeg/detail/supported_types.hpp>
 #include <boost/gil/extension/io/jpeg/detail/writer_backend.hpp>
 
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+
+#include <vector>
+
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
-#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
+#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
 
-namespace detail { 
+namespace detail {
 
 struct jpeg_write_is_supported
 {
@@ -64,9 +53,7 @@ class writer< Device
 {
 public:
 
-    typedef writer_backend< Device
-                          , jpeg_tag
-                          > backend_t;
+    using backend_t = writer_backend<Device, jpeg_tag>;
 
 public:
 
@@ -100,7 +87,7 @@ private:
         //       the setjmp.
         if( setjmp( this->_mark )) { this->raise_error(); }
 
-        typedef typename channel_type< typename View::value_type >::type channel_t;
+        using channel_t = typename channel_type<typename View::value_type>::type;
 
         this->get()->image_width      = JDIMENSION( view.width()  );
         this->get()->image_height     = JDIMENSION( view.height() );
@@ -159,9 +146,7 @@ class dynamic_image_writer< Device
                    , jpeg_tag
                    >
 {
-    typedef writer< Device
-                  , jpeg_tag
-                  > parent_t;
+    using parent_t = writer<Device, jpeg_tag>;
 
 public:
 
@@ -184,9 +169,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // gil
 } // boost

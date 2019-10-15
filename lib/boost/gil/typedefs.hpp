@@ -9,21 +9,15 @@
 #ifndef BOOST_GIL_TYPEDEFS_HPP
 #define BOOST_GIL_TYPEDEFS_HPP
 
-/// \file
-/// \brief Useful public typedefs
-/// \author Lubomir Bourdev and Hailin Jin \n
-///         Adobe Systems Incorporated
-
-#include "gil_config.hpp"
+#include <boost/gil/cmyk.hpp>
+#include <boost/gil/device_n.hpp>
+#include <boost/gil/gray.hpp>
+#include <boost/gil/point.hpp>
+#include <boost/gil/rgb.hpp>
+#include <boost/gil/rgba.hpp>
 
 #include <cstdint>
 #include <memory>
-
-#include "cmyk.hpp"
-#include "device_n.hpp"
-#include "gray.hpp"
-#include "rgb.hpp"
-#include "rgba.hpp"
 
 // B - bits size/signedness, CM - channel model, CS - colour space, LAYOUT - pixel layout
 // Example: B = '8', CM = 'uint8_t', CS = 'bgr,  LAYOUT='bgr_layout_t'
@@ -32,7 +26,7 @@
     template <typename, typename> struct planar_pixel_reference;                         \
     template <typename, typename> struct planar_pixel_iterator;                          \
     template <typename> class memory_based_step_iterator;                                \
-    template <typename> class point2;                                                    \
+    template <typename> class point;                                                    \
     template <typename> class memory_based_2d_locator;                                   \
     template <typename> class image_view;                                                \
     template <typename, bool, typename> class image;                                     \
@@ -102,27 +96,27 @@ template <typename T> struct float_point_one;
 //////////////////////////////////////////////////////////////////////////////////////////
 
 /// \ingroup ChannelModel
-/// \brief 8-bit unsigned integral channel type (typedef from uint8_t). Models ChannelValueConcept
+/// \brief 8-bit unsigned integral channel type (alias from uint8_t). Models ChannelValueConcept
 using std::uint8_t;
 
 /// \ingroup ChannelModel
-/// \brief 16-bit unsigned integral channel type (typedef from uint16_t). Models ChannelValueConcept
+/// \brief 16-bit unsigned integral channel type (alias from uint16_t). Models ChannelValueConcept
 using std::uint16_t;
 
 /// \ingroup ChannelModel
-/// \brief 32-bit unsigned integral channel type  (typedef from uint32_t). Models ChannelValueConcept
+/// \brief 32-bit unsigned integral channel type  (alias from uint32_t). Models ChannelValueConcept
 using std::uint32_t;
 
 /// \ingroup ChannelModel
-/// \brief 8-bit signed integral channel type (typedef from int8_t). Models ChannelValueConcept
+/// \brief 8-bit signed integral channel type (alias from int8_t). Models ChannelValueConcept
 using std::int8_t;
 
 /// \ingroup ChannelModel
-/// \brief 16-bit signed integral channel type (typedef from int16_t). Models ChannelValueConcept
+/// \brief 16-bit signed integral channel type (alias from int16_t). Models ChannelValueConcept
 using std::int16_t;
 
 /// \ingroup ChannelModel
-/// \brief 32-bit signed integral channel type (typedef from int32_t). Models ChannelValueConcept
+/// \brief 32-bit signed integral channel type (alias from int32_t). Models ChannelValueConcept
 using std::int32_t;
 
 /// \ingroup ChannelModel

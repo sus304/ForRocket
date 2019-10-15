@@ -1,38 +1,27 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_BMP_DETAIL_WRITE_HPP
 #define BOOST_GIL_EXTENSION_IO_BMP_DETAIL_WRITE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <vector>
+#include <boost/gil/extension/io/bmp/tags.hpp>
+#include <boost/gil/extension/io/bmp/detail/writer_backend.hpp>
 
 #include <boost/gil/io/base.hpp>
 #include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
 
-#include <boost/gil/extension/io/bmp/tags.hpp>
-
-#include <boost/gil/extension/io/bmp/detail/writer_backend.hpp>
+#include <vector>
 
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 namespace detail {
@@ -48,9 +37,9 @@ struct bmp_write_is_supported
 };
 
 template < int N > struct get_bgr_cs {};
-template <> struct get_bgr_cs< 1 > { typedef gray8_view_t type; };
-template <> struct get_bgr_cs< 3 > { typedef bgr8_view_t type;  };
-template <> struct get_bgr_cs< 4 > { typedef bgra8_view_t type; };
+template <> struct get_bgr_cs< 1 > { using type = gray8_view_t; };
+template <> struct get_bgr_cs< 3 > { using type = bgr8_view_t;  };
+template <> struct get_bgr_cs< 4 > { using type = bgra8_view_t; };
 
 } // namespace detail
 
@@ -68,7 +57,7 @@ class writer< Device
 public:
 
     writer( const Device&                      io_dev
-          , const image_write_info< bmp_tag >& info 
+          , const image_write_info< bmp_tag >& info
           )
     : backend_t( io_dev
                     , info
@@ -83,15 +72,15 @@ public:
 
 private:
 
-    typedef writer_backend< Device, bmp_tag > backend_t;
+    using backend_t = writer_backend<Device, bmp_tag>;
 
     template< typename View >
     void write( const View& view )
     {
-        // typedef typename channel_type<
-        //             typename get_pixel_type< View >::type >::type channel_t;
+        // using channel_t = typename channel_type<
+        //             typename get_pixel_type<View>::type>::type;
 
-        // typedef typename color_space_type< View >::type color_space_t;
+        // using color_space_t = typename color_space_type<View>::type;
 
         // check if supported
 /*
@@ -116,8 +105,8 @@ private:
 */
 
         std::size_t spn = ( view.width() * num_channels< View >::value + 3 ) & ~3;
-        std::size_t ofs = bmp_header_size::_size 
-                        + bmp_header_size::_win32_info_size 
+        std::size_t ofs = bmp_header_size::_size
+                        + bmp_header_size::_win32_info_size
                         + entries * 4;
 
         std::size_t siz = ofs + spn * view.height();
@@ -193,9 +182,7 @@ class dynamic_image_writer< Device
                    , bmp_tag
                    >
 {
-    typedef writer< Device
-                  , bmp_tag
-                  > parent_t;
+    using parent_t = writer<Device, bmp_tag>;
 
 public:
 
@@ -220,9 +207,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // gil
 } // boost

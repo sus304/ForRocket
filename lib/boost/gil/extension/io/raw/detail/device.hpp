@@ -1,30 +1,21 @@
-/*
-    Copyright 2007-2012 Olivier Tournaire, Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Olivier Tournaire
+// Copyright 2007 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_RAW_DETAIL_DEVICE_HPP
 #define BOOST_GIL_EXTENSION_IO_RAW_DETAIL_DEVICE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Olivier Tournaire \n
-///
-/// \date   2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/utility/enable_if.hpp>
+#include <boost/gil/extension/io/raw/tags.hpp>
 
 #include <boost/gil/io/base.hpp>
 #include <boost/gil/io/device.hpp>
 
 #include <memory>
+#include <string>
 
 namespace boost { namespace gil { namespace detail {
 
@@ -81,7 +72,7 @@ public:
 
     int unpack()                                                         { return _processor_ptr.get()->unpack(); }
     int dcraw_process()                                                  { return _processor_ptr.get()->dcraw_process(); }
-    libraw_processed_image_t* dcraw_make_mem_image(int* error_code=NULL) { return _processor_ptr.get()->dcraw_make_mem_image(error_code); }
+    libraw_processed_image_t* dcraw_make_mem_image(int* error_code=nullptr) { return _processor_ptr.get()->dcraw_make_mem_image(error_code); }
 
 protected:
 
@@ -107,7 +98,7 @@ public:
                       , read_tag   = read_tag()
                       )
     {
-        io_error_if( _processor_ptr.get()->open_file( file_name.c_str() ) != LIBRAW_SUCCESS 
+        io_error_if( _processor_ptr.get()->open_file( file_name.c_str() ) != LIBRAW_SUCCESS
                    , "file_stream_device: failed to open file"
                    );
     }
@@ -119,7 +110,7 @@ public:
                       , read_tag   = read_tag()
                       )
     {
-        io_error_if( _processor_ptr.get()->open_file( file_name ) != LIBRAW_SUCCESS 
+        io_error_if( _processor_ptr.get()->open_file( file_name ) != LIBRAW_SUCCESS
                    , "file_stream_device: failed to open file"
                    );
     }
@@ -132,7 +123,7 @@ struct is_adaptable_input_device< FormatTag
                                 >
     : mpl::true_
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 

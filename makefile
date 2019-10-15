@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -O2 -std=c++11
+CXXFLAGS = -Wall -O2 -std=gnu++11
 
 TARGET = ForRocket
 TARGETDIR = ./bin

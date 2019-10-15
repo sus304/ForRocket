@@ -1,23 +1,30 @@
-/*
-    Copyright 2007-2012 Christian Henning, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_SCANLINE_READ_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_SCANLINE_READ_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Lubomir Bourdev \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/tiff/detail/device.hpp>
+#include <boost/gil/extension/io/tiff/detail/is_allowed.hpp>
+#include <boost/gil/extension/io/tiff/detail/reader_backend.hpp>
+
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/bit_operations.hpp>
+#include <boost/gil/io/conversion_policies.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/row_buffer_helper.hpp>
+#include <boost/gil/io/scanline_read_iterator.hpp>
+
+#include <algorithm>
+#include <functional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 // taken from jpegxx - https://bitbucket.org/edd/jpegxx/src/ea2492a1a4a6/src/ijg_headers.hpp
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS
@@ -30,26 +37,6 @@
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS
     }
 #endif
-
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include <boost/function.hpp>
-#include <boost/static_assert.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/bit_operations.hpp>
-#include <boost/gil/io/row_buffer_helper.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/io/reader_base.hpp>
-#include <boost/gil/io/scanline_read_iterator.hpp>
-
-#include <boost/gil/extension/io/tiff/detail/reader_backend.hpp>
-#include <boost/gil/extension/io/tiff/detail/device.hpp>
-#include <boost/gil/extension/io/tiff/detail/is_allowed.hpp>
-
 
 namespace boost { namespace gil {
 
@@ -66,13 +53,10 @@ class scanline_reader< Device
 {
 public:
 
-
-    typedef tiff_tag tag_t;
-    typedef reader_backend < Device, tag_t > backend_t;
-    typedef scanline_reader< Device, tag_t > this_t;
-    typedef scanline_read_iterator< this_t > iterator_t;
-
-public:
+    using tag_t = tiff_tag;
+    using backend_t = reader_backend<Device, tag_t>;
+    using this_t = scanline_reader<Device, tag_t>;
+    using iterator_t = scanline_read_iterator<this_t>;
 
     scanline_reader( Device&                                device
                    , const image_read_settings< tiff_tag >& settings
@@ -88,7 +72,7 @@ public:
     void read( byte_t* dst, int pos )
     {
         _read_function( this, dst, pos );
-    }    
+    }
 
     /// Skip over a scanline.
     void skip( byte_t* dst, int pos )
@@ -110,8 +94,8 @@ private:
         if( this->_info._photometric_interpretation == PHOTOMETRIC_PALETTE )
         {
 
-            this->_scanline_length = this->_info._width 
-                                   * num_channels< rgb16_view_t >::value 
+            this->_scanline_length = this->_info._width
+                                   * num_channels< rgb16_view_t >::value
                                    * sizeof( channel_type<rgb16_view_t>::type );
 
             this->_io_dev.get_field_defaulted( this->_red
@@ -125,7 +109,7 @@ private:
             {
                 case 1:
                 {
-                    typedef channel_type< get_pixel_type< gray1_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray1_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -137,14 +121,14 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_1_bit_index_image );
+                    _read_function = std::mem_fn(&this_t::read_1_bit_index_image);
 
                     break;
                 }
 
                 case 2:
                 {
-                    typedef channel_type< get_pixel_type< gray2_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray2_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -156,13 +140,13 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_2_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_2_bits_index_image);
 
                     break;
                 }
                 case 4:
                 {
-                    typedef channel_type< get_pixel_type< gray4_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray4_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -174,14 +158,14 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_4_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_4_bits_index_image);
 
                     break;
                 }
 
-                case 8:  
+                case 8:
                 {
-                    typedef channel_type< get_pixel_type< gray8_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray8_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -193,14 +177,14 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_8_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_8_bits_index_image);
 
                     break;
                 }
 
                 case 16:
                 {
-                    typedef channel_type< get_pixel_type< gray16_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray16_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -212,14 +196,14 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_16_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_16_bits_index_image);
 
                     break;
                 }
 
                 case 24:
                 {
-                    typedef channel_type< get_pixel_type< gray24_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray24_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -231,14 +215,14 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_24_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_24_bits_index_image);
 
                     break;
                 }
 
                 case 32:
                 {
-                    typedef channel_type< get_pixel_type< gray32_image_t::view_t >::type >::type channel_t;
+                    using channel_t = channel_type<get_pixel_type<gray32_image_t::view_t>::type>::type;
 
                     int num_colors = channel_traits< channel_t >::max_value() + 1;
 
@@ -250,7 +234,7 @@ private:
                                               , sizeof(uint16_t) * num_colors
                                               );
 
-                    _read_function = boost::mem_fn( &this_t::read_32_bits_index_image );
+                    _read_function = std::mem_fn(&this_t::read_32_bits_index_image);
 
                     break;
                 }
@@ -278,17 +262,17 @@ private:
                     {
                         switch( this->_info._bits_per_sample )
                         {
-                            case  1: 
-                            case  2: 
+                            case  1:
+                            case  2:
                             case  4:
-                            case  6: 
-                            case  8: 
-                            case 10: 
-                            case 12: 
-                            case 14: 
-                            case 16: 
-                            case 24: 
-                            case 32: { _read_function = boost::mem_fn( &this_t::read_row ); break; }
+                            case  6:
+                            case  8:
+                            case 10:
+                            case 12:
+                            case 14:
+                            case 16:
+                            case 24:
+                            case 32: { _read_function = std::mem_fn(&this_t::read_row); break; }
                             default: { io_error( "Image type is not supported." ); }
                         }
 
@@ -303,15 +287,15 @@ private:
                             {
                                 switch( this->_info._bits_per_sample )
                                 {
-                                    case  2: 
-                                    case  4: 
-                                    case  8: 
-                                    case 10: 
-                                    case 12: 
-                                    case 14: 
-                                    case 16: 
-                                    case 24: 
-                                    case 32: { _read_function = boost::mem_fn( &this_t::read_row );  break; }
+                                    case  2:
+                                    case  4:
+                                    case  8:
+                                    case 10:
+                                    case 12:
+                                    case 14:
+                                    case 16:
+                                    case 24:
+                                    case 32: { _read_function = std::mem_fn(&this_t::read_row);  break; }
                                     default: { io_error( "Image type is not supported." ); }
                                 }
 
@@ -322,15 +306,15 @@ private:
                             {
                                 switch( this->_info._bits_per_sample )
                                 {
-                                    case  2: 
-                                    case  4: 
-                                    case  8: 
-                                    case 10: 
-                                    case 12: 
-                                    case 14: 
-                                    case 16: 
-                                    case 24: 
-                                    case 32: { _read_function = boost::mem_fn( &this_t::read_row );  break; }
+                                    case  2:
+                                    case  4:
+                                    case  8:
+                                    case 10:
+                                    case 12:
+                                    case 14:
+                                    case 16:
+                                    case 24:
+                                    case 32: { _read_function = std::mem_fn(&this_t::read_row);  break; }
                                     default: { io_error( "Image type is not supported." ); }
                                 }
 
@@ -346,15 +330,15 @@ private:
                     {
                         switch( this->_info._bits_per_sample )
                         {
-                            case  2: 
-                            case  4: 
-                            case  8: 
-                            case 10: 
-                            case 12: 
-                            case 14: 
-                            case 16: 
-                            case 24: 
-                            case 32: { _read_function = boost::mem_fn( &this_t::read_row );  break; }
+                            case  2:
+                            case  4:
+                            case  8:
+                            case 10:
+                            case 12:
+                            case 14:
+                            case 16:
+                            case 24:
+                            case 32: { _read_function = std::mem_fn(&this_t::read_row);  break; }
                             default: { io_error( "Image type is not supported." ); }
                         }
 
@@ -374,7 +358,7 @@ private:
     template< typename Src_View >
     void read_n_bits_row( byte_t* dst, int pos )
     {
-        typedef rgb16_view_t dst_view_t;
+        using dst_view_t = rgb16_view_t;
 
         this->_io_dev.read_scanline( _buffer
                                    , pos
@@ -426,7 +410,7 @@ private:
     {
         read_n_bits_row< gray8_image_t::view_t >( dst, pos );
     }
-    
+
     void read_16_bits_index_image( byte_t* dst, int pos )
     {
         read_n_bits_row< gray16_image_t::view_t >( dst, pos );
@@ -452,11 +436,9 @@ private:
 
 private:
 
-    std::vector< byte_t > _buffer;
-
-    detail::mirror_bits< std::vector< byte_t >, mpl::true_ > _mirror_bites;
-
-    boost::function< void ( this_t*, byte_t*, int ) > _read_function;
+    std::vector< byte_t> _buffer;
+    detail::mirror_bits<std::vector<byte_t>, std::true_type> _mirror_bites;
+    std::function<void(this_t*, byte_t*, int)> _read_function;
 };
 
 } // namespace gil

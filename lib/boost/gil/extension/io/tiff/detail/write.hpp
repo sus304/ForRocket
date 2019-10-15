@@ -1,49 +1,36 @@
-/*
-    Copyright 2007-2012 Christian Henning, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_WRITE_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_WRITE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Lubomir Bourdev \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/tiff/tags.hpp>
+#include <boost/gil/extension/io/tiff/detail/writer_backend.hpp>
+#include <boost/gil/extension/io/tiff/detail/device.hpp>
+
+#include <boost/gil/premultiply.hpp>
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 extern "C" {
 #include "tiff.h"
 #include "tiffio.h"
 }
 
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <boost/static_assert.hpp>
-
-#include <boost/gil/premultiply.hpp>
-
-#include <boost/gil/extension/io/tiff/tags.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/device.hpp>
-
-#include <boost/gil/extension/io/tiff/detail/writer_backend.hpp>
-#include <boost/gil/extension/io/tiff/detail/device.hpp>
-
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 namespace detail {
@@ -52,13 +39,15 @@ template <typename PixelReference>
 struct my_interleaved_pixel_iterator_type_from_pixel_reference
 {
 private:
-    typedef typename remove_reference< PixelReference >::type::value_type pixel_t;
+    using pixel_t = typename remove_reference<PixelReference>::type::value_type;
 public:
-    typedef typename iterator_type_from_pixel< pixel_t
-                                             , false
-                                             , false
-                                             , true
-                                             >::type type;
+    using type = typename iterator_type_from_pixel
+        <
+            pixel_t,
+            false,
+            false,
+            true
+        >::type;
 };
 
 
@@ -85,7 +74,7 @@ struct my_interleaved_pixel_iterator_type_from_pixel_reference< const bit_aligne
 struct tiff_write_is_supported
 {
     template< typename View >
-    struct apply 
+    struct apply
         : public is_write_supported< typename get_pixel_type< View >::type
                                    , tiff_tag
                                    >
@@ -107,7 +96,8 @@ class writer< Device
                            >
 {
 private:
-    typedef writer_backend< Device, tiff_tag > backend_t;
+    using backend_t = writer_backend<Device, tiff_tag>;
+
 public:
 
     writer( const Device&                       io_dev
@@ -129,9 +119,9 @@ private:
     template< typename View >
     void write_view( const View& view )
     {
-        typedef typename View::value_type pixel_t;
+        using pixel_t = typename View::value_type;
         // get the type of the first channel (heterogeneous pixels might be broken for now!)
-        typedef typename channel_traits< typename element_type< pixel_t >::type >::value_type channel_t;
+        using channel_t = typename channel_traits<typename element_type<pixel_t>::type>::value_type;
         tiff_bits_per_sample::type bits_per_sample = detail::unsigned_integral_num_bits< channel_t >::value;
 
         tiff_samples_per_pixel::type samples_per_pixel = num_channels< pixel_t >::value;
@@ -177,7 +167,7 @@ private:
     {
         byte_vector_t row( row_size_in_bytes );
 
-        typedef typename View::x_iterator x_it_t;
+        using x_it_t = typename View::x_iterator;
         x_it_t row_it = x_it_t( &(*row.begin()));
 
 		auto pm_view = premultiply_view <typename View:: value_type> (view);
@@ -207,7 +197,7 @@ private:
     {
         byte_vector_t row( row_size_in_bytes );
 
-        typedef typename View::x_iterator x_it_t;
+        using x_it_t = typename View::x_iterator;
         x_it_t row_it = x_it_t( &(*row.begin()));
 
         for( typename View::y_coord_t y = 0; y < view.height(); ++y )
@@ -226,7 +216,7 @@ private:
             // @todo: do optional bit swapping here if you need to...
         }
     }
-        
+
     /////////////////////////////
 
     template< typename View >
@@ -235,13 +225,12 @@ private:
                    , const mpl::true_&    // bit_aligned
                    )
     {
-      typedef typename color_space_type<typename View::value_type>::type colour_space_t;
-      typedef mpl::bool_<mpl::contains<colour_space_t, alpha_t>::value> has_alpha_t;
+        using colour_space_t = typename color_space_type<typename View::value_type>::type;
+        using has_alpha_t = mpl::bool_<mpl::contains<colour_space_t, alpha_t>::value>;
 
         write_bit_aligned_view_to_dev(view, row_size_in_bytes, has_alpha_t());
-        
     }
-	
+
     template< typename View>
     void write_tiled_data( const View&            view
                          , tiff_tile_width::type  tw
@@ -251,7 +240,7 @@ private:
     {
         byte_vector_t row( this->_io_dev.get_tile_size() );
 
-        typedef typename View::x_iterator x_it_t;
+        using x_it_t = typename View::x_iterator;
         x_it_t row_it = x_it_t( &(*row.begin()));
 
         internal_write_tiled_data(view, tw, th, row, row_it);
@@ -299,8 +288,7 @@ private:
     {
         byte_vector_t row( this->_io_dev.get_tile_size() );
 
-        typedef typename detail::my_interleaved_pixel_iterator_type_from_pixel_reference< typename View::reference
-                                                                                >::type x_iterator;
+        using x_iterator = typename detail::my_interleaved_pixel_iterator_type_from_pixel_reference<typename View::reference>::type;
         x_iterator row_it = x_iterator( &(*row.begin()));
 
         internal_write_tiled_data(view, tw, th, row, row_it);
@@ -339,7 +327,7 @@ private:
                  , it
                  );
     }
-        
+
     /////////////////////////////
 
 
@@ -369,9 +357,9 @@ private:
                                                       , static_cast< int >( tw )
                                                       , static_cast< int >( th )
                                                       );
-                    
-		    typedef typename color_space_type<typename View::value_type>::type colour_space_t;
-		    typedef mpl::bool_<mpl::contains<colour_space_t, alpha_t>::value> has_alpha_t;
+
+                    using colour_space_t = typename color_space_type<typename View::value_type>::type;
+                    using has_alpha_t = mpl::bool_<mpl::contains<colour_space_t, alpha_t>::value>;
 
                     write_tiled_view_to_dev(tile_subimage_view, it, has_alpha_t());
                 }
@@ -428,9 +416,7 @@ class dynamic_image_writer< Device
                    , tiff_tag
                    >
 {
-    typedef writer< Device
-                  , tiff_tag
-                  > parent_t;
+    using parent_t = writer<Device, tiff_tag>;
 
 public:
 
@@ -453,9 +439,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

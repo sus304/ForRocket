@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -12,19 +12,35 @@
 
 #include <boost/beast/core/detail/config.hpp>
 #include <boost/version.hpp>
+
+#if defined(BOOST_BEAST_USE_STD_STRING_VIEW)
+#include <string_view>
+#else
 #include <boost/utility/string_view.hpp>
+#endif
+
 #include <algorithm>
 
 namespace boost {
 namespace beast {
 
-/// The type of string view used by the library
-using string_view = boost::string_view;
+#if defined(BOOST_BEAST_USE_STD_STRING_VIEW)
+  /// The type of string view used by the library
+  using string_view = std::string_view;
 
-/// The type of basic string view used by the library
-template<class CharT, class Traits>
-using basic_string_view =
-    boost::basic_string_view<CharT, Traits>;
+  /// The type of basic string view used by the library
+  template<class CharT, class Traits>
+  using basic_string_view =
+      std::basic_string_view<CharT, Traits>;
+#else
+  /// The type of string view used by the library
+  using string_view = boost::string_view;
+
+  /// The type of basic string view used by the library
+  template<class CharT, class Traits>
+  using basic_string_view =
+      boost::basic_string_view<CharT, Traits>;
+#endif
 
 namespace detail {
 
@@ -48,24 +64,24 @@ iequals(
     auto p1 = lhs.data();
     auto p2 = rhs.data();
     char a, b;
+    // fast loop
     while(n--)
     {
         a = *p1++;
         b = *p2++;
         if(a != b)
-        {
-            // slow loop
-            do
-            {
-                if(ascii_tolower(a) != ascii_tolower(b))
-                    return false;
-                a = *p1++;
-                b = *p2++;
-            }
-            while(n--);
-            return true;
-        }
+            goto slow;
     }
+    return true;
+slow:
+    do
+    {
+        if(ascii_tolower(a) != ascii_tolower(b))
+            return false;
+        a = *p1++;
+        b = *p2++;
+    }
+    while(n--);
     return true;
 }
 

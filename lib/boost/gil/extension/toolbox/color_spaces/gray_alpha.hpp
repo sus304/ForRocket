@@ -1,37 +1,26 @@
-/*
-    Copyright 2012 Andreas Pokorny
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Andreas Pokorny
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_GRAY_ALPHA_HPP
 #define BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_GRAY_ALPHA_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file gray_alpha.hpp
-/// \brief Support for gray_alpha color space.
-/// \author Andreas Pokorny \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/mpl/contains.hpp>
-
-#include <boost/gil/gil_config.hpp>
 #include <boost/gil/color_convert.hpp>
 #include <boost/gil/gray.hpp>
 #include <boost/gil/typedefs.hpp>
 
+#include <boost/mpl/contains.hpp>
+#include <boost/mpl/vector.hpp>
+
 namespace boost{ namespace gil {
 
-typedef mpl::vector2<gray_color_t,alpha_t> gray_alpha_t;
+using gray_alpha_t = mpl::vector2<gray_color_t,alpha_t>;
 
-typedef layout<gray_alpha_t> gray_alpha_layout_t;
-typedef layout<gray_alpha_layout_t, mpl::vector2_c<int,1,0> > alpha_gray_layout_t;
+using gray_alpha_layout_t = layout<gray_alpha_t>;
+using alpha_gray_layout_t = layout<gray_alpha_layout_t, mpl::vector2_c<int,1,0>>;
 
 GIL_DEFINE_BASE_TYPEDEFS(8, uint8_t, alpha_gray)
 GIL_DEFINE_BASE_TYPEDEFS(8s, int8_t, alpha_gray)
@@ -73,15 +62,15 @@ struct default_color_converter_impl<gray_alpha_t,rgb_t> {
     void operator()(const P1& src, P2& dst) const {
         get_color(dst,red_t())  =
             channel_convert<typename color_element_type<P2, red_t>::type>(
-                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) ) 
+                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) )
                 );
         get_color(dst,green_t())  =
             channel_convert<typename color_element_type<P2, green_t>::type>(
-                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) ) 
+                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) )
                 );
         get_color(dst,blue_t())  =
             channel_convert<typename color_element_type<P2, blue_t>::type>(
-                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) ) 
+                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) )
                 );
     }
 };
@@ -93,7 +82,7 @@ struct default_color_converter_impl<gray_alpha_t,gray_t> {
     void operator()(const P1& src, P2& dst) const {
         get_color(dst,gray_color_t())  =
             channel_convert<typename color_element_type<P2, gray_color_t>::type>(
-                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) ) 
+                channel_multiply(get_color(src,gray_color_t()),get_color(src,alpha_t()) )
                 );
     }
 };
@@ -101,4 +90,4 @@ struct default_color_converter_impl<gray_alpha_t,gray_t> {
 } // namespace gil
 } // namespace boost
 
-#endif // BOOST_GIL_EXTENSION_TOOLBOX_COLOR_SPACES_GRAY_ALPHA_HPP
+#endif

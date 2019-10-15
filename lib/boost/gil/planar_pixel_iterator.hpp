@@ -1,33 +1,19 @@
-/*
-    Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
+#ifndef BOOST_GIL_PLANAR_PIXEL_ITERATOR_HPP
+#define BOOST_GIL_PLANAR_PIXEL_ITERATOR_HPP
 
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
+#include <boost/gil/pixel.hpp>
+#include <boost/gil/step_iterator.hpp>
 
-    See http://opensource.adobe.com/gil for most recent version including documentation.
-*/
-
-/*************************************************************************************************/
-
-#ifndef GIL_PLANAR_PTR_H
-#define GIL_PLANAR_PTR_H
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief planar pixel pointer class
-/// \author Lubomir Bourdev and Hailin Jin \n
-///         Adobe Systems Incorporated
-/// \date   2005-2007 \n Last updated on February 12, 2007
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <cassert>
-#include <iterator>
 #include <boost/iterator/iterator_facade.hpp>
-#include "gil_config.hpp"
-#include "pixel.hpp"
-#include "step_iterator.hpp"
+
+#include <iterator>
 
 namespace boost { namespace gil {
 //forward declaration (as this file is included in planar_pixel_reference.hpp)
@@ -57,16 +43,16 @@ struct planar_pixel_iterator : public iterator_facade<planar_pixel_iterator<Chan
                                                       const planar_pixel_reference<typename std::iterator_traits<ChannelPtr>::reference,ColorSpace> >,
                                public detail::homogeneous_color_base<ChannelPtr,layout<ColorSpace>,mpl::size<ColorSpace>::value > {
 private:
-    typedef iterator_facade<planar_pixel_iterator<ChannelPtr,ColorSpace>,
-                            pixel<typename std::iterator_traits<ChannelPtr>::value_type,layout<ColorSpace> >,
+    using parent_t = iterator_facade<planar_pixel_iterator<ChannelPtr,ColorSpace>,
+                            pixel<typename std::iterator_traits<ChannelPtr>::value_type,layout<ColorSpace>>,
                             std::random_access_iterator_tag,
-                            const planar_pixel_reference<typename std::iterator_traits<ChannelPtr>::reference,ColorSpace> > parent_t;
-    typedef detail::homogeneous_color_base<ChannelPtr,layout<ColorSpace>,mpl::size<ColorSpace>::value> color_base_parent_t;
-    typedef typename std::iterator_traits<ChannelPtr>::value_type channel_t;
+                            const planar_pixel_reference<typename std::iterator_traits<ChannelPtr>::reference,ColorSpace>>;
+    using color_base_parent_t = detail::homogeneous_color_base<ChannelPtr,layout<ColorSpace>,mpl::size<ColorSpace>::value>;
+    using channel_t = typename std::iterator_traits<ChannelPtr>::value_type;
 public:
-    typedef typename parent_t::value_type                 value_type;
-    typedef typename parent_t::reference                  reference;
-    typedef typename parent_t::difference_type            difference_type;
+    using value_type = typename parent_t::value_type;
+    using reference = typename parent_t::reference;
+    using difference_type = typename parent_t::difference_type;
 
     planar_pixel_iterator() : color_base_parent_t(0) {}
     planar_pixel_iterator(bool) {}        // constructor that does not fill with zero (for performance)
@@ -114,11 +100,7 @@ private:
 
     void increment()            { static_transform(*this,*this,detail::inc<ChannelPtr>()); }
     void decrement()            { static_transform(*this,*this,detail::dec<ChannelPtr>()); }
-#ifdef BOOST_NO_CXX98_BINDERS
     void advance(std::ptrdiff_t d){ static_transform(*this,*this,std::bind(detail::plus_asymmetric<ChannelPtr,std::ptrdiff_t>(),std::placeholders::_1,d)); }
-#else
-    void advance(std::ptrdiff_t d){ static_transform(*this,*this,std::bind2nd(detail::plus_asymmetric<ChannelPtr,std::ptrdiff_t>(),d)); }
-#endif
     reference dereference() const { return this->template deref<reference>(); }
 
     std::ptrdiff_t distance_to(const planar_pixel_iterator& it) const { return gil::at_c<0>(it)-gil::at_c<0>(*this); }
@@ -133,9 +115,9 @@ namespace detail {
 template <typename IC, typename C>
 struct const_iterator_type<planar_pixel_iterator<IC,C> > {
 private:
-    typedef typename std::iterator_traits<IC>::value_type channel_t;
+    using channel_t = typename std::iterator_traits<IC>::value_type;
 public:
-    typedef planar_pixel_iterator<typename channel_traits<channel_t>::const_pointer,C> type;
+    using type = planar_pixel_iterator<typename channel_traits<channel_t>::const_pointer,C>;
 };
 
 // The default implementation when the iterator is a C pointer is to use the standard constness semantics
@@ -148,7 +130,7 @@ struct iterator_is_mutable<planar_pixel_iterator<IC,C> > : public detail::channe
 
 template <typename IC, typename C, int K>
 struct kth_element_type<planar_pixel_iterator<IC,C>, K> {
-    typedef IC type;
+    using type = IC;
 };
 
 template <typename IC, typename C, int K>
@@ -163,7 +145,7 @@ struct kth_element_const_reference_type<planar_pixel_iterator<IC,C>, K> : public
 
 template <typename IC, typename C>
 struct color_space_type<planar_pixel_iterator<IC,C> > {
-    typedef C type;
+    using type = C;
 };
 
 template <typename IC, typename C>
@@ -174,7 +156,7 @@ struct is_planar<planar_pixel_iterator<IC,C> > : public mpl::true_ {};
 
 template <typename IC, typename C>
 struct channel_type<planar_pixel_iterator<IC,C> > {
-    typedef typename std::iterator_traits<IC>::value_type type;
+    using type = typename std::iterator_traits<IC>::value_type;
 };
 
 /////////////////////////////
@@ -221,7 +203,7 @@ inline planar_pixel_reference<typename std::iterator_traits<ChannelPtr>::referen
 
 template <typename IC, typename C>
 struct dynamic_x_step_type<planar_pixel_iterator<IC,C> > {
-    typedef memory_based_step_iterator<planar_pixel_iterator<IC,C> > type;
+    using type = memory_based_step_iterator<planar_pixel_iterator<IC,C>>;
 };
 } }  // namespace boost::gil
 

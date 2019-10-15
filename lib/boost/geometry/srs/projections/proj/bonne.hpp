@@ -40,23 +40,19 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_BONNE_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_BONNE_HPP
 
-#include <boost/geometry/util/math.hpp>
-#include <boost/math/special_functions/hypot.hpp>
-
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
 #include <boost/geometry/srs/projections/impl/pj_mlfn.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
+
+#include <boost/math/special_functions/hypot.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct bonne {};
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -89,7 +85,7 @@ namespace projections
 
                 // FORWARD(e_forward)  ellipsoid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T rh, E, c;
 
@@ -101,7 +97,7 @@ namespace projections
 
                 // INVERSE(e_inverse)  ellipsoid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(T const& xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
 
@@ -139,7 +135,7 @@ namespace projections
 
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T E, rh;
 
@@ -153,7 +149,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(T const& xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
 
@@ -178,14 +174,14 @@ namespace projections
             };
 
             // Bonne (Werner lat_1=90)
-            template <typename Parameters, typename T>
-            inline void setup_bonne(Parameters& par, par_bonne<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_bonne(Params const& params, Parameters& par, par_bonne<T>& proj_parm)
             {
                 static const T half_pi = detail::half_pi<T>();
 
                 T c;
 
-                proj_parm.phi1 = pj_get_param_r(par.params, "lat_1");
+                proj_parm.phi1 = pj_get_param_r<T, srs::spar::lat_1>(params, "lat_1", srs::dpar::lat_1);
                 if (fabs(proj_parm.phi1) < epsilon10)
                     BOOST_THROW_EXCEPTION( projection_exception(error_lat1_is_zero) );
 
@@ -223,9 +219,11 @@ namespace projections
     template <typename T, typename Parameters>
     struct bonne_ellipsoid : public detail::bonne::base_bonne_ellipsoid<T, Parameters>
     {
-        inline bonne_ellipsoid(const Parameters& par) : detail::bonne::base_bonne_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline bonne_ellipsoid(Params const& params, Parameters const& par)
+            : detail::bonne::base_bonne_ellipsoid<T, Parameters>(par)
         {
-            detail::bonne::setup_bonne(this->m_par, this->m_proj_parm);
+            detail::bonne::setup_bonne(params, this->m_par, this->m_proj_parm);
         }
     };
 
@@ -247,9 +245,11 @@ namespace projections
     template <typename T, typename Parameters>
     struct bonne_spheroid : public detail::bonne::base_bonne_spheroid<T, Parameters>
     {
-        inline bonne_spheroid(const Parameters& par) : detail::bonne::base_bonne_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline bonne_spheroid(Params const& params, Parameters const& par)
+            : detail::bonne::base_bonne_spheroid<T, Parameters>(par)
         {
-            detail::bonne::setup_bonne(this->m_par, this->m_proj_parm);
+            detail::bonne::setup_bonne(params, this->m_par, this->m_proj_parm);
         }
     };
 
@@ -258,26 +258,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::bonne, bonne_spheroid, bonne_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::spar::proj_bonne, bonne_spheroid, bonne_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class bonne_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<bonne_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<bonne_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(bonne_entry, bonne_spheroid, bonne_ellipsoid)
 
-        template <typename T, typename Parameters>
-        inline void bonne_init(detail::base_factory<T, Parameters>& factory)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(bonne_init)
         {
-            factory.add_to_factory("bonne", new bonne_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(bonne, bonne_entry);
         }
 
     } // namespace detail

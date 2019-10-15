@@ -1,36 +1,27 @@
-/*
-    Copyright 2005-2007 Adobe Systems Incorporated
-   
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_NUMERIC_ALGORITHM_HPP
 #define BOOST_GIL_EXTENSION_NUMERIC_ALGORITHM_HPP
 
-/*!
-/// \file               
-/// \brief Numeric algorithms
-/// \author Hailin Jin and Lubomir Bourdev \n
-///         Adobe Systems Incorporated
-/// \date   2005-2007 \n
-*/
+#include <boost/gil/extension/numeric/pixel_numeric_operations.hpp>
 
-#include <cassert>
-#include <iterator>
-#include <algorithm>
-#include <numeric>
-
-#include <boost/gil/gil_config.hpp>
-#include <boost/gil/pixel_iterator.hpp>
 #include <boost/gil/metafunctions.hpp>
+#include <boost/gil/pixel_iterator.hpp>
+
+#include <boost/assert.hpp>
+
+#include <algorithm>
+#include <iterator>
+#include <numeric>
 
 namespace boost { namespace gil {
 
-/// \brief Returns the reference proxy associated with a type that has a \p "reference" member typedef.
+/// \brief Returns the reference proxy associated with a type that has a \p "reference" member type alias.
 ///
 /// The reference proxy is the reference type, but with stripped-out C++ reference. It models PixelConcept
 template <typename T>
@@ -47,7 +38,7 @@ BinaryFunction for_each(Iterator1 first1,Iterator1 last1,Iterator2 first2,Binary
 template <typename SrcIterator,typename DstIterator>
 inline DstIterator assign_pixels(SrcIterator src,SrcIterator src_end,DstIterator dst) {
     for_each(src,src_end,dst,pixel_assigns_t<typename pixel_proxy<typename std::iterator_traits<SrcIterator>::value_type>::type,
-                                             typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type>());             
+                                             typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type>());
     return dst+(src_end-src);
 }
 
@@ -56,8 +47,8 @@ template <std::size_t Size>
 struct inner_product_k_t {
     template <class _InputIterator1, class _InputIterator2, class _Tp,
               class _BinaryOperation1, class _BinaryOperation2>
-    static _Tp apply(_InputIterator1 __first1, 
-                     _InputIterator2 __first2, _Tp __init, 
+    static _Tp apply(_InputIterator1 __first1,
+                     _InputIterator2 __first2, _Tp __init,
                      _BinaryOperation1 __binary_op1,
                      _BinaryOperation2 __binary_op2) {
         __init = __binary_op1(__init, __binary_op2(*__first1, *__first2));
@@ -70,8 +61,8 @@ template <>
 struct inner_product_k_t<0> {
     template <class _InputIterator1, class _InputIterator2, class _Tp,
               class _BinaryOperation1, class _BinaryOperation2>
-    static _Tp apply(_InputIterator1 __first1, 
-                     _InputIterator2 __first2, _Tp __init, 
+    static _Tp apply(_InputIterator1 __first1,
+                     _InputIterator2 __first2, _Tp __init,
                      _BinaryOperation1 __binary_op1,
                      _BinaryOperation2 __binary_op2) {
         return __init;
@@ -84,9 +75,9 @@ template <std::size_t Size,
           class _InputIterator1, class _InputIterator2, class _Tp,
           class _BinaryOperation1, class _BinaryOperation2>
 BOOST_FORCEINLINE
-_Tp inner_product_k(_InputIterator1 __first1, 
+_Tp inner_product_k(_InputIterator1 __first1,
                     _InputIterator2 __first2,
-                    _Tp __init, 
+                    _Tp __init,
                     _BinaryOperation1 __binary_op1,
                     _BinaryOperation2 __binary_op2) {
     return detail::inner_product_k_t<Size>::template apply(__first1,__first2,__init,
@@ -98,9 +89,9 @@ template <typename PixelAccum,typename SrcIterator,typename KernelIterator,typen
 inline DstIterator correlate_pixels_n(SrcIterator src_begin,SrcIterator src_end,
                                       KernelIterator ker_begin,Integer ker_size,
                                       DstIterator dst_begin) {
-    typedef typename pixel_proxy<typename std::iterator_traits<SrcIterator>::value_type>::type PIXEL_SRC_REF;
-    typedef typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type PIXEL_DST_REF;
-    typedef typename std::iterator_traits<KernelIterator>::value_type kernel_type;
+    using PIXEL_SRC_REF = typename pixel_proxy<typename std::iterator_traits<SrcIterator>::value_type>::type;
+    using PIXEL_DST_REF = typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type;
+    using kernel_type = typename std::iterator_traits<KernelIterator>::value_type;
     PixelAccum acc_zero; pixel_zeros_t<PixelAccum>()(acc_zero);
     while(src_begin!=src_end) {
         pixel_assigns_t<PixelAccum,PIXEL_DST_REF>()(
@@ -118,9 +109,9 @@ template <std::size_t Size,typename PixelAccum,typename SrcIterator,typename Ker
 inline DstIterator correlate_pixels_k(SrcIterator src_begin,SrcIterator src_end,
                                       KernelIterator ker_begin,
                                       DstIterator dst_begin) {
-    typedef typename pixel_proxy<typename std::iterator_traits<SrcIterator>::value_type>::type PIXEL_SRC_REF;
-    typedef typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type PIXEL_DST_REF;
-    typedef typename std::iterator_traits<KernelIterator>::value_type kernel_type;
+    using PIXEL_SRC_REF = typename pixel_proxy<typename std::iterator_traits<SrcIterator>::value_type>::type;
+    using PIXEL_DST_REF = typename pixel_proxy<typename std::iterator_traits<DstIterator>::value_type>::type;
+    using kernel_type = typename std::iterator_traits<KernelIterator>::value_type;
     PixelAccum acc_zero; pixel_zeros_t<PixelAccum>()(acc_zero);
     while(src_begin!=src_end) {
         pixel_assigns_t<PixelAccum,PIXEL_DST_REF>()(
@@ -136,9 +127,9 @@ inline DstIterator correlate_pixels_k(SrcIterator src_begin,SrcIterator src_end,
 /// \brief destination is set to be product of the source and a scalar
 template <typename PixelAccum,typename SrcView,typename Scalar,typename DstView>
 inline void view_multiplies_scalar(const SrcView& src,const Scalar& scalar,const DstView& dst) {
-    assert(src.dimensions()==dst.dimensions());
-    typedef typename pixel_proxy<typename SrcView::value_type>::type PIXEL_SRC_REF;
-    typedef typename pixel_proxy<typename DstView::value_type>::type PIXEL_DST_REF;
+    BOOST_ASSERT(src.dimensions() == dst.dimensions());
+    using PIXEL_SRC_REF = typename pixel_proxy<typename SrcView::value_type>::type;
+    using PIXEL_DST_REF = typename pixel_proxy<typename DstView::value_type>::type;
     int height=src.height();
     for(int rr=0;rr<height;++rr) {
         typename SrcView::x_iterator it_src=src.row_begin(rr);
@@ -153,6 +144,6 @@ inline void view_multiplies_scalar(const SrcView& src,const Scalar& scalar,const
     }
 }
 
-} }  // namespace boost::gil
+}} // namespace boost::gil
 
-#endif // BOOST_GIL_EXTENSION_NUMERIC_ALGORITHM_HPP
+#endif

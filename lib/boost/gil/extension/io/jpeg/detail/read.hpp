@@ -1,43 +1,33 @@
-/*
-    Copyright 2007-2012 Christian Henning, Andreas Pokorny, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Andreas Pokorny, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_READ_HPP
 #define BOOST_GIL_EXTENSION_IO_JPEG_DETAIL_READ_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Andreas Pokorny, Lubomir Bourdev \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <csetjmp>
-#include <vector>
 #include <boost/gil/extension/io/jpeg/tags.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/reader_base.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/io/typedefs.hpp>
-
 #include <boost/gil/extension/io/jpeg/detail/base.hpp>
 #include <boost/gil/extension/io/jpeg/detail/is_allowed.hpp>
 
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/conversion_policies.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/typedefs.hpp>
+
+#include <csetjmp>
+#include <vector>
+
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
-#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
+#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
 
 ///
@@ -59,16 +49,12 @@ class reader< Device
 {
 private:
 
-    typedef reader< Device
-                  , jpeg_tag
-                  , ConversionPolicy
-                  > this_t;
-
-    typedef typename ConversionPolicy::color_converter_type cc_t;
+    using this_t = reader<Device, jpeg_tag, ConversionPolicy>;
+    using cc_t = typename ConversionPolicy::color_converter_type;
 
 public:
 
-    typedef reader_backend< Device, jpeg_tag > backend_t;
+    using backend_t = reader_backend<Device, jpeg_tag>;
 
 public:
 
@@ -113,9 +99,11 @@ public:
 
         this->get()->dct_method = this->_settings._dct_method;
 
-        typedef typename is_same< ConversionPolicy
-                                , detail::read_and_no_convert
-                                >::type is_read_and_convert_t;
+        using is_read_and_convert_t = typename is_same
+            <
+                ConversionPolicy,
+                detail::read_and_no_convert
+            >::type;
 
         io_error_if( !detail::is_allowed< View >( this->_info
                                                 , is_read_and_convert_t()
@@ -144,7 +132,7 @@ public:
             {
                 this->_scanline_length = this->_info._width * num_channels< rgb8_view_t >::value;
 
-                read_rows< rgb8_pixel_t  >( view ); 
+                read_rows< rgb8_pixel_t  >( view );
                 break;
             }
 
@@ -172,7 +160,7 @@ private:
             >
     void read_rows( const View& view )
     {
-        typedef std::vector<ImagePixel> buffer_t;
+        using buffer_t = std::vector<ImagePixel>;
         buffer_t buffer( this->_info._width );
 
         // In case of an error we'll jump back to here and fire an exception.
@@ -231,7 +219,7 @@ private:
     }
 };
 
-namespace detail { 
+namespace detail {
 
 struct jpeg_type_format_checker
 {
@@ -275,10 +263,7 @@ class dynamic_image_reader< Device
                    , detail::read_and_no_convert
                    >
 {
-    typedef reader< Device
-                  , jpeg_tag
-                  , detail::read_and_no_convert
-                  > parent_t;
+    using parent_t = reader<Device, jpeg_tag, detail::read_and_no_convert>;
 
 public:
 
@@ -321,9 +306,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // gil
 } // boost

@@ -1,36 +1,21 @@
-/*
-    Copyright 2005-2007 Adobe Systems Incorporated
-
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-
-    See http://opensource.adobe.com/gil for most recent version including documentation.
-*/
-/*************************************************************************************************/
-
+//
+// Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_IO_DYNAMIC_IO_NEW_HPP
 #define BOOST_GIL_IO_DYNAMIC_IO_NEW_HPP
 
-/// \file
-/// \brief  Generic io functions for dealing with dynamic images
-//
-/// \author Hailin Jin and Lubomir Bourdev \n
-///         Adobe Systems Incorporated
-/// \date   2005-2007 \n Last updated May 30, 2006
+#include <boost/gil/extension/dynamic_image/dynamic_image_all.hpp>
+
+#include <boost/gil/io/error.hpp>
 
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/size.hpp>
-#include <boost/gil/gil_config.hpp>
-#include <boost/gil/io/error.hpp>
-#include <boost/gil/extension/dynamic_image/dynamic_image_all.hpp>
 
 namespace boost { namespace gil {
-
-// need this for various meta functions.
-struct any_image_pixel_t       {};
-struct any_image_channel_t     {};
-struct any_image_color_space_t {};
 
 namespace detail {
 
@@ -40,7 +25,7 @@ struct construct_matched_t {
     static bool apply(any_image<Images>& im,Pred pred) {
         if (pred.template apply<typename mpl::at_c<Images,N-1>::type>()) {
             typename mpl::at_c<Images,N-1>::type x;
-            im.move_in(x);
+            im = std::move(x);
             return true;
         } else return construct_matched_t<N-1>::apply(im,pred);
     }
@@ -85,7 +70,7 @@ class dynamic_io_fnobj {
 public:
     dynamic_io_fnobj(OpClass* op) : _op(op) {}
 
-    typedef void result_type;
+    using result_type = void;
 
     template <typename View>
     void operator()(const View& view) {apply(view,typename IsSupported::template apply<View>::type());}

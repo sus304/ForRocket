@@ -1,45 +1,35 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNM_DETAIL_READ_HPP
 #define BOOST_GIL_EXTENSION_IO_PNM_DETAIL_READ_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <vector>
-#include <boost/bind.hpp>
-#include <boost/gil.hpp>
 #include <boost/gil/extension/io/pnm/tags.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/row_buffer_helper.hpp>
-#include <boost/gil/io/bit_operations.hpp>
-#include <boost/gil/io/reader_base.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/io/typedefs.hpp>
-
 #include <boost/gil/extension/io/pnm/detail/reader_backend.hpp>
 #include <boost/gil/extension/io/pnm/detail/is_allowed.hpp>
 
+#include <boost/gil.hpp> // FIXME: Include what you use!
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/bit_operations.hpp>
+#include <boost/gil/io/conversion_policies.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/row_buffer_helper.hpp>
+#include <boost/gil/io/typedefs.hpp>
+
+#include <type_traits>
+#include <vector>
+
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 ///
@@ -62,18 +52,12 @@ class reader< Device
 
 private:
 
-    typedef reader< Device
-                  , pnm_tag
-                  , ConversionPolicy
-                  > this_t;
-
-    typedef typename ConversionPolicy::color_converter_type cc_t;
+    using this_t = reader<Device, pnm_tag, ConversionPolicy>;
+    using cc_t = typename ConversionPolicy::color_converter_type;
 
 public:
 
-    typedef reader_backend< Device, pnm_tag > backend_t;
-
-public:
+    using backend_t = reader_backend<Device, pnm_tag>;
 
     reader( const Device&                         io_dev
           , const image_read_settings< pnm_tag >& settings
@@ -101,9 +85,11 @@ public:
     template<typename View>
     void apply( const View& view )
     {
-        typedef typename is_same< ConversionPolicy
-                                , detail::read_and_no_convert
-                                >::type is_read_and_convert_t;
+        using is_read_and_convert_t = typename is_same
+            <
+                ConversionPolicy,
+                detail::read_and_no_convert
+            >::type;
 
         io_error_if( !detail::is_allowed< View >( this->_info
                                                 , is_read_and_convert_t()
@@ -119,7 +105,7 @@ public:
             {
                 this->_scanline_length = this->_info._width;
 
-                read_text_data< gray8_view_t >( view ); 
+                read_text_data< gray8_view_t >( view );
 
                 break;
             }
@@ -171,7 +157,7 @@ private:
             >
     void read_text_data( const View_Dst& dst )
     {
-        typedef typename View_Dst::y_coord_t y_t;
+        using y_t = typename View_Dst::y_coord_t;
 
         byte_vector_t row( this->_scanline_length );
 
@@ -229,7 +215,7 @@ private:
 
                 if( this->_info._max_value == 1 )
                 {
-                    typedef typename channel_type< typename get_pixel_type< View_Dst >::type >::type channel_t;
+                    using channel_t = typename channel_type<typename get_pixel_type<View_Dst>::type>::type;
 
                     // for pnm format 0 is white
                     row[x] = ( value != 0 )
@@ -313,11 +299,10 @@ private:
             >
     void read_bin_data( const View_Dst& view )
     {
-        typedef typename View_Dst::y_coord_t y_t;
-        typedef typename is_bit_aligned<
-                    typename View_Src::value_type >::type is_bit_aligned_t;
+        using y_t = typename View_Dst::y_coord_t;
+        using is_bit_aligned_t = typename is_bit_aligned<typename View_Src::value_type>::type;
 
-        typedef detail::row_buffer_helper_view< View_Src > rh_t;
+        using rh_t = detail::row_buffer_helper_view<View_Src>;
         rh_t rh( this->_scanline_length, true );
 
         typename rh_t::iterator_t beg = rh.begin() + this->_settings._top_left.x;
@@ -325,13 +310,17 @@ private:
 
         // For bit_aligned images we need to negate all bytes in the row_buffer
         // to make sure that 0 is black and 255 is white.
-        detail::negate_bits< typename rh_t::buffer_t
-                           , is_bit_aligned_t
-                           > neg;
+        detail::negate_bits
+            <
+                typename rh_t::buffer_t,
+                std::integral_constant<bool, is_bit_aligned_t::value> // TODO: Simplify after MPL removal
+            > neg;
 
-        detail::swap_half_bytes< typename rh_t::buffer_t
-                               , is_bit_aligned_t
-                               > swhb;
+        detail::swap_half_bytes
+            <
+                typename rh_t::buffer_t,
+                std::integral_constant<bool, is_bit_aligned_t::value> // TODO: Simplify after MPL removal
+            > swhb;
 
         //Skip scanlines if necessary.
         for( y_t y = 0; y < this->_settings._top_left.y; ++y )
@@ -364,7 +353,7 @@ private:
 };
 
 
-namespace detail { 
+namespace detail {
 
 struct pnm_type_format_checker
 {
@@ -375,9 +364,11 @@ struct pnm_type_format_checker
     template< typename Image >
     bool apply()
     {
-        typedef is_read_supported< typename get_pixel_type< typename Image::view_t >::type
-                                 , pnm_tag
-                                 > is_supported_t;
+        using is_supported_t = is_read_supported
+            <
+                typename get_pixel_type<typename Image::view_t>::type,
+                pnm_tag
+            >;
 
         return is_supported_t::_asc_type == _type
             || is_supported_t::_bin_type == _type;
@@ -412,10 +403,12 @@ class dynamic_image_reader< Device
                    , detail::read_and_no_convert
                    >
 {
-    typedef reader< Device
-                  , pnm_tag
-                  , detail::read_and_no_convert
-                  > parent_t;
+    using parent_t = reader
+        <
+            Device,
+            pnm_tag,
+            detail::read_and_no_convert
+        >;
 
 public:
 
@@ -455,9 +448,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // gil
 } // boost

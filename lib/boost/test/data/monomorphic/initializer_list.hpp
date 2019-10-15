@@ -17,6 +17,9 @@
 #include <boost/test/data/monomorphic/fwd.hpp>
 
 #include <boost/core/ignore_unused.hpp>
+
+#include <vector>
+
 #include <boost/test/detail/suppress_warnings.hpp>
 
 //____________________________________________________________________________//
@@ -38,8 +41,6 @@ namespace monomorphic {
 template<typename T>
 class init_list {
 public:
-    typedef T sample;
-
     enum { arity = 1 };
 
     typedef typename std::vector<T>::const_iterator iterator;

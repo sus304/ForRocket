@@ -1,31 +1,20 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_READER_BACKEND_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_READER_BACKEND_HPP
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
 
 #include <boost/gil/extension/io/tiff/tags.hpp>
 
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 ///
@@ -38,7 +27,7 @@ struct reader_backend< Device
 {
 public:
 
-    typedef tiff_tag format_tag_t;
+    using format_tag_t = tiff_tag;
 
 public:
 
@@ -51,9 +40,9 @@ public:
 
     , _scanline_length( 0 )
 
-    , _red  ( NULL )
-    , _green( NULL )
-    , _blue ( NULL )
+    , _red  ( nullptr )
+    , _green( nullptr )
+    , _blue ( nullptr )
     {
         init_multipage_read( settings );
 
@@ -144,7 +133,7 @@ private:
         {
             _io_dev.set_directory( settings._directory );
         }
-    } 
+    }
 
 public:
 
@@ -163,9 +152,9 @@ public:
     rgb16_planar_view_t _palette;
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

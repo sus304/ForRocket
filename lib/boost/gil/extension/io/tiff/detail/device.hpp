@@ -1,25 +1,24 @@
-/*
-    Copyright 2007-2008 Andreas Pokorny, Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2008 Andreas Pokorny, Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_DEVICE_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_DEVICE_HPP
 
-#include <algorithm>
+#include <boost/gil/extension/io/tiff/tags.hpp>
+#include <boost/gil/extension/io/tiff/detail/log.hpp>
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Andreas Pokorny, Christian Henning \n
-///
-/// \date   2007-2008 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/device.hpp>
+
+#include <boost/mpl/size.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <sstream>
 
 // taken from jpegxx - https://bitbucket.org/edd/jpegxx/src/ea2492a1a4a6/src/ijg_headers.hpp
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS
@@ -35,15 +34,6 @@
 
 #include <tiffio.hxx>
 
-#include <boost/mpl/size.hpp>
-#include <boost/utility/enable_if.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/extension/io/tiff/detail/log.hpp>
-
-#include <memory>
-
 namespace boost { namespace gil { namespace detail {
 
 template <int n_args>
@@ -58,7 +48,7 @@ struct set_property_f {
 	bool call_me(const typename Property:: type& value, std::shared_ptr<TIFF>& file) const;
 };
 
-template <> struct get_property_f <1> 
+template <> struct get_property_f <1>
 {
 	// For single-valued properties
 	template <typename Property>
@@ -117,7 +107,7 @@ template <> struct set_property_f <2>
 	bool call_me(typename Property:: type const & values, std::shared_ptr<TIFF>& file) const
 	{
 		typename mpl:: at <typename Property:: arg_types, mpl::int_<0> >:: type const length = values. size ();
-		typename mpl:: at <typename Property:: arg_types, mpl::int_<1> >:: type const pointer = & (values. front ()); 
+		typename mpl:: at <typename Property:: arg_types, mpl::int_<1> >:: type const pointer = & (values. front ());
 		return (1 == TIFFSetField( file.get()
 				, Property:: tag
 				, length
@@ -153,9 +143,9 @@ public:
       return set_property_f <mpl:: size <typename Property:: arg_types>::value > ().template call_me<Property> (value, _tiff_file);
     }
 
-    // TIFFIsByteSwapped returns a non-zero value if the image data was in a different 
-    // byte-order than the host machine. Zero is returned if the TIFF file and local 
-    // host byte-orders are the same. Note that TIFFReadTile(), TIFFReadStrip() and TIFFReadScanline() 
+    // TIFFIsByteSwapped returns a non-zero value if the image data was in a different
+    // byte-order than the host machine. Zero is returned if the TIFF file and local
+    // host byte-orders are the same. Note that TIFFReadTile(), TIFFReadStrip() and TIFFReadScanline()
     // functions already normally perform byte swapping to local host order if needed.
     bool are_bytes_swapped()
     {
@@ -255,7 +245,7 @@ public:
        io_error_if( TIFFWriteScanline( _tiff_file.get()
                                      , &buffer.front()
                                      , row
-                                     , plane 
+                                     , plane
                                      ) == -1
                    , "Write error"
                    );
@@ -269,7 +259,7 @@ public:
        io_error_if( TIFFWriteScanline( _tiff_file.get()
                                      , buffer
                                      , row
-                                     , plane 
+                                     , plane
                                      ) == -1
                    , "Write error"
                    );
@@ -357,7 +347,7 @@ public:
     {
         TIFF* tiff;
 
-        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "r" )) == NULL
+        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "r" )) == nullptr
                    , "file_stream_device: failed to open file" );
 
         _tiff_file = tiff_file_t( tiff, TIFFClose );
@@ -367,7 +357,7 @@ public:
     {
         TIFF* tiff;
 
-        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "w" )) == NULL
+        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "w" )) == nullptr
                    , "file_stream_device: failed to open file" );
 
         _tiff_file = tiff_file_t( tiff, TIFFClose );
@@ -394,7 +384,7 @@ public:
         io_error_if( ( tiff = TIFFStreamOpen( ""
                                             , &_out
                                             )
-                      ) == NULL
+                      ) == nullptr
                    , "ostream_device: failed to stream"
                    );
 
@@ -425,7 +415,7 @@ public:
         io_error_if( ( tiff = TIFFStreamOpen( ""
                                             , &_in
                                             )
-                     ) == NULL
+                     ) == nullptr
                    , "istream_device: failed to stream"
                    );
 
@@ -452,7 +442,7 @@ struct is_adaptable_input_device< FormatTag
                                 >
     : mpl::true_
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 template< typename FormatTag >
@@ -462,7 +452,7 @@ struct is_adaptable_output_device< FormatTag
                                  >
     : mpl::true_
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 

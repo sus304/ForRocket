@@ -1,38 +1,28 @@
-/*
-    Copyright 2007-2012 Andreas Pokorny, Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Andreas Pokorny
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_IO_DEVICE_HPP
 #define BOOST_GIL_IO_DEVICE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Andreas Pokorny, Christian Henning \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <cstdio>
-
-#include <boost/utility/enable_if.hpp>
 #include <boost/gil/io/base.hpp>
 
+#include <boost/assert.hpp>
+#include <boost/core/ignore_unused.hpp>
+
+#include <cstdio>
 #include <memory>
+#include <type_traits>
 
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
-
 
 namespace detail {
 
@@ -45,7 +35,6 @@ template <> struct buff_item< void >
 {
     static const unsigned int size = 1;
 };
-
 
 /*!
  * Implements the IODevice concept c.f. to \ref IODevice required by Image libraries like
@@ -62,7 +51,7 @@ class file_stream_device
 {
 public:
 
-   typedef FormatTag format_tag_t;
+   using format_tag_t = FormatTag;
 
 public:
 
@@ -77,9 +66,9 @@ public:
                       , read_tag   = read_tag()
                       )
     {
-        FILE* file = NULL;
+        FILE* file = nullptr;
 
-        io_error_if( ( file = fopen( file_name.c_str(), "rb" )) == NULL
+        io_error_if( ( file = fopen( file_name.c_str(), "rb" )) == nullptr
                    , "file_stream_device: failed to open file"
                    );
 
@@ -95,9 +84,9 @@ public:
                       , read_tag   = read_tag()
                       )
     {
-        FILE* file = NULL;
+        FILE* file = nullptr;
 
-        io_error_if( ( file = fopen( file_name, "rb" )) == NULL
+        io_error_if( ( file = fopen( file_name, "rb" )) == nullptr
                    , "file_stream_device: failed to open file"
                    );
 
@@ -113,9 +102,9 @@ public:
                       , write_tag
                       )
     {
-        FILE* file = NULL;
+        FILE* file = nullptr;
 
-        io_error_if( ( file = fopen( file_name.c_str(), "wb" )) == NULL
+        io_error_if( ( file = fopen( file_name.c_str(), "wb" )) == nullptr
                    , "file_stream_device: failed to open file"
                    );
 
@@ -131,9 +120,9 @@ public:
                       , write_tag
                       )
     {
-        FILE* file = NULL;
+        FILE* file = nullptr;
 
-        io_error_if( ( file = fopen( file_name, "wb" )) == NULL
+        io_error_if( ( file = fopen( file_name, "wb" )) == nullptr
                    , "file_stream_device: failed to open file"
                    );
 
@@ -183,12 +172,12 @@ public:
         ///@todo: add compiler symbol to turn error checking on and off.
         if(ferror( get() ))
         {
-            assert( false );
+            BOOST_ASSERT(false);
         }
 
         //libjpeg sometimes reads blocks in 4096 bytes even when the file is smaller than that.
         //assert( num_elements == count );
-        assert( num_elements > 0 );
+        BOOST_ASSERT(num_elements > 0 );
 
         return num_elements;
     }
@@ -242,8 +231,7 @@ public:
                                          , get()
                                          );
 
-        assert( num_elements == count );
-
+        BOOST_ASSERT(num_elements == count);
         return num_elements;
     }
 
@@ -306,7 +294,7 @@ public:
                    );
 
         return pos;
-    } 
+    }
 
     void flush()
     {
@@ -322,7 +310,8 @@ public:
                                          , get()
                                          );
 
-        assert( num_elements == line.size() );
+        BOOST_ASSERT(num_elements == line.size());
+        boost::ignore_unused(num_elements);
     }
 
     int error()
@@ -338,7 +327,7 @@ private:
         {
             fclose( file );
         }
-    }    
+    }
 
 private:
 
@@ -565,18 +554,22 @@ template< typename FormatTag
         >
 struct is_adaptable_input_device : mpl::false_{};
 
-template< typename FormatTag
-        , typename T
-        >
-struct is_adaptable_input_device< FormatTag
-                                , T
-                                , typename enable_if< mpl::or_< is_base_and_derived< std::istream, T >
-                                                              , is_same            < std::istream, T >
-                                                              >
-                                                    >::type
-                                > : mpl::true_
+template <typename FormatTag, typename T>
+struct is_adaptable_input_device
+<
+    FormatTag,
+    T,
+    typename std::enable_if
+    <
+        mpl::or_
+        <
+            is_base_and_derived<std::istream, T>,
+            is_same<std::istream, T>
+        >::value
+    >::type
+> : mpl::true_
 {
-    typedef istream_device< FormatTag > device_type;
+    using device_type = istream_device<FormatTag>;
 };
 
 template< typename FormatTag >
@@ -586,7 +579,7 @@ struct is_adaptable_input_device< FormatTag
                                 >
     : mpl::true_
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 ///
@@ -599,19 +592,22 @@ template< typename FormatTag
 struct is_read_device : mpl::false_
 {};
 
-template< typename FormatTag
-        , typename T
-        >
-struct is_read_device< FormatTag
-                     , T
-                     , typename enable_if< mpl::or_< is_input_device< FormatTag >
-                                                   , is_adaptable_input_device< FormatTag
-                                                                              , T
-                                                                              >
-                                                   >
-                                         >::type
-                     > : mpl::true_
-{};
+template <typename FormatTag, typename T>
+struct is_read_device
+<
+    FormatTag,
+    T,
+    typename std::enable_if
+    <
+        mpl::or_
+        <
+            is_input_device<FormatTag>,
+            is_adaptable_input_device<FormatTag, T>
+        >::value
+    >::type
+> : mpl::true_
+{
+};
 
 
 /**
@@ -629,23 +625,28 @@ template< typename FormatTag
         >
 struct is_adaptable_output_device : mpl::false_ {};
 
-template< typename FormatTag
-        , typename T
-        > struct is_adaptable_output_device< FormatTag
-                                           , T
-                                           , typename enable_if< mpl::or_< is_base_and_derived< std::ostream, T >
-                                                                         , is_same            < std::ostream, T >
-                                                                         >
-                                           >::type
-        > : mpl::true_
+template <typename FormatTag, typename T>
+struct is_adaptable_output_device
+<
+    FormatTag,
+    T,
+    typename std::enable_if
+    <
+        mpl::or_
+        <
+            is_base_and_derived<std::ostream, T>,
+            is_same<std::ostream, T>
+        >::value
+    >::type
+> : mpl::true_
 {
-    typedef ostream_device< FormatTag > device_type;
+    using device_type = ostream_device<FormatTag>;
 };
 
 template<typename FormatTag> struct is_adaptable_output_device<FormatTag,FILE*,void>
   : mpl::true_
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 
@@ -659,19 +660,22 @@ template< typename FormatTag
 struct is_write_device : mpl::false_
 {};
 
-template< typename FormatTag
-        , typename T
-        >
-struct is_write_device< FormatTag
-                      , T
-                      , typename enable_if< mpl::or_< is_output_device< FormatTag >
-                                                    , is_adaptable_output_device< FormatTag
-                                                                                , T
-                                                                                >
-                                                    >
-                                          >::type
-                      > : mpl::true_
-{};
+template <typename FormatTag, typename T>
+struct is_write_device
+<
+    FormatTag,
+    T,
+    typename std::enable_if
+    <
+        mpl::or_
+        <
+            is_output_device<FormatTag>,
+            is_adaptable_output_device<FormatTag, T>
+        >::value
+    >::type
+> : mpl::true_
+{
+};
 
 } // namespace detail
 
@@ -742,9 +746,9 @@ struct is_dynamic_image_writer< dynamic_image_writer< Device
 
 } // namespace detail
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

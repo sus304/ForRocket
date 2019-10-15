@@ -88,7 +88,10 @@ struct gmp_float_imp
    typedef mpl::list<double, long double>                 float_types;
    typedef long                                           exponent_type;
 
-   gmp_float_imp() BOOST_NOEXCEPT {}
+   gmp_float_imp() BOOST_NOEXCEPT 
+   {
+      m_data[0]._mp_d = 0; // uninitialized m_data
+   }
 
    gmp_float_imp(const gmp_float_imp& o)
    {
@@ -98,7 +101,7 @@ struct gmp_float_imp
       // to get the right value, but if it's then used in further calculations
       // things go badly wrong!!
       //
-      mpf_init2(m_data, multiprecision::detail::digits10_2_2(digits10 ? digits10 : get_default_precision()));
+      mpf_init2(m_data, mpf_get_prec(o.data()));
       if(o.m_data[0]._mp_d)
          mpf_set(m_data, o.m_data);
    }
@@ -112,9 +115,20 @@ struct gmp_float_imp
    gmp_float_imp& operator = (const gmp_float_imp& o)
    {
       if(m_data[0]._mp_d == 0)
-         mpf_init2(m_data, multiprecision::detail::digits10_2_2(digits10 ? digits10 : get_default_precision()));
-      if(o.m_data[0]._mp_d)
-         mpf_set(m_data, o.m_data);
+         mpf_init2(m_data, mpf_get_prec(o.data()));
+      if (mpf_get_prec(data()) != mpf_get_prec(o.data()))
+      {
+         mpf_t t;
+         mpf_init2(t, mpf_get_prec(o.data()));
+         mpf_set(t, o.data());
+         mpf_swap(data(), t);
+         mpf_clear(t);
+      }
+      else
+      {
+         if (o.m_data[0]._mp_d)
+            mpf_set(m_data, o.m_data);
+      }
       return *this;
    }
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -328,8 +342,19 @@ struct gmp_float_imp
             }
             else if(digits > 0)
             {
+               mp_exp_t old_e = e;
                ps = mpf_get_str (0, &e, 10, static_cast<std::size_t>(digits), m_data);
                --e;  // To match with what our formatter expects.
+               if (old_e > e)
+               {
+                  // in some cases, when we ask for more digits of precision, it will
+                  // change the number of digits to the left of the decimal, if that
+                  // happens, account for it here.
+                  // example: cout << fixed << setprecision(3) << mpf_float_50("99.9809")
+                  digits -= old_e - e;
+                  ps = mpf_get_str (0, &e, 10, static_cast<std::size_t>(digits), m_data);
+                  --e;  // To match with what our formatter expects.
+               }
             }
             else
             {
@@ -518,7 +543,25 @@ struct gmp_float<0> : public detail::gmp_float_imp<0>
       mpf_init2(this->m_data, multiprecision::detail::digits10_2_2(digits10));
       mpf_set(this->m_data, o.data());
    }
+   template <class V>
+   gmp_float(const V& o, unsigned digits10)
+   {
+      mpf_init2(this->m_data, multiprecision::detail::digits10_2_2(digits10));
+      *this = o;
+   }
 
+#ifndef BOOST_NO_CXX17_HDR_STRING_VIEW
+   //
+   // Support for new types in C++17
+   //
+   template <class Traits>
+   gmp_float(const std::basic_string_view<char, Traits>& o, unsigned digits10)
+   {
+      using default_ops::assign_from_string_view; 
+      mpf_init2(this->m_data, multiprecision::detail::digits10_2_2(digits10));
+      assign_from_string_view(*this, o);
+   }
+#endif
    gmp_float& operator=(const gmp_float& o)
    {
       *static_cast<detail::gmp_float_imp<0>*>(this) = static_cast<detail::gmp_float_imp<0> const&>(o);
@@ -2340,6 +2383,12 @@ template<>
 struct number_category<detail::canonical<mpq_t, gmp_rational>::type> : public mpl::int_<number_kind_rational>{};
 template<>
 struct number_category<detail::canonical<mpf_t, gmp_float<0> >::type> : public mpl::int_<number_kind_floating_point>{};
+
+namespace detail
+{
+   template<>
+   struct is_variable_precision<backends::gmp_float<0> > : public true_type {};
+}
 
 
 typedef number<gmp_float<50> >    mpf_float_50;

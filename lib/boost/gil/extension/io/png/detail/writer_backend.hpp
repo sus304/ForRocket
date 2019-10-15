@@ -1,38 +1,26 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNG_DETAIL_WRITER_BACKEND_HPP
 #define BOOST_GIL_EXTENSION_IO_PNG_DETAIL_WRITER_BACKEND_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/gil/io/typedefs.hpp>
-#include <boost/gil/io/base.hpp>
-
 #include <boost/gil/extension/io/png/tags.hpp>
-
 #include <boost/gil/extension/io/png/detail/base.hpp>
 #include <boost/gil/extension/io/png/detail/supported_types.hpp>
 
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/typedefs.hpp>
+
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
-#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
+#pragma warning(disable:4611) //interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
 
 ///
@@ -47,15 +35,11 @@ struct writer_backend< Device
 
 private:
 
-    typedef writer_backend< Device
-                          , png_tag
-                          > this_t;
+    using this_t = writer_backend<Device, png_tag>;
 
 public:
 
-    typedef png_tag format_tag_t;
-
-public:
+    using format_tag_t = png_tag;
 
     ///
     /// Constructor
@@ -73,22 +57,22 @@ public:
         // the library version is compatible with the one used at compile time,
         // in case we are using dynamically linked libraries.  REQUIRED.
         get()->_struct = png_create_write_struct( PNG_LIBPNG_VER_STRING
-                                                , NULL  // user_error_ptr
-                                                , NULL  // user_error_fn
-                                                , NULL  // user_warning_fn
+                                                , nullptr  // user_error_ptr
+                                                , nullptr  // user_error_fn
+                                                , nullptr  // user_warning_fn
                                                 );
 
-        io_error_if( get_struct() == NULL
+        io_error_if( get_struct() == nullptr
                    , "png_writer: fail to call png_create_write_struct()"
                    );
 
-        // Allocate/initialize the image information data.  REQUIRED 
+        // Allocate/initialize the image information data.  REQUIRED
         get()->_info = png_create_info_struct( get_struct() );
 
-        if( get_info() == NULL )
+        if( get_info() == nullptr )
         {
             png_destroy_write_struct( &get()->_struct
-                                    , NULL
+                                    , nullptr
                                     );
 
             io_error( "png_writer: fail to call png_create_info_struct()" );
@@ -114,9 +98,11 @@ protected:
     template< typename View >
     void write_header( const View& view )
     {
-        typedef detail::png_write_support< typename channel_type< typename get_pixel_type< View >::type >::type
-                                         , typename color_space_type< View >::type
-                                         > png_rw_info_t;
+        using png_rw_info_t = detail::png_write_support
+            <
+                typename channel_type<typename get_pixel_type<View>::type>::type,
+                typename color_space_type<View>::type
+            >;
 
         // Set the image information here.  Width and height are up to 2^31,
         // bit_depth is one of 1, 2, 4, 8, or 16, but valid values also depend on
@@ -288,7 +274,7 @@ protected:
 
 #ifndef BOOST_GIL_IO_PNG_1_4_OR_LOWER
 
-#ifdef BOOST_GIL_IO_PNG_FLOATING_POINT_SUPPORTED 
+#ifdef BOOST_GIL_IO_PNG_FLOATING_POINT_SUPPORTED
         if( _info._valid_scale_factors )
         {
             png_set_sCAL( get_struct()
@@ -358,11 +344,11 @@ protected:
             int sample_max = ( 1u << _info._bit_depth );
 
             /* libpng doesn't reject a tRNS chunk with out-of-range samples */
-            if( !(  (  _info._color_type == PNG_COLOR_TYPE_GRAY 
+            if( !(  (  _info._color_type == PNG_COLOR_TYPE_GRAY
                     && (int) _info._trans_values[0].gray > sample_max
                     )
                  || (  _info._color_type == PNG_COLOR_TYPE_RGB
-                    &&(  (int) _info._trans_values[0].red   > sample_max 
+                    &&(  (int) _info._trans_values[0].red   > sample_max
                       || (int) _info._trans_values[0].green > sample_max
                       || (int) _info._trans_values[0].blue  > sample_max
                       )
@@ -408,7 +394,7 @@ protected:
                                        );
 
 #ifdef BOOST_GIL_IO_PNG_DITHERING_SUPPORTED
-        // Dithering 
+        // Dithering
         if( _info._set_dithering )
         {
             png_set_dither( get_struct()
@@ -506,9 +492,9 @@ public:
     image_write_info< png_tag > _info;
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

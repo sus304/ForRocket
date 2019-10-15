@@ -1,39 +1,29 @@
-/*
-    Copyright 2012 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2012 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNM_DETAIL_WRITE_HPP
 #define BOOST_GIL_EXTENSION_IO_PNM_DETAIL_WRITE_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/pnm/tags.hpp>
+#include <boost/gil/extension/io/pnm/detail/writer_backend.hpp>
+
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/bit_operations.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
 
 #include <cstdlib>
 #include <string>
 
-#include <boost/gil/extension/io/pnm/tags.hpp>
+namespace boost { namespace gil {
 
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/device.hpp>
-
-#include <boost/gil/extension/io/pnm/detail/writer_backend.hpp>
-
-namespace boost { namespace gil { 
-
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 namespace detail {
@@ -41,7 +31,7 @@ namespace detail {
 struct pnm_write_is_supported
 {
     template< typename View >
-    struct apply 
+    struct apply
         : public is_write_supported< typename get_pixel_type< View >::type
                                    , pnm_tag
                                    >
@@ -62,7 +52,7 @@ class writer< Device
                            >
 {
 private:
-    typedef writer_backend< Device, pnm_tag > backend_t;
+    using backend_t = writer_backend<Device, pnm_tag>;
 
 public:
 
@@ -77,7 +67,7 @@ public:
     template< typename View >
     void apply( const View& view )
     {
-        typedef typename get_pixel_type< View >::type pixel_t;
+        using pixel_t = typename get_pixel_type<View>::type;
 
         std::size_t width  = view.width();
         std::size_t height = view.height();
@@ -141,38 +131,23 @@ private:
                    , const mpl::true_&    // bit_aligned
                    )
     {
-        BOOST_STATIC_ASSERT(( is_same< View
-                                     , typename gray1_image_t::view_t
-                                     >::value
-                           ));
+        static_assert(is_same<View, typename gray1_image_t::view_t>::value, "");
 
         byte_vector_t row( pitch / 8 );
 
-        typedef typename View::x_iterator x_it_t;
+        using x_it_t = typename View::x_iterator;
         x_it_t row_it = x_it_t( &( *row.begin() ));
 
-        detail::negate_bits< byte_vector_t
-                           , mpl::true_
-                           > neg;
-
-        detail::mirror_bits< byte_vector_t
-                           , mpl::true_
-                           > mirror;
-
-
-        for( typename View::y_coord_t y = 0; y < src.height(); ++y )
+        detail::negate_bits<byte_vector_t, std::true_type> negate;
+        detail::mirror_bits<byte_vector_t, std::true_type> mirror;
+        for (typename View::y_coord_t y = 0; y < src.height(); ++y)
         {
-            std::copy( src.row_begin( y )
-                     , src.row_end( y )
-                     , row_it
-                     );
+            std::copy(src.row_begin(y), src.row_end(y), row_it);
 
-            mirror( row );
-            neg   ( row );
+            mirror(row);
+            negate(row);
 
-            this->_io_dev.write( &row.front()
-                               , pitch / 8
-                               );
+            this->_io_dev.write(&row.front(), pitch / 8);
         }
     }
 
@@ -187,8 +162,8 @@ private:
                           >
                    > buf( src.width() );
 
-        // typedef typename View::value_type pixel_t;
-        // typedef typename view_type_from_pixel< pixel_t >::type view_t;
+        // using pixel_t = typename View::value_type;
+        // using view_t = typename view_type_from_pixel< pixel_t >::type;
 
         //view_t row = interleaved_view( src.width()
         //                             , 1
@@ -233,9 +208,7 @@ class dynamic_image_writer< Device
                    , pnm_tag
                    >
 {
-    typedef writer< Device
-                  , pnm_tag
-                  > parent_t;
+    using parent_t = writer<Device, pnm_tag>;
 
 public:
 
@@ -258,9 +231,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // gil
 } // boost

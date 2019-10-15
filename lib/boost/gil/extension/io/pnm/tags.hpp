@@ -1,29 +1,18 @@
-/*
-    Copyright 2008 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2008 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNM_TAGS_HPP
 #define BOOST_GIL_EXTENSION_IO_PNM_TAGS_HPP
 
-#define BOOST_GIL_EXTENSION_IO_PNM_READ_ENABLED
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file               
-/// \brief 
-/// \author Christian Henning \n
-///         
-/// \date 2008 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/mpl/integral_c.hpp>
+#define BOOST_GIL_EXTENSION_IO_PNM_READ_ENABLED // TODO: Document, explain, review
 
 #include <boost/gil/io/base.hpp>
+
+#include <boost/mpl/integral_c.hpp>
 
 namespace boost { namespace gil {
 
@@ -35,13 +24,13 @@ struct pnm_tag : format_tag {};
 /// Defines type for image type property.
 struct pnm_image_type : property_base< uint32_t >
 {
-    typedef boost::mpl::integral_c< type, 1 > mono_asc_t;
-    typedef boost::mpl::integral_c< type, 2 > gray_asc_t;
-    typedef boost::mpl::integral_c< type, 3 > color_asc_t;
+    using mono_asc_t = boost::mpl::integral_c<type, 1>;
+    using gray_asc_t = boost::mpl::integral_c<type, 2>;
+    using color_asc_t = boost::mpl::integral_c<type, 3>;
 
-    typedef boost::mpl::integral_c< type, 4 > mono_bin_t;
-    typedef boost::mpl::integral_c< type, 5 > gray_bin_t;
-    typedef boost::mpl::integral_c< type, 6 > color_bin_t;
+    using mono_bin_t = boost::mpl::integral_c<type, 4>;
+    using gray_bin_t = boost::mpl::integral_c<type, 5>;
+    using color_bin_t = boost::mpl::integral_c<type, 6>;
 };
 
 /// Defines type for image width property.

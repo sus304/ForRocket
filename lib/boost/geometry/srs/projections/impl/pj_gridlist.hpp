@@ -41,8 +41,11 @@
 #define BOOST_GEOMETRY_SRS_PROJECTIONS_IMPL_PJ_GRIDLIST_HPP
 
 
+#include <boost/geometry/srs/projections/exception.hpp>
 #include <boost/geometry/srs/projections/grids.hpp>
 #include <boost/geometry/srs/projections/impl/pj_gridinfo.hpp>
+#include <boost/geometry/srs/projections/impl/pj_strerrno.hpp>
+#include <boost/geometry/srs/projections/par_data.hpp>
 
 
 namespace boost { namespace geometry { namespace projections
@@ -130,29 +133,19 @@ inline bool pj_gridlist_merge_gridfile(std::string const& gridname,
 /************************************************************************/
 
 template <typename StreamPolicy, typename Grids>
-inline void pj_gridlist_from_nadgrids(std::string const& nadgrids,
+inline void pj_gridlist_from_nadgrids(srs::detail::nadgrids const& nadgrids,
                                       StreamPolicy const& stream_policy,
                                       Grids & grids,
                                       std::vector<std::size_t> & gridindexes)
 
 {
     // Loop processing names out of nadgrids one at a time.
-    for (std::string::size_type i = 0 ; i < nadgrids.size() ; )
+    for (srs::detail::nadgrids::const_iterator it = nadgrids.begin() ;
+            it != nadgrids.end() ; ++it)
     {
-        bool required = true;
+        bool required = (*it)[0] != '@';
         
-        if( nadgrids[i] == '@' )
-        {
-            required = false;
-            ++i;
-        }
-
-        std::string::size_type end = nadgrids.find(',', i);
-        std::string name = nadgrids.substr(i, end - i);
-                
-        i = end;
-        if (end != std::string::npos)
-            ++i;
+        std::string name(it->begin() + (required ? 0 : 1), it->end());
 
         if ( ! pj_gridlist_merge_gridfile(name, stream_policy, grids, gridindexes) 
           && required )
@@ -167,7 +160,7 @@ inline void pj_gridlist_from_nadgrids(Par const& defn, srs::projection_grids<Gri
 {
     BOOST_GEOMETRY_ASSERT(grids.storage_ptr != NULL);
 
-    pj_gridlist_from_nadgrids(pj_get_param_s(defn.params, "nadgrids"),
+    pj_gridlist_from_nadgrids(defn.nadgrids,
                               grids.storage_ptr->stream_policy,
                               grids.storage_ptr->hgrids,
                               grids.hindexes);
