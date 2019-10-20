@@ -1,10 +1,9 @@
 // ******************************************************
 // Project Name    : ForRocket
-// File Name       : FlightDataRecorder.cpp
-// Creation Date   : 2019/07/19
- 
+// File Name       : flight_data_recorder.cpp
+// Creation Date   : 2019/10/20
+
 // Copyright © 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
-#include "FlightDataRecorder.hpp"
-
+#include "flight_data_recorder.hpp"
