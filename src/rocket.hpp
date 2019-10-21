@@ -2,7 +2,7 @@
 // Project Name    : ForRocket
 // File Name       : rocket.hpp
 // Creation Date   : 2019/10/20
- 
+//
 // Copyright © 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
@@ -21,6 +21,13 @@ namespace forrocket {
             Position position;
             Velocity velocity;
             Mass mass;
+            Eigen::Vector4d quaternion;
+            Eigen::Vector3d omega;
+
+            void SeparateUpperStage();
+
+        private:
+            bool has_upper_stage;
 
     };
 

@@ -1,3 +1,4 @@
+# # coding: utf-8
 import sys
 import datetime
 
@@ -14,8 +15,8 @@ def GenerateNewFile(file_name):
     source_file.write("// Project Name    : ForRocket\n")
     source_file.write("// File Name       : " + source_full_file_name + "\n")
     source_file.write("// Creation Date   : " + date.strftime("%Y/%m/%d") + "\n")
-    source_file.write("\n")
-    source_file.write("// Copyright © " + date.strftime("%Y") + " Susumu Tanaka. All rights reserved.\n")
+    source_file.write("//\n")
+    source_file.write("// Copyright (c) " + date.strftime("%Y") + " Susumu Tanaka. All rights reserved.\n")
     source_file.write("// ******************************************************\n")
     source_file.write("\n")
     source_file.write('#include "' + header_full_file_name + '"\n')
@@ -30,8 +31,8 @@ def GenerateNewFile(file_name):
     header_file.write("// Project Name    : ForRocket\n")
     header_file.write("// File Name       : " + header_full_file_name + "\n")
     header_file.write("// Creation Date   : " + date.strftime("%Y/%m/%d") + "\n")
-    header_file.write("\n")
-    header_file.write("// Copyright © " + date.strftime("%Y") + " Susumu Tanaka. All rights reserved.\n")
+    header_file.write("//\n")
+    header_file.write("// Copyright (c) " + date.strftime("%Y") + " Susumu Tanaka. All rights reserved.\n")
     header_file.write("// ******************************************************\n")
     header_file.write("\n")
     header_file.write("#ifndef " + header_include_guard + "\n")

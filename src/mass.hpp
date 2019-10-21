@@ -2,7 +2,7 @@
 // Project Name    : ForRocket
 // File Name       : mass.hpp
 // Creation Date   : 2019/10/20
- 
+//
 // Copyright © 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
@@ -13,10 +13,9 @@
 namespace forrocket {
     class Mass {
         public:
-            double dry;
             double inert;
             double propellant;
-
+            double upper_stage;
     };
 
 }
