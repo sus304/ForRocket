@@ -11,6 +11,8 @@
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
+#include "environment_air.hpp"
+
 namespace odeint = boost::numeric::odeint;
 
 forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket) {
@@ -25,21 +27,24 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->omega[0] = x[10]; p_rocket->omega[1] = x[11]; p_rocket->omega[2] = x[12];
     p_rocket->mass.propellant = x[13];
 
-    
+    forrocket::EnvironmentAir env_air;
+    p_rocket->UpdateParameter(t, env_air);
 
+    
+    
 
     dx[0] = p_rocket->velocity.ECI[0];  // vel_ECI => pos_ECI
     dx[1] = p_rocket->velocity.ECI[1];  // 
     dx[2] = p_rocket->velocity.ECI[2];  // 
-    dx[3] =   // acc_ECI => vel_ECI
-    dx[4] =   // 
-    dx[5] =   // 
-    dx[6] =   // quatdot => quat
-    dx[7] =   // 
-    dx[8] =   // 
-    dx[9] =   // 
-    dx[10] =   // omegadot => omega
-    dx[11] =   // 
-    dx[12] =   // 
-    dx[13] =   // massdot => mass_prop
+    dx[3] = p_rocket->acceleration.ECI[0];  // acc_ECI => vel_ECI
+    dx[4] = p_rocket->acceleration.ECI[1];  // 
+    dx[5] = p_rocket->acceleration.ECI[2];  // 
+    dx[6] = p_rocket->quaternion_dot[0];  // quatdot => quat
+    dx[7] = p_rocket->quaternion_dot[1];  // 
+    dx[8] = p_rocket->quaternion_dot[2];  // 
+    dx[9] = p_rocket->quaternion_dot[3];  // 
+    dx[10] = p_rocket->omega_dot[0];  // omegadot => omega
+    dx[11] = p_rocket->omega_dot[1];  // 
+    dx[12] = p_rocket->omega_dot[2];  // 
+    dx[13] = -p_rocket->engine.mdot_prop;  // massdot => mass_prop
 };
