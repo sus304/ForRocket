@@ -25,6 +25,9 @@ namespace forrocket {
             double mis_alignment_angle_y_axis;
             double mis_alignment_angle_z_axis;
 
+            void Ingnition();
+            void Cutoff();
+
         private:
             double thrust_source;
             double mdot_prop_source;

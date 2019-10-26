@@ -65,13 +65,12 @@ namespace forrocket {
             Eigen::Vector3d moment_aero_dumping;
             Eigen::Vector3d moment_jet_dumping;
 
-            void UpdateParameter(const double t, const EnvironmentAir& env_air);
+            void UpdateStatus(const double t, const EnvironmentAir& env_air);
 
-            void CutoffEngine();
-            void SeparateUpperStage();
+            // void SeparateUpperStage();
 
         private:
-            bool has_upper_stage;
+            // bool has_upper_stage;
 
     };
 

@@ -7,3 +7,7 @@
 // ******************************************************
 
 #include "rocket.hpp"
+
+void UpdateStatus(const double t, const EnvironmentAir& env_air);
+
+void SeparateUpperStage();

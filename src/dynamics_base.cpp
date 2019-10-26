@@ -40,7 +40,7 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroForceBodyCoordinate() {
     double force_axial = p_rocket->dynamic_pressure * p_rocket->CA * p_rocket->area;
     double force_normal_y_axis = p_rocket->dynamic_pressure * p_rocket->CNa * p_rocket->area * p_rocket->sideslip_angle;
     double force_normal_z_axis = p_rocket->dynamic_pressure * p_rocket->CNa * p_rocket->area * p_rocket->angle_of_attack;
-    force_aero << force_axial + getFinCantAxialForce(), force_normal_y_axis, force_normal_z_axis;
+    force_aero << force_axial + forrocket::DynamicsBase::getFinCantAxialForce(), force_normal_y_axis, force_normal_z_axis;
 
     return force_aero;
 };
@@ -71,7 +71,7 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroForceMoment() {
 
     Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_CP, 0.0, 0.0);
     moment_aero = p_rocket->force_aero.cross(moment_arm);
-    moment_aero[0] += getFinCantAxialForce() * p_rocket->radius_CP_fin;
+    moment_aero[0] += forrocket::DynamicsBase::getFinCantAxialForce() * p_rocket->radius_CP_fin;
 
     return moment_aero;
 };

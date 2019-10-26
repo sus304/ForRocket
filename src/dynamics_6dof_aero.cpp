@@ -28,7 +28,7 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->mass.propellant = x[13];
 
     forrocket::EnvironmentAir env_air;
-    p_rocket->UpdateParameter(t, env_air);
+    p_rocket->UpdateStatus(t, env_air);
 
     
     

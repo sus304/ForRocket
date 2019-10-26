@@ -7,3 +7,15 @@
 // ******************************************************
 
 #include "engine.hpp"
+
+void forrocket::Engine::Ingnition() {
+    thrust = thrust_source;
+    mdot_prop = mdot_prop_source;
+};
+
+
+void forrocket::Engine::Cutoff() {
+    thrust = 0.0;
+    mdot_prop = 0.0;
+};
+
