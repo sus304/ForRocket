@@ -8,8 +8,14 @@
 
 #include "engine.hpp"
 
-void forrocket::Engine::Ingnition() {
-    thrust = thrust_source;
+void forrocket::Engine::Ignition(const double pressure_sea_level, const double pressure) {
+    thrust = thrust_sea_level;
+    mdot_prop = mdot_prop_source;
+};
+
+
+void forrocket::Engine::Update(const double t, const double pressure_sea_level, const double pressure) {
+    thrust = thrust_sea_level + (pressure_sea_level - pressure) * area_exit;
     mdot_prop = mdot_prop_source;
 };
 

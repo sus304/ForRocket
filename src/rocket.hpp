@@ -19,7 +19,7 @@
 #include "acceleration.hpp"
 #include "mass.hpp"
 
-#include "environment_air.hpp"
+#include "environment/air.hpp"
 
 namespace forrocket {
     class Rocket {
@@ -65,7 +65,15 @@ namespace forrocket {
             Eigen::Vector3d moment_aero_dumping;
             Eigen::Vector3d moment_jet_dumping;
 
-            void UpdateStatus(const double t, const EnvironmentAir& env_air);
+            void UpdatePosition();
+            void UpdateVelocity();
+            void UpdateLengthCG(const double t);
+            void UpdateLengthCP(const double mach);
+            void UpdateEngine(const double t, const double air_pressure);
+            void UpdateAerodynamicsCoefficient(const double mach);
+            void UpdateAoA(Eigen::Vector3d velocity_air_body);
+            void UpdateAttitudeFromProgramRate(const double t);
+
 
             // void SeparateUpperStage();
 

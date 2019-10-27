@@ -1,13 +1,13 @@
 // ******************************************************
 // Project Name    : ForRocket
-// File Name       : environment_air.cpp
+// File Name       : wind.cpp
 // Creation Date   : 2019/10/26
 //
 // Copyright (c) 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
-#include "environment_air.hpp"
+#include "environment/wind.hpp"
 
-forrocket::EnvironmentAir::EnvironmentAir(const double altitude) {
-
+void forrocket::EnvironmentWind::Update(const double altitude) {
+    NED << 0.0, 0.0, 0.0;
 };

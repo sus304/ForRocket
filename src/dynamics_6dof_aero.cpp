@@ -11,7 +11,7 @@
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-#include "environment_air.hpp"
+#include "environment/air.hpp"
 
 namespace odeint = boost::numeric::odeint;
 
@@ -28,7 +28,6 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->mass.propellant = x[13];
 
     forrocket::EnvironmentAir env_air;
-    p_rocket->UpdateStatus(t, env_air);
 
     
     
