@@ -8,6 +8,6 @@
 
 #include "rocket.hpp"
 
-void UpdateStatus(const double t, const EnvironmentAir& env_air);
+void forrocket::Rocket::UpdateStatus(const double t, const forrocket::EnvironmentAir& env_air) {
 
-void SeparateUpperStage();
+};

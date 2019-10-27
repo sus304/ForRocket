@@ -12,6 +12,9 @@
 namespace forrocket {
     class EnvironmentAir {
         public:
+            EnvironmentAir() {};
+            EnvironmentAir(const double altitude);
+
             double temprature;
             double pressure;
             double rho;

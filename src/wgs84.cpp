@@ -1,13 +1,9 @@
 // ******************************************************
 // Project Name    : ForRocket
-// File Name       : environment_air.cpp
-// Creation Date   : 2019/10/26
+// File Name       : wgs84.cpp
+// Creation Date   : 2019/10/27
 //
 // Copyright (c) 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
-#include "environment_air.hpp"
-
-forrocket::EnvironmentAir::EnvironmentAir(const double altitude) {
-
-};
+#include "wgs84.hpp"
