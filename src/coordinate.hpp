@@ -12,14 +12,48 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
+#include "environment/wgs84.hpp"
+
 namespace forrocket {
+    class DirectionCosineMatrix {
+        public:
+            Eigen::Matrix3d ECI2ECEF;
+            Eigen::Matrix3d ECEF2NED;
+            Eigen::Matrix3d NED2body;
+            Eigen::Matrix3d wind2body;
+
+            Eigen::Matrix3d body2NED;
+            Eigen::Matrix3d NED2ECEF;
+            Eigen::Matrix3d ECEF2ECI;
+            Eigen::Matrix3d body2wind;
+
+            Eigen::Matrix3d EarthRotate;
+
+            DirectionCosineMatrix() {};
+            DirectionCosineMatrix(WGS84& wgs) {
+                EarthRotate << 0.0, -wgs.omega, 0.0,
+                                wgs.omega, 0.0, 0.0,
+                                0.0, 0.0, 0.0;
+            };
+    };
+
     class Coordinate {
         public:
+            WGS84 wgs;
+            DirectionCosineMatrix dcm;
 
-        Eigen::Matrix3d wind2body;
-        wind2body << cos(alpha) * cos(beta), cos(alpha) * sin(beta), -sin(alpha),
-            -sin(beta)             , cos(beta)             , 0.0,
-            sin(alpha) * cos(beta), sin(alpha) * sin(beta), cos(alpha);
+            void setWind2Body(const double alpha, const double beta);
+
+            void setNED2Body(const Eigen::Vector3d euler_angle);
+            void setNED2Body(const Eigen::Vector4d quaternion);
+
+            void setECI2ECEF(const double epoc_time);
+
+            void setECEF2NED(const Eigen::Vector3d pos_LLH_init);
+            
+            Eigen::Vector4d Quaternion(const Eigen::Vector3d euler_angle);
+            Eigen::Vector3d EulerAngle();
+            // Eigen::Vector3d EulerAngle(const Eigen::Vector4d quaternion);
         
     };
 }
