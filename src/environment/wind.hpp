@@ -9,6 +9,7 @@
 #ifndef ENVIRONMENT_WIND_HPP_
 #define ENVIRONMENT_WIND_HPP_
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 namespace forrocket {

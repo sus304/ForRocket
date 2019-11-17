@@ -9,6 +9,7 @@
 #ifndef ACCELERATION_HPP_
 #define ACCELERATION_HPP_
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 namespace forrocket {

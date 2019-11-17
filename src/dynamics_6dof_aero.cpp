@@ -8,6 +8,7 @@
 
 #include "dynamics_6dof_aero.hpp"
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 

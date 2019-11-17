@@ -11,6 +11,7 @@
 
 #include <array>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "rocket.hpp"

@@ -11,6 +11,7 @@
 
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "engine.hpp"

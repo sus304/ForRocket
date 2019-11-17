@@ -15,7 +15,7 @@
 namespace forrocket {
     class TrajectorySolver {
         public:
-            void solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time);
+            void Solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time);
     };
 }
 

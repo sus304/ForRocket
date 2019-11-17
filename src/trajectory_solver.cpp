@@ -8,10 +8,11 @@
 
 #include "trajectory_solver.hpp"
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-void forrocket::TrajectorySolver::solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time) {
+void forrocket::TrajectorySolver::Solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time) {
     namespace odeint = boost::numeric::odeint;
 
     odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
