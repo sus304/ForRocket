@@ -24,11 +24,7 @@ namespace forrocket {
 
             using state = std::array<double, 14>;
 
-            void operator()(const state& x, state& dx, const double t) {
-                // ほんとはabstruct classにしたいがファンクタは純粋仮想関数にできないので
-                // 使うなよという意味で強制終了を実装
-                exit(1);
-            };
+            virtual void operator()(const state& x, state& dx, const double t) = 0;
 
         protected:
             Eigen::Vector3d ThrustBodyCoordinate();
