@@ -41,7 +41,7 @@ void forrocket::Coordinate::setNED2Body(const Eigen::Vector4d quat) {
 };
 
 
-void forrocket::Coordinate::setECI2ECEF(const double epoc_time) {
+void forrocket::Coordinate::setECI2ECEF(const double epoch_time) {
     double xi = wgs.omega * epoc_time;
     dcm.ECI2ECEF << std::cos(xi) , std::sin(xi), 0.0,
                     -std::sin(xi), std::cos(xi), 0.0,

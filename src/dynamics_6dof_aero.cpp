@@ -29,7 +29,13 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->omega[0] = x[10]; p_rocket->omega[1] = x[11]; p_rocket->omega[2] = x[12];
     p_rocket->mass.propellant = x[13];
 
+    // quat normalize
+    p_rocket->quaternion.normalize();
+
+    // epoch time
+
     Coordinate coordinate;
+    coordinate.setECI2ECEF()
 
     double altitude;
 

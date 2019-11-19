@@ -47,7 +47,7 @@ namespace forrocket {
             void setNED2Body(const Eigen::Vector3d euler_angle);
             void setNED2Body(const Eigen::Vector4d quaternion);
 
-            void setECI2ECEF(const double epoc_time);
+            void setECI2ECEF(const double epoch_time);
 
             void setECEF2NED(const Eigen::Vector3d pos_LLH_init);
             

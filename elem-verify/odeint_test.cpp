@@ -9,9 +9,9 @@ namespace odeint = boost::numeric::odeint;
 
 class Rocket {
     public:
-        double mass = 10.0  // [kg]
-        double thrust = 300.0  // [N]
-        double tb = 3.0  // [s]
+        double mass = 10.0;  // [kg]
+        double thrust = 300.0;  // [N]
+        double tb = 3.0;  // [s]
     private:
 }
 
