@@ -17,8 +17,8 @@ void forrocket::TrajectorySolver::Solve(forrocket::DynamicsBase* p_dynamics, con
 
     odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
 
-    forrocket::DynamicsBase::state x0 = {};
-    odeint::integrate_const(stepper, *p_dynamics, x0, start_time, end_time, delta_time);
+    forrocket::DynamicsBase::state x0 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    odeint::integrate_const(stepper, p_dynamics, x0, start_time, end_time, delta_time);
 
 };
 

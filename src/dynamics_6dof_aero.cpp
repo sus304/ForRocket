@@ -17,25 +17,26 @@
 
 namespace odeint = boost::numeric::odeint;
 
-forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket) {
+forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket, SequenceClock* clock) {
     p_rocket = rocket;
+    p_clock = clock;
 };
 
 void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const double t) {
-    // update flight infomation
+    // Update Flight Infomation
     p_rocket->position.ECI[0] = x[0]; p_rocket->position.ECI[1] = x[1]; p_rocket->position.ECI[2] = x[2];
     p_rocket->velocity.ECI[0] = x[3]; p_rocket->velocity.ECI[1] = x[4]; p_rocket->velocity.ECI[2] = x[5];
     p_rocket->quaternion[0] = x[6]; p_rocket->quaternion[1] = x[7]; p_rocket->quaternion[2] = x[8]; p_rocket->quaternion[3] = x[9]; 
     p_rocket->omega[0] = x[10]; p_rocket->omega[1] = x[11]; p_rocket->omega[2] = x[12];
     p_rocket->mass.propellant = x[13];
-
-    // quat normalize
     p_rocket->quaternion.normalize();
 
-    // epoch time
+    // Countup Time
+    p_clock->SyncSolverTime(t);
 
+    // Coordinate Transform
     Coordinate coordinate;
-    coordinate.setECI2ECEF()
+    coordinate.setECI2ECEF(p_clock->greenwich_sidereal_time);
 
     double altitude;
 
