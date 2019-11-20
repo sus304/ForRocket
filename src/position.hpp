@@ -20,11 +20,8 @@ namespace forrocket {
             Eigen::Vector3d NED;
             Eigen::Vector3d LLH;
             
-            void UpdateECI();
-
         private:
             
-            void toECEF();
 
     };
 

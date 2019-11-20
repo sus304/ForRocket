@@ -8,18 +8,21 @@
 
 #include "dynamics_6dof_aero.hpp"
 
+#include <cmath>
+
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-#include "environment/air.hpp"
 #include "coordinate.hpp"
 
 namespace odeint = boost::numeric::odeint;
 
-forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket, SequenceClock* clock) {
+forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentAir* air, EnvironmentWind* wind) {
     p_rocket = rocket;
     p_clock = clock;
+    p_air = air;
+    p_wind = wind;
 };
 
 void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const double t) {
@@ -34,16 +37,45 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     // Countup Time
     p_clock->SyncSolverTime(t);
 
-    // Coordinate Transform
+    // Coordinate Transform(Position)
     Coordinate coordinate;
     coordinate.setECI2ECEF(p_clock->greenwich_sidereal_time);
+    p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
+    p_rocket->position.LLH = coordinate.ECEF2LLH(p_rocket->position.ECEF);
+    coordinate.setECEF2NED(p_rocket->position.LLH);
+    coordinate.setNED2Body(p_rocket->quaternion);
 
-    double altitude;
+    // Coordinate Transform(Velocity)
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI;
+    p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
 
-    forrocket::EnvironmentAir env_air(altitude);
+    // Update Environment
+    double altitude = p_rocket->position.LLH[2];
+    p_air->Update(altitude);
+    p_wind->Update(altitude);
+    double g = gravity(altitude);
+    double g0 = gravity(0.0);
 
-    
-    
+    // Update Airspeed
+    p_rocket->velocity.air_body = coordinate.dcm.NED2body * (p_rocket->velocity.NED - p_wind->NED);
+    p_rocket->dynamic_pressure = 0.5 * p_air->density * std::pow(p_rocket->velocity.air_body.norm(), 2);
+    p_rocket->velocity.mach_number = p_rocket->velocity.air_body.norm() / p_air->speed_of_sound;
+
+    // Update AoA
+    p_rocket->angle_of_attack = std::atan2(p_rocket->velocity.air_body[2], p_rocket->velocity.air_body[0]);
+    // if (std::abs(p_rocket->velocity.air_body[0]) <= 0.0) {
+    //     p_rocket->angle_of_attack = 90.0 * 3.14159265 / 180.0;
+    // } else {
+    //     p_rocket->angle_of_attack = std::atan2(p_rocket->velocity.air_body[2], p_rocket->velocity.air_body[0]);
+    // }
+    if (p_rocket->velocity.air_body.norm() <= 0.0) {
+        p_rocket->sideslip_angle = 0.0;
+    } else {
+        p_rocket->sideslip_angle = std::asin(-p_rocket->velocity.air_body[1] / p_rocket->velocity.air_body.norm());
+    }
+
+
+
 
     dx[0] = p_rocket->velocity.ECI[0];  // vel_ECI => pos_ECI
     dx[1] = p_rocket->velocity.ECI[1];  // 

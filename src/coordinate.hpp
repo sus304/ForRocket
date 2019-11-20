@@ -49,8 +49,11 @@ namespace forrocket {
 
             void setECI2ECEF(const double epoch_time);
 
-            void setECEF2NED(const Eigen::Vector3d pos_LLH_init);
+            void setECEF2NED(const Eigen::Vector3d pos_LLH);
             
+            Eigen::Vector3d ECEF2LLH(const Eigen::Vector3d pos_ECEF);
+            Eigen::Vector3d LLH2ECEF(const Eigen::Vector3d pos_LLH);
+
             Eigen::Vector4d Quaternion(const Eigen::Vector3d euler_angle);
             Eigen::Vector3d EulerAngle();
             // Eigen::Vector3d EulerAngle(const Eigen::Vector4d quaternion);
