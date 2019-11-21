@@ -22,7 +22,7 @@ namespace forrocket {
             double density;
             double speed_of_sound;
 
-            void Update(const double geometric_altitude);
+            EnvironmentAir(const double geometric_altitude);
         
         private:
             WGS84 wgs84;

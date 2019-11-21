@@ -36,6 +36,8 @@ namespace forrocket {
             Eigen::Vector3d AeroForceMoment();
             Eigen::Vector3d AeroDampingMoment();
             Eigen::Vector3d JetDampingMoment();
+            
+            Eigen::Vector3d QuaternionDiff();
 
         private:
             Rocket* p_rocket;

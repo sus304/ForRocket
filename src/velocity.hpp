@@ -18,7 +18,7 @@ namespace forrocket {
             Eigen::Vector3d ECI;
             Eigen::Vector3d ECEF;
             Eigen::Vector3d NED;
-            Eigen::Vector3d body;
+            // Eigen::Vector3d body;
             Eigen::Vector3d air_body;
             double mach_number;
     };

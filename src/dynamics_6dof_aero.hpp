@@ -12,21 +12,19 @@
 #include "dynamics_base.hpp"
 #include "rocket.hpp"
 #include "sequence_clock.hpp"
-#include "environment/air.hpp*
 #include "environment/wind.hpp"
 
 namespace forrocket {
     class Dynamics6dofAero : public DynamicsBase {
         public:
             Dynamics6dofAero() {};
-            Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentAir* air, EnvironmentWind* wind);
+            Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind);
 
             void operator()(const state& x, state& dx, const double t);
 
         private:
             Rocket* p_rocket;
             SequenceClock* p_clock;
-            EnvironmentAir* p_air;
             EnvironmentWind* p_wind;
             
     };

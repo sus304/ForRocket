@@ -57,22 +57,22 @@ namespace forrocket {
 
             Eigen::Vector4d quaternion;
             Eigen::Vector4d quaternion_dot;
-            Eigen::Vector3d omega;
-            Eigen::Vector3d omega_dot;
+            Eigen::Vector3d angular_velocity;
+            Eigen::Vector3d angular_acceleration;
             double angle_of_attack;
             double sideslip_angle;
 
+            Eigen::Vector3d moment_gyro;
+            Eigen::Vector3d moment_thrust;
             Eigen::Vector3d moment_aero_force;
             Eigen::Vector3d moment_aero_dumping;
             Eigen::Vector3d moment_jet_dumping;
 
-            void UpdatePosition();
-            void UpdateVelocity();
             void UpdateLengthCG(const double t);
-            void UpdateLengthCP(const double mach);
-            void UpdateEngine(const double t, const double air_pressure);
-            void UpdateAerodynamicsCoefficient(const double mach);
-            void UpdateAoA(Eigen::Vector3d velocity_air_body);
+            void UpdateLengthCP();
+            void UpdateInertiaTensor(const double t);
+            void UpdateEngine(const double t, const double air_pressure, const double air_pressure_sea_level);
+            void UpdateAerodynamicsCoefficient();
             void UpdateAttitudeFromProgramRate(const double t);
 
 

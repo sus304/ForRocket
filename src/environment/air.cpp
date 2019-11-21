@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-void forrocket::EnvironmentAir::Update(const double geometric_altitude) {
+forrocket::EnvironmentAir::EnvironmentAir(const double geometric_altitude) {
     double geopotential_height = geometric_altitude * wgs84.a / (wgs84.a + geometric_altitude);
 
     int index_layer = 0;  // default layer

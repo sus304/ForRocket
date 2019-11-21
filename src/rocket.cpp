@@ -10,24 +10,6 @@
 
 #include <cmath>
 
-void forrocket::Rocket::UpdatePosition() {
-    // position.ECEF;
-    // position.LLH;
-    // position.NED;
-
-};
-
-
-void forrocket::Rocket::UpdateVelocity() {
-    // velocity.ECEF;
-    // velocity.NED;
-    // velocity.body;
-    // velocity.air_body;
-    // velocity.mach_number;
-    // double dynamic_pressure;
-
-};
-
 
 void forrocket::Rocket::UpdateLengthCG(const double t) {
 
@@ -35,39 +17,33 @@ void forrocket::Rocket::UpdateLengthCG(const double t) {
 };
 
 
-void forrocket::Rocket::UpdateLengthCP(const double mach) {
+void forrocket::Rocket::UpdateLengthCP() {
 
 
 };
 
 
-void forrocket::Rocket::UpdateEngine(const double t, const double air_pressure) {
-    forrocket::EnvironmentAir env_air_sea_level(0.0);
+void forrocket::Rocket::UpdateInertiaTensor(const double t) {
+
+};
+
+
+void forrocket::Rocket::UpdateEngine(const double t, const double air_pressure, const double air_pressure_sea_level) {
     if (t > engine.burn_duration || mass.propellant <= 0.0) {
         engine.Cutoff();
     }
     else {
-        engine.Update(t, env_air_sea_level.pressure, air_pressure);
+        engine.Update(t, air_pressure_sea_level, air_pressure);
     }
 }
 
 
-void forrocket::Rocket::UpdateAerodynamicsCoefficient(const double mach) {
+void forrocket::Rocket::UpdateAerodynamicsCoefficient() {
     // double CA;
     // double CNa;
     // double Clp;
     // double Cmq;
     // double Cnr;
-};
-
-
-void forrocket::Rocket::UpdateAoA(Eigen::Vector3d velocity_air_body) {
-    double abs = velocity_air_body.norm();
-    if (std::abs(velocity_air_body(0)) <= 0.0) angle_of_attack = 0.0;
-    else angle_of_attack = std::atan2(velocity_air_body(2), velocity_air_body(0));
-
-    if (abs <= 0.0) sideslip_angle = 0.0;
-    else sideslip_angle = std::asin(-velocity_air_body(1) / abs);
 };
 
 
