@@ -12,14 +12,19 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
+#include "datetime.hpp"
+
 namespace forrocket {
     class Position {
         public:
             Eigen::Vector3d ECI;
             Eigen::Vector3d ECEF;
-            Eigen::Vector3d NED;
             Eigen::Vector3d LLH;
-            
+
+            Position();
+
+            void Initialize(const DateTime datetime, const Eigen::Vector3d LLH);
+
         private:
             
 

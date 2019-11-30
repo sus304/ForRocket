@@ -9,8 +9,13 @@
 #ifndef ROCKETFACTORY_HPP_
 #define ROCKETFACTORY_HPP_
 
-namespace forrocket {
+#include "rocket.hpp"
+#include "datetime.hpp"
 
+namespace forrocket {
+    class RocketFactory {
+        Rocket* Create(const DateTime datetime);
+    }
 }
 
 #endif

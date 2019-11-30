@@ -68,6 +68,9 @@ namespace forrocket {
             Eigen::Vector3d moment_aero_dumping;
             Eigen::Vector3d moment_jet_dumping;
 
+            Rocket();
+            void InitializePosition(const DateTime datetime_UTC_init, const Eigen::Vector3d LLH);
+
             void UpdateLengthCG(const double t);
             void UpdateLengthCP();
             void UpdateInertiaTensor(const double t);

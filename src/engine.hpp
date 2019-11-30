@@ -9,16 +9,20 @@
 #ifndef ENGINE_HPP_
 #define ENGINE_HPP_
 
+#include <vector>
+
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
+
+#include "interpolate.hpp"
 
 namespace forrocket {
     class Engine {
         public:
             double thrust;
-            double area_exit;
             double mdot_prop;
-            double Isp;
+
+            double area_exit;
             double burn_duration;
 
             double gimbal_angle_y_axis;  // Body coordinateの軸で回転角度の正負を定義
@@ -27,13 +31,16 @@ namespace forrocket {
             double mis_alignment_angle_y_axis;
             double mis_alignment_angle_z_axis;
 
-            void Ignition(const double pressure_sea_level, const double pressure);
+            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_vector, const std::vector<double> mdot_p_vector);
+
             void Update(const double t, const double pressure_sea_level, const double pressure);
+            void Ignition(const double pressure_sea_level, const double pressure);
             void Cutoff();
 
         private:
-            double thrust_sea_level;
-            double mdot_prop_source;
+            std::vector<double> thrust_sea_level_vector;
+            interpolate::Interp1d thrust_sea_level;
+            std::vector<double> mdot_prop_vector;
     };
 }
 
