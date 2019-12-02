@@ -12,13 +12,17 @@
 
 const double pi = 3.14159265;
 
-void forrocket::EngineFactory::Create(Engine& engine) {
+forrocket::Engine forrocket::EngineFactory::Create() {
     double diameter_throat = 15.0 / 1e3;
     double area_throat = 0.25 * std::pow(diameter_throat, 2) * pi;
-    engine.area_exit = area_throat * 3.5;
-    engine.Isp = 170.0;
-    engine.burn_duration = 1.5;
+    double area_exit = area_throat * 3.5;
 
-    engine.mis_alignment_angle_y_axis = 0.0;
-    engine.mis_alignment_angle_z_axis = 0.0;
+    double tb = 1.5;
+    double thrust = 300.0;
+    double Isp = 180.0;
+    double mdot_p = thrust / (Isp * 9.80665);
+
+    Engine engine(tb, thrust, mdot_p, area_exit);
+
+    return engine;
 };

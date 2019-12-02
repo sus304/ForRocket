@@ -13,8 +13,8 @@
 
 namespace forrocket {
     class EngineFactory {
-        void Create(Engine& engine);
-    }
+        Engine Create();
+    };
 }
 
 #endif

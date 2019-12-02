@@ -22,25 +22,45 @@ namespace forrocket {
             double thrust;
             double mdot_prop;
 
-            double area_exit;
-            double burn_duration;
-
             double gimbal_angle_y_axis;  // Body coordinateの軸で回転角度の正負を定義
             double gimbal_angle_z_axis;
 
             double mis_alignment_angle_y_axis;
             double mis_alignment_angle_z_axis;
 
-            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_vector, const std::vector<double> mdot_p_vector);
+            Engine() {};
+            Engine(const double burn_duration, const double thrust_const, const double mdot_prop_const, const double area_exit);
+            Engine(const double burn_duration, const double thrust_const, const double mdot_prop_const, const double area_exit,
+                    const double mis_alignment_angle_y_axis, const double mis_alignment_angle_z_axis);
+
+            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_sea_level_vector, const std::vector<double> mdot_prop_vector, const double area_exit);
+            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_sea_level_vector, const std::vector<double> mdot_prop_vector, const double area_exit,
+                    const double mis_alignment_angle_y_axis, const double mis_alignment_angle_z_axis);
+            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_sea_level_vector, const std::vector<double> mdot_prop_vector, const double area_exit,
+                    const std::vector<double> gimbal_angle_y_axis_vector, const std::vector<double> gimbal_angle_z_axis_vector);
+            Engine(const std::vector<double> time_vector, const std::vector<double> thrust_sea_level_vector, const std::vector<double> mdot_prop_vector, const double area_exit,
+                    const std::vector<double> gimbal_angle_y_axis_vector, const std::vector<double> gimbal_angle_z_axis_vector,
+                    const double mis_alignment_angle_y_axis, const double mis_alignment_angle_z_axis);
 
             void Update(const double t, const double pressure_sea_level, const double pressure);
-            void Ignition(const double pressure_sea_level, const double pressure);
-            void Cutoff();
 
         private:
-            std::vector<double> thrust_sea_level_vector;
-            interpolate::Interp1d thrust_sea_level;
-            std::vector<double> mdot_prop_vector;
+            void Reset();
+
+            double area_exit;
+
+            bool enable_thrust_from_log;
+            bool enable_gimbal;
+
+            interpolate::Interp1d thrust_sea_level_polate;
+            interpolate::Interp1d mdot_prop_polate;
+            interpolate::Interp1d gimbal_angle_y_axis_polate;
+            interpolate::Interp1d gimbal_angle_z_axis_polate;
+
+            // For constant thrust
+            double burn_duration;
+            double thrust_const;
+            double mdot_prop_const;
     };
 }
 
