@@ -17,6 +17,8 @@ namespace forrocket {
         public:
             Eigen::Vector3d ECI;
             Eigen::Vector3d body;
+
+            Acceleration();
     };
 }
 

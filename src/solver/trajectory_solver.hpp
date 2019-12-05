@@ -9,8 +9,8 @@
 #ifndef TRAJECTORYSOLVER_HPP_
 #define TRAJECTORYSOLVER_HPP_
 
-#include "rocket.hpp"
-#include "dynamics_base.hpp"
+#include "rocket/rocket.hpp"
+#include "dynamics/dynamics_base.hpp"
 
 namespace forrocket {
     class TrajectorySolver {

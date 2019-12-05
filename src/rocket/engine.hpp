@@ -25,9 +25,6 @@ namespace forrocket {
             double gimbal_angle_y_axis;  // Body coordinateの軸で回転角度の正負を定義
             double gimbal_angle_z_axis;
 
-            double mis_alignment_angle_y_axis;
-            double mis_alignment_angle_z_axis;
-
             Engine() {};
             Engine(const double burn_duration, const double thrust_const, const double mdot_prop_const, const double area_exit);
             Engine(const double burn_duration, const double thrust_const, const double mdot_prop_const, const double area_exit,
@@ -48,6 +45,8 @@ namespace forrocket {
             void Reset();
 
             double area_exit;
+            double mis_alignment_angle_y_axis;
+            double mis_alignment_angle_z_axis;
 
             bool enable_thrust_from_log;
             bool enable_gimbal;

@@ -9,9 +9,9 @@
 #ifndef DYNAMICS6DOFAERO_HPP_
 #define DYNAMICS6DOFAERO_HPP_
 
-#include "dynamics_base.hpp"
-#include "rocket.hpp"
-#include "sequence_clock.hpp"
+#include "dynamics/dynamics_base.hpp"
+#include "rocket/rocket.hpp"
+#include "environment/sequence_clock.hpp"
 #include "environment/wind.hpp"
 
 namespace forrocket {

@@ -73,6 +73,26 @@ double forrocket::interpolate::Interp1d::operator()(const double x) {
 };
 
 
+std::vector<double> forrocket::interpolate::Interp1d::operator()(const std::vector<double> x) {
+    std::vector<double> res;
+    for(int i=0; i < x.size(); ++i) {
+        res.push_back(polator->polate(x[i], x_src, y_src, fill_value));
+    }
+    return res;
+};
+
+
+Eigen::VectorXd forrocket::interpolate::Interp1d::operator()(const Eigen::VectorXd x) {
+    Eigen::VectorXd res(x.size());
+    for(int i=0; i < x.size(); ++i) {
+        res[i] = polator->polate(x[i], x_src, y_src, fill_value);
+    }
+    return res;
+};
+
+
+
+
 double forrocket::interpolate::_Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
     if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {

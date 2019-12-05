@@ -7,3 +7,8 @@
 // ******************************************************
 
 #include "acceleration.hpp"
+
+forrocket::Acceleration::Acceleration() {
+    ECI << 0.0, 0.0, 0.0;
+    body << 0.0, 0.0, 0.0;
+};

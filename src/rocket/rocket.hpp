@@ -14,13 +14,15 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
-#include "engine.hpp"
-#include "position.hpp"
-#include "velocity.hpp"
-#include "acceleration.hpp"
-#include "mass.hpp"
-
-#include "environment/air.hpp"
+#include "rocket/engine.hpp"
+#include "rocket/parameter/position.hpp"
+#include "rocket/parameter/velocity.hpp"
+#include "rocket/parameter/acceleration.hpp"
+#include "rocket/parameter/force.hpp"
+#include "rocket/parameter/moment.hpp"
+#include "rocket/parameter/mass.hpp"
+#include "rocket/parameter/aerodynamics_parameter.hpp"
+#include "interpolate.hpp"
 
 namespace forrocket {
     class Rocket {
@@ -51,9 +53,7 @@ namespace forrocket {
             Velocity velocity;
             double dynamic_pressure;
             Acceleration acceleration;
-
-            Eigen::Vector3d force_thrust;
-            Eigen::Vector3d force_aero;
+            Force force;
 
             Eigen::Vector4d quaternion;
             Eigen::Vector4d quaternion_dot;
@@ -61,28 +61,39 @@ namespace forrocket {
             Eigen::Vector3d angular_acceleration;
             double angle_of_attack;
             double sideslip_angle;
-
-            Eigen::Vector3d moment_gyro;
-            Eigen::Vector3d moment_thrust;
-            Eigen::Vector3d moment_aero_force;
-            Eigen::Vector3d moment_aero_dumping;
-            Eigen::Vector3d moment_jet_dumping;
+            Moment moment;
 
             Rocket();
-            void InitializePosition(const DateTime datetime_UTC_init, const Eigen::Vector3d LLH);
 
             void UpdateLengthCG(const double t);
-            void UpdateLengthCP();
-            void UpdateInertiaTensor(const double t);
-            void UpdateEngine(const double t, const double air_pressure, const double air_pressure_sea_level);
-            void UpdateAerodynamicsCoefficient();
+            // void UpdateInertiaTensor(const double t);
+            void UpdateAerodynamicsParameter(const double mach_number);
+            void UpdateAerodynamicsParameter(const double mach_number, const double AoA);
             void UpdateAttitudeFromProgramRate(const double t);
 
+            void setLengthCG(const double length_CG);
+            void setLengthCG(const std::vector<double> time_vector, const std::vector<double> CG_vector);
 
-            // void SeparateUpperStage();
+            void setLengthCP(const AerodynamicsParameter length_CP);
+            void setCA(const AerodynamicsParameter CA);
+            void setCNa(const AerodynamicsParameter CNa);
+            void setClp(const AerodynamicsParameter Clp);
+            void setCmq(const AerodynamicsParameter Cmq);
+            void setCnr(const AerodynamicsParameter Cnr);
 
         private:
-            // bool has_upper_stage;
+            bool enable_length_CG_from_log;
+            bool enable_program_rate;
+
+            interpolate::Interp1d length_CG_polate;
+            interpolate::Interp1d program_rate_polate;
+
+            AerodynamicsParameter length_CP_src;
+            AerodynamicsParameter CA_src;
+            AerodynamicsParameter CNa_src;
+            AerodynamicsParameter Clp_src;
+            AerodynamicsParameter Cmq_src;
+            AerodynamicsParameter Cnr_src;
 
     };
 

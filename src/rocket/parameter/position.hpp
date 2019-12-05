@@ -12,7 +12,8 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
-#include "datetime.hpp"
+#include "environment/datetime.hpp"
+#include "environment/coordinate.hpp"
 
 namespace forrocket {
     class Position {
@@ -23,7 +24,8 @@ namespace forrocket {
 
             Position();
 
-            void Initialize(const DateTime datetime, const Eigen::Vector3d LLH);
+            void Initialize(const DateTime datetime, const Eigen::Vector3d& LLH);
+            void Update(Coordinate& coordinate, const Eigen::Vector3d& ECI);
 
         private:
             

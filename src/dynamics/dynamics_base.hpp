@@ -14,7 +14,7 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
-#include "rocket.hpp"
+#include "rocket/rocket.hpp"
 
 namespace forrocket {
     class DynamicsBase {

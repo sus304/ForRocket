@@ -52,8 +52,19 @@ int main()
     std::cout << "m1 * v1" << std::endl;
     std::cout << v2 << std::endl;
 
+    std::vector<double> vec;
+    vec.push_back(1);
+    vec.push_back(2);
+    vec.push_back(3);
+    vec.push_back(4);
+    vec.push_back(5);
+    // v2 = Eigen::Map<Eigen::Vector3d>(vec.data());
+    v2 = Eigen::Map<Eigen::Vector3d>(std::vector<double>(vec.begin()+2, vec.begin()+5).data());
+    std::cout << "convert vector to eigen::vector for eigen::map" << std::endl;
+    std::cout << v2 << std::endl;
     
 
     return 0;    
 };
+
 

@@ -1,16 +1,21 @@
 // ******************************************************
 // Project Name    : ForRocket
-// File Name       : moment.hpp
+// File Name       : engine_factory.hpp
 // Creation Date   : 2019/11/24
 //
 // Copyright (c) 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
-#ifndef MOMENT_HPP_
-#define MOMENT_HPP_
+#ifndef ENGINEFACTORY_HPP_
+#define ENGINEFACTORY_HPP_
+
+#include "rocket/engine.hpp"
 
 namespace forrocket {
-
+    class EngineFactory {
+        public:
+            Engine Create();
+    };
 }
 
 #endif
