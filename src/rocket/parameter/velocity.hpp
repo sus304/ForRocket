@@ -27,8 +27,8 @@ namespace forrocket {
 
             Velocity();
 
-            void Initialize(const DateTime datetime, const Eigen::Vector3d& NED, const Eigen::Vector3d& pos_LLH, const Eigen::Vector3d pos_ECI);
-            void Update(Coordinate& coordinate, const Eigen::Vector3d& ECI, const Eigen::Vector3d pos_ECI);
+            void Initialize(const DateTime datetime, const Eigen::Vector3d& NED, const Eigen::Vector3d& pos_LLH, const Eigen::Vector3d& pos_ECI);
+            void Update(Coordinate& coordinate, const Eigen::Vector3d& ECI, const Eigen::Vector3d& pos_ECI);
     };
 
 }

@@ -19,6 +19,7 @@
 #include "rocket/parameter/velocity.hpp"
 #include "rocket/parameter/acceleration.hpp"
 #include "rocket/parameter/force.hpp"
+#include "rocket/parameter/attitude.hpp"
 #include "rocket/parameter/moment.hpp"
 #include "rocket/parameter/mass.hpp"
 #include "rocket/parameter/aerodynamics_parameter.hpp"
@@ -55,7 +56,7 @@ namespace forrocket {
             Acceleration acceleration;
             Force force;
 
-            Eigen::Vector4d quaternion;
+            Attitude attitude;
             Eigen::Vector4d quaternion_dot;
             Eigen::Vector3d angular_velocity;
             Eigen::Vector3d angular_acceleration;

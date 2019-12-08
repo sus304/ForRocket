@@ -38,9 +38,8 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     coordinate.setECEF2NED(p_rocket->position.LLH);
     p_rocket->velocity.Update(coordinate, Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data()), p_rocket->position.ECI);
 
-    p_rocket->quaternion = Eigen::Map<Eigen::Vector4d>(std::vector<double>(x.begin()+6, x.begin()+10).data());
-    p_rocket->quaternion.normalize();
-    coordinate.setNED2Body(p_rocket->quaternion);
+    p_rocket->attitude.Update(Eigen::Map<Eigen::Vector4d>(std::vector<double>(x.begin()+6, x.begin()+10).data()), coordinate);
+    coordinate.setNED2Body(p_rocket->attitude.quaternion);
 
     p_rocket->angular_velocity = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+10, x.begin()+13).data());
 

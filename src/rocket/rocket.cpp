@@ -31,7 +31,6 @@ forrocket::Rocket::Rocket() {
 
     dynamic_pressure = 0.0;
 
-    quaternion << 0.0, 0.0, 0.0, 0.0;
     quaternion_dot << 0.0, 0.0, 0.0, 0.0;
     angular_velocity << 0.0, 0.0, 0.0;
     angular_acceleration << 0.0, 0.0, 0.0;

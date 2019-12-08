@@ -19,7 +19,7 @@ forrocket::Velocity::Velocity() {
 };
 
 
-void forrocket::Velocity::Initialize(const DateTime datetime, const Eigen::Vector3d& NED, const Eigen::Vector3d& pos_LLH, const Eigen::Vector3d pos_ECI) {
+void forrocket::Velocity::Initialize(const DateTime datetime, const Eigen::Vector3d& NED, const Eigen::Vector3d& pos_LLH, const Eigen::Vector3d& pos_ECI) {
     SequenceClock clock(datetime);
     Coordinate coordinate;
     this->NED = NED;
@@ -30,7 +30,7 @@ void forrocket::Velocity::Initialize(const DateTime datetime, const Eigen::Vecto
 };
 
 
-void forrocket::Velocity::Update(Coordinate& coordinate, const Eigen::Vector3d& ECI, const Eigen::Vector3d pos_ECI) {
+void forrocket::Velocity::Update(Coordinate& coordinate, const Eigen::Vector3d& ECI, const Eigen::Vector3d& pos_ECI) {
     this->ECI = ECI;
     this->ECEF = coordinate.dcm.ECI2ECEF * this->ECI - coordinate.dcm.EarthRotate * pos_ECI;
     this->NED = coordinate.dcm.ECEF2NED * this->ECEF;

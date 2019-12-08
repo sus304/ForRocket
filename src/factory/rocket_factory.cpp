@@ -47,12 +47,15 @@ forrocket::Rocket forrocket::RocketFactory::Create(const DateTime datetime) {
     llh << 35.2, 135.3, 0.0;
     rocket.position.Initialize(datetime, llh);
     Eigen::Vector3d ned;
-    ned << 0.0, 0.0, 0.0;
+    ned << 0.0, 0.0, -15.0;
     rocket.velocity.Initialize(datetime, ned, llh, rocket.position.ECI);
 
     double elv_init = 85.0;
     double azi_init = 275.0;
     double roll_init = 0.0;
+    Eigen::Vector3d euler;
+    euler << azi_init, elv_init, roll_init;
+    rocket.attitude.Initialize(euler);
 
     return rocket;
 };
