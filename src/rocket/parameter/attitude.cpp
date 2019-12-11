@@ -8,8 +8,6 @@
 
 #include "attitude.hpp"
 
-#include "environment/coordinate.hpp"
-
 forrocket::Attitude::Attitude() {
     euler_angle << 0.0, 0.0, 0.0;
     quaternion << 0.0, 0.0, 0.0, 0.0;
