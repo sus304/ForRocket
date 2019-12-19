@@ -1,12 +1,12 @@
 // ******************************************************
 // Project Name    : ForRocket
-// File Name       : dynamics_6dof_aero.cpp
+// File Name       : dynamics_6dof.cpp
 // Creation Date   : 2019/10/20
 //
 // Copyright © 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
-#include "dynamics_6dof_aero.hpp"
+#include "dynamics_6dof.hpp"
 
 #include <cmath>
 
@@ -19,14 +19,14 @@
 
 namespace odeint = boost::numeric::odeint;
 
-forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
+forrocket::Dynamics6dof::Dynamics6dof(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
     p_rocket = rocket;
     p_clock = clock;
     p_wind = wind;
 };
 
 
-void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const double t) {
+void forrocket::Dynamics6dof::operator()(const state& x, state& dx, const double t) {
     Coordinate coordinate;
 
     // Countup Time
