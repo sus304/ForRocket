@@ -12,10 +12,13 @@
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-void forrocket::TrajectorySolver::Solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time) {
-    namespace odeint = boost::numeric::odeint;
+#include "dynamics/dynamics_base.hpp"
 
+void forrocket::TrajectorySolver::Solve() {
+    namespace odeint = boost::numeric::odeint;
     odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
+
+
 
     forrocket::DynamicsBase::state x0 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     odeint::integrate_const(stepper, p_dynamics, x0, start_time, end_time, delta_time);

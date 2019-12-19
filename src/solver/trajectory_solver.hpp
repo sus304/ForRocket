@@ -10,12 +10,11 @@
 #define TRAJECTORYSOLVER_HPP_
 
 #include "rocket/rocket.hpp"
-#include "dynamics/dynamics_base.hpp"
 
 namespace forrocket {
     class TrajectorySolver {
         public:
-            void Solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time);
+            void Solve();
     };
 }
 
