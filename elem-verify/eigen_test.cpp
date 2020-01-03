@@ -24,7 +24,9 @@ int main()
 
     // 全体(各要素)への乗算
     v2 = v1 * 2.0;
+    std::cout << v2 << std::endl;
     v2 = v1.array() * 2.0;
+    std::cout << v2 << std::endl;
     m2 = m1 * 2.0;
 
     // ベクトル+ベクトル
