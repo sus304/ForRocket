@@ -15,21 +15,20 @@
 #include "Eigen/Core"
 
 #include "rocket/rocket.hpp"
+#include "environment/sequence_clock.hpp"
+#include "environment/wind.hpp"
 
 namespace forrocket {
     class DynamicsBase {
         public:
             DynamicsBase() {};
-            DynamicsBase(Rocket* rocket);
 
             using state = std::array<double, 14>;
 
             virtual void operator()(const state& x, state& dx, const double t) = 0;
 
         protected:
-            Eigen::Vector3d ThrustBodyCoordinate();
-            double getFinCantAxialForce();
-            Eigen::Vector3d AeroForceBodyCoordinate();
+            Eigen::Vector3d AeroForce();
 
             Eigen::Vector3d GyroEffectMoment();
             Eigen::Vector3d ThrustMoment();
@@ -41,7 +40,8 @@ namespace forrocket {
 
         private:
             Rocket* p_rocket;
-
+            SequenceClock* p_clock;
+            EnvironmentWind* p_wind;
 
 
     };

@@ -14,6 +14,9 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
+#include "environment/datetime.hpp"
+#include "environment/sequence_clock.hpp"
+
 #include "rocket/engine.hpp"
 #include "rocket/parameter/position.hpp"
 #include "rocket/parameter/velocity.hpp"
@@ -22,33 +25,33 @@
 #include "rocket/parameter/attitude.hpp"
 #include "rocket/parameter/moment.hpp"
 #include "rocket/parameter/mass.hpp"
-#include "rocket/parameter/aerodynamics_parameter.hpp"
+#include "rocket/parameter/interpolate_parameter.hpp"
 #include "interpolate.hpp"
 
 namespace forrocket {
     class Rocket {
         public:
+            Rocket();
+
+            SequenceClock burn_clock;
             Engine engine;
             double length_thrust;  // from end
 
             double diameter;
             double area;
             double length;
+            double length_CG;
+            double length_CP;
             Mass mass;
-            double length_CG;  // from end
-            double length_CP;  // from end
             Eigen::Matrix3d inertia_tensor;
-            // Eigen::Vector3d inertia_moment;
-
+            
             double CA;
             double CNa;
+            double Cld;
             double Clp;
             double Cmq;
             double Cnr;
-
             double cant_angle_fin;  // rollモーメント正となるフィンカント角を正で定義
-            double CNa_fin;
-            double radius_CP_fin;
 
             Position position;
             Velocity velocity;
@@ -64,37 +67,61 @@ namespace forrocket {
             double sideslip_angle;
             Moment moment;
 
-            Rocket();
+            // Parameter Setter
+            void setEngine(Engine engine);
+            void setLengthCG(const InterpolateParameter length_CG);
+            void setLengthCP(const InterpolateParameter length_CP);
+            void setCA(const InterpolateParameter CA);
+            void setCA(const InterpolateParameter CA, const InterpolateParameter CA_burnout);
+            void setCNa(const InterpolateParameter CNa);
+            void setCld(const InterpolateParameter Cld);
+            void setClp(const InterpolateParameter Clp);
+            void setCmq(const InterpolateParameter Cmq);
+            void setCnr(const InterpolateParameter Cnr);
 
-            void UpdateLengthCG(const double t);
-            // void UpdateInertiaTensor(const double t);
-            void UpdateAerodynamicsParameter(const double mach_number);
-            void UpdateAerodynamicsParameter(const double mach_number, const double AoA);
-            void UpdateAttitudeFromProgramRate(const double t);
+            void setInertiaTensor(const InterpolateParameter MOI_xx, const InterpolateParameter MOI_yy, const InterpolateParameter MOI_zz);
+            void setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll);
 
-            void setLengthCG(const double length_CG);
-            void setLengthCG(const std::vector<double> time_vector, const std::vector<double> CG_vector);
+            // Parameter Getter
+            double getLengthCG();
+            double getLengthCP(const double mach_number);
+            double getCA(const double mach_number);
+            double getCNa(const double mach_number);
+            double getCld(const double mach_number);
+            double getClp(const double mach_number);
+            double getCmq(const double mach_number);
+            double getCnr(const double mach_number);
 
-            void setLengthCP(const AerodynamicsParameter length_CP);
-            void setCA(const AerodynamicsParameter CA);
-            void setCNa(const AerodynamicsParameter CNa);
-            void setClp(const AerodynamicsParameter Clp);
-            void setCmq(const AerodynamicsParameter Cmq);
-            void setCnr(const AerodynamicsParameter Cnr);
+            Eigen::Vector3d getThrust(const double air_pressure, const double air_pressure_sea_level);
+            Eigen::Matrix3d getInertiaTensor();
+            Eigen::Vector3d getAttitude();
+
+            // SOE Handler
+            void IgnitionEngine(DateTime UTC_init, double countup_time_init);
+            void CutoffEngine();
+            void JettsonFairing(const double mass_fairing);
+            void SeparateUpperStage(const double mass_upper_stage);
 
         private:
-            bool enable_length_CG_from_log;
-            bool enable_program_rate;
+            bool enable_program_attitude;
 
-            interpolate::Interp1d length_CG_polate;
-            interpolate::Interp1d program_rate_polate;
+            InterpolateParameter inertia_moment_xx_src;
+            InterpolateParameter inertia_moment_yy_src;
+            InterpolateParameter inertia_moment_zz_src;
 
-            AerodynamicsParameter length_CP_src;
-            AerodynamicsParameter CA_src;
-            AerodynamicsParameter CNa_src;
-            AerodynamicsParameter Clp_src;
-            AerodynamicsParameter Cmq_src;
-            AerodynamicsParameter Cnr_src;
+            InterpolateParameter azimuth_program_src;
+            InterpolateParameter elevation_program_src;
+            InterpolateParameter roll_program_src;
+
+            InterpolateParameter length_CG_src;  // from end
+            InterpolateParameter length_CP_src;  // from end
+            InterpolateParameter CA_src;
+            InterpolateParameter CA_burnout_src;
+            InterpolateParameter CNa_src;
+            InterpolateParameter Cld_src;
+            InterpolateParameter Clp_src;
+            InterpolateParameter Cmq_src;
+            InterpolateParameter Cnr_src;
 
     };
 

@@ -9,13 +9,27 @@
 #ifndef TRAJECTORYSOLVER_HPP_
 #define TRAJECTORYSOLVER_HPP_
 
-#include "rocket/rocket.hpp"
-#include "dynamics/dynamics_base.hpp"
+
+#include "solver/rocket_stage.hpp"
 
 namespace forrocket {
     class TrajectorySolver {
         public:
-            void Solve(forrocket::DynamicsBase* p_dynamics, const double start_time, const double end_time, const double delta_time);
+            TrajectorySolver() {};
+
+            
+            RocketStage stage_1st;
+            RocketStage stage_2nd;
+            RocketStage stage_3rd;
+            RocketStage PBS;
+            double mass_satellite;
+
+            
+
+            void Solve();
+
+        private:
+            void StageSolve(DynamicsBase::state x0);
     };
 }
 

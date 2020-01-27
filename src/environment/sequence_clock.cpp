@@ -10,37 +10,36 @@
 
 #include <cmath>
 
-forrocket::SequenceClock::SequenceClock() {
-    UTC_date_init = DateTime();
-    countup_time = 0.0;
+void forrocket::SequenceClock::UpdateJulianDate() {
     julian_data = UTC2JulianDate(UTC_date_init + countup_time);
     modified_julian_date = JulianDate2ModifiedJulianDate(julian_data);
     greenwich_sidereal_time = JulianDate2GreenwichSiderealTime(julian_data);
+};
+
+
+forrocket::SequenceClock::SequenceClock() {
+    UTC_date_init = DateTime();
+    countup_time = 0.0;
+    UpdateJulianDate();
 };
 
 forrocket::SequenceClock::SequenceClock(DateTime UTC_init) {
     UTC_date_init = UTC_init;
     countup_time = 0.0;
-    julian_data = UTC2JulianDate(UTC_date_init + countup_time);
-    modified_julian_date = JulianDate2ModifiedJulianDate(julian_data);
-    greenwich_sidereal_time = JulianDate2GreenwichSiderealTime(julian_data);
+    countup_time_ref = 0.0;
+    UpdateJulianDate();
 };
 
 forrocket::SequenceClock::SequenceClock(DateTime UTC_init, double countup_time_init) {
     UTC_date_init = UTC_init;
-    countup_time = countup_time_init;
-    julian_data = UTC2JulianDate(UTC_date_init + countup_time);
-    modified_julian_date = JulianDate2ModifiedJulianDate(julian_data);
-    greenwich_sidereal_time = JulianDate2GreenwichSiderealTime(julian_data);
+    countup_time = 0.0;
+    countup_time_ref = countup_time_init;
+    UpdateJulianDate();
 };
 
-
-
 void forrocket::SequenceClock::SyncSolverTime(const double t) {
-    countup_time = t;
-    julian_data = UTC2JulianDate(UTC_date_init + countup_time);
-    modified_julian_date = JulianDate2ModifiedJulianDate(julian_data);
-    greenwich_sidereal_time = JulianDate2GreenwichSiderealTime(julian_data);
+    countup_time = t - countup_time_ref;
+    UpdateJulianDate();
 };
 
 

@@ -15,7 +15,6 @@ namespace forrocket {
         public:
             double inert;
             double propellant;
-            double upper_stage;
     };
 
 }

@@ -31,37 +31,55 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
 
     // Countup Time
     p_clock->SyncSolverTime(t);
+    p_rocket->burn_clock.SyncSolverTime(t);
 
     // Update Flight Infomation
     coordinate.setECI2ECEF(p_clock->greenwich_sidereal_time);
-    p_rocket->position.Update(coordinate, Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data()));
-    coordinate.setECEF2NED(p_rocket->position.LLH);
-    p_rocket->velocity.Update(coordinate, Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data()), p_rocket->position.ECI);
 
-    p_rocket->attitude.Update(Eigen::Map<Eigen::Vector4d>(std::vector<double>(x.begin()+6, x.begin()+10).data()), coordinate);
+    p_rocket->position.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data());
+    p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
+    p_rocket->position.LLH = coordinate.ECEF2LLH(p_rocket->position.ECEF);
+
+    coordinate.setECEF2NED(p_rocket->position.LLH);
+
+    p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI;
+    p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
+
+    p_rocket->attitude.quaternion = Eigen::Map<Eigen::Vector4d>(std::vector<double>(x.begin()+6, x.begin()+10).data()).normalized();
+
     coordinate.setNED2Body(p_rocket->attitude.quaternion);
+    
+    p_rocket->attitude.euler_angle = coordinate.EulerAngle();
 
     p_rocket->angular_velocity = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+10, x.begin()+13).data());
 
     p_rocket->mass.propellant = x[13];
+    if (p_rocket->mass.propellant <= 0.0) p_rocket->engine.Cutoff();
 
 
     // Update Environment
     double altitude = p_rocket->position.LLH[2];
     EnvironmentAir air(altitude);
     EnvironmentAir air_sea_level(0.0);
-    p_wind->Update(altitude);
     Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
 
     // Update Airspeed
-    p_rocket->velocity.air_body = coordinate.dcm.NED2body * (p_rocket->velocity.NED - p_wind->NED);
+    p_rocket->velocity.air_body = coordinate.dcm.NED2body * (p_rocket->velocity.NED - p_wind->getNED(altitude));
     p_rocket->dynamic_pressure = 0.5 * air.density * std::pow(p_rocket->velocity.air_body.norm(), 2);
     p_rocket->velocity.mach_number = p_rocket->velocity.air_body.norm() / air.speed_of_sound;
 
-    // Update Flight Infomation 2
-    p_rocket->engine.Update(p_clock->countup_time, air.pressure, air_sea_level.pressure);
-    p_rocket->UpdateLengthCG(p_clock->countup_time);
-    p_rocket->UpdateAerodynamicsParameter(p_rocket->velocity.mach_number);
+    // Update time and mach parameter
+    p_rocket->inertia_tensor = p_rocket->getInertiaTensor();
+
+    p_rocket->length_CG = p_rocket->getLengthCG();    
+    p_rocket->length_CP = p_rocket->getLengthCP(p_rocket->velocity.mach_number);
+    p_rocket->CA = p_rocket->getCA(p_rocket->velocity.mach_number);
+    p_rocket->CNa = p_rocket->getCNa(p_rocket->velocity.mach_number);
+    p_rocket->Cld = p_rocket->getCld(p_rocket->velocity.mach_number);
+    p_rocket->Clp = p_rocket->getClp(p_rocket->velocity.mach_number);
+    p_rocket->Cmq = p_rocket->getCmq(p_rocket->velocity.mach_number);
+    p_rocket->Cnr = p_rocket->getCnr(p_rocket->velocity.mach_number);
 
     // Calculate AoA
     p_rocket->angle_of_attack = std::atan2(p_rocket->velocity.air_body[2], p_rocket->velocity.air_body[0]);
@@ -71,11 +89,10 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
         p_rocket->sideslip_angle = std::asin(-p_rocket->velocity.air_body[1] / p_rocket->velocity.air_body.norm());
     }
 
-
     // Calculate Force
-    p_rocket->force.thrust = ThrustBodyCoordinate();
-    p_rocket->force.aero = AeroForceBodyCoordinate();
-    p_rocket->force.gravity = coordinate.dcm.NED2body * gravity_NED * (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->force.thrust = p_rocket->getThrust(air.pressure, air_sea_level.pressure);
+    p_rocket->force.aero = AeroForce();
+    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.inert + p_rocket->mass.propellant);
 
     // Calculate Acceleration
     p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.inert + p_rocket->mass.propellant);
@@ -89,7 +106,7 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->moment.jet_dumping = JetDampingMoment();
     
     // Calculate Angle Velocity
-    p_rocket->angular_acceleration = p_rocket->inertia_tensor.inverse() * p_rocket->moment.Sum();
+    p_rocket->angular_acceleration = p_rocket->getInertiaTensor().inverse() * p_rocket->moment.Sum();
 
     // Calculate Quaternion
     p_rocket->quaternion_dot = 0.5 * QuaternionDiff();

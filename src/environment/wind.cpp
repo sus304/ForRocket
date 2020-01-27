@@ -8,6 +8,10 @@
 
 #include "environment/wind.hpp"
 
-void forrocket::EnvironmentWind::Update(const double altitude) {
+Eigen::Vector3d forrocket::EnvironmentWind::getNED(const double altitude) {
+    Eigen::Vector3d NED;
+
     NED << 0.0, 0.0, 0.0;
+
+    return NED;
 };

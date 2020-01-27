@@ -15,9 +15,7 @@
 namespace forrocket {
     class EnvironmentWind {
         public:
-            Eigen::Vector3d NED;
-
-            void Update(const double altitude);
+            Eigen::Vector3d getNED(const double altitude);
     };
 }
 
