@@ -15,6 +15,9 @@ namespace forrocket {
     class RocketStage {
         public:
             RocketStage() {};
+            RocketStage(Rocket rocket);
+
+            int stage_number;
 
             Rocket rocket;
 
@@ -37,6 +40,8 @@ namespace forrocket {
             double time_opan_parachute;
 
             double time_end;
+
+            void FlightSequence(SequenceClock* master_clock, const EnvironmentWind* wind, DynamicsBase::state& x0);
 
     };
 }

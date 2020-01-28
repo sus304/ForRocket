@@ -9,17 +9,12 @@
 #ifndef TRAJECTORYSOLVER_HPP_
 #define TRAJECTORYSOLVER_HPP_
 
-<<<<<<< HEAD
 
 #include "solver/rocket_stage.hpp"
-=======
-#include "rocket/rocket.hpp"
->>>>>>> 54d51d7e23162f54ddfc33962da5f54d33c29dfc
 
 namespace forrocket {
     class TrajectorySolver {
         public:
-<<<<<<< HEAD
             TrajectorySolver() {};
 
             
@@ -35,9 +30,6 @@ namespace forrocket {
 
         private:
             void StageSolve(DynamicsBase::state x0);
-=======
-            void Solve();
->>>>>>> 54d51d7e23162f54ddfc33962da5f54d33c29dfc
     };
 }
 
