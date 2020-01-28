@@ -36,7 +36,8 @@ namespace forrocket {
             bool enable_parachute_open;
             double time_opan_parachute;
 
-            void separate();
+            double time_end;
+
     };
 }
 

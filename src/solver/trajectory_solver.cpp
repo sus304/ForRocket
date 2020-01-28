@@ -91,19 +91,14 @@ void forrocket::TrajectorySolver::StageSolve(RocketStage& stage, SequenceClock& 
     if (stage.enable_sepation) {
         odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, stage.time_separation, delta);
         start = stage.time_separation;
-        stage.rocket.SeparateUpperStage()
+        stage.rocket.SeparateUpperStage();
 
-
-
-
-    } else if (stage.enable_parachute_open) {
-        end = stage.time_opan_parachute;
-    } else {
-        end = 
+    if (stage.enable_parachute_open) {
+        odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, stage.time_opan_parachute, delta);
+        start = stage.time_opan_parachute;
     }
-    odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, end, delta);
 
-
+    odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, stage.time_end, delta);
 
 };
 
