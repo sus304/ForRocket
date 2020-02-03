@@ -86,42 +86,49 @@ void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, c
 ////////////////////////////////////////////////////////
 double forrocket::Rocket::getLengthCG() {
     if (engine.burning) {
-        return length_CG_src(burn_clock.countup_time);
-    } else {
-        return this->length_CG;
+        this->length_CG = length_CG_src(burn_clock.countup_time);
     }
+        
+    return this->length_CG;
 };
 
 double forrocket::Rocket::getLengthCP(const double mach_number) {
-    return length_CP_src(mach_number);
+    this->length_CP = length_CP_src(mach_number);
+    return this->length_CP;
 };
 
 double forrocket::Rocket::getCA(const double mach_number) {
     if (engine.burning) {
-        return CA_src(mach_number);
+        this->CA = CA_src(mach_number);
     } else {
-        return CA_burnout_src(mach_number);
+        this->CA = CA_burnout_src(mach_number);
     }
+    return this->CA;
 };
 
 double forrocket::Rocket::getCNa(const double mach_number) {
-    return CNa_src(mach_number);
+    this->CNa = CNa_src(mach_number);
+    return this->CNa;
 };
 
 double forrocket::Rocket::getCld(const double mach_number) {
-    return Cld_src(mach_number);
+    this->Cld = Cld_src(mach_number);
+    return this->Cld;
 };
 
 double forrocket::Rocket::getClp(const double mach_number) {
-    return Clp_src(mach_number);
+    this->Clp = Clp_src(mach_number);
+    return this->Clp;
 };
 
 double forrocket::Rocket::getCmq(const double mach_number) {
-    return Cmq_src(mach_number);
+    this->Cmq = Cmq_src(mach_number);
+    return this->Cmq;
 };
 
 double forrocket::Rocket::getCnr(const double mach_number) {
-    return Cnr_src(mach_number);
+    this->Cnr = Cnr_src(mach_number);
+    return this->Cnr;
 };
 
 
@@ -148,10 +155,9 @@ Eigen::Matrix3d forrocket::Rocket::getInertiaTensor() {
         tensor << inertia_moment_xx_src(t), 0.0, 0.0,
                 0.0, inertia_moment_yy_src(t), 0.0,
                 0.0, 0.0, inertia_moment_zz_src(t);
-        return tensor;
-    } else {
-        return this->inertia_tensor;
+        this->inertia_tensor = tensor;
     }
+    return this->inertia_tensor;
 };
 
 Eigen::Vector3d forrocket::Rocket::getAttitude() {
@@ -171,6 +177,12 @@ void forrocket::Rocket::IgnitionEngine(DateTime UTC_init, double countup_time_in
 void forrocket::Rocket::CutoffEngine() {
     engine.Cutoff();
 };
+
+void forrocket::Rocket::DeSpin() {
+    angular_acceleration[0] = 0.0;
+    angular_velocity[0] = 0.0;
+}
+
 
 void forrocket::Rocket::JettsonFairing(const double mass_fairing) {
     mass.inert = mass.inert - mass_fairing;

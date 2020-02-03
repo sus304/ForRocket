@@ -12,35 +12,48 @@
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-#include "environment/sequence_clock.hpp"
-#include "environment/wind.hpp"
-
-#include "dynamics/dynamics_base.hpp"
 #include "dynamics/dynamics_6dof_aero.hpp"
+#include "dynamics/dynamics_6dof_programrate.hpp"
+#include "dynamics/dynamics_3dof_onlauncher.hpp"
+#include "dynamics/dynamics_3dof_parachute.hpp"
 
-forrocket::RocketStage::RocketStage(Rocket rocket) {
+forrocket::RocketStage::RocketStage(int stage_number, Rocket rocket) {
+    this->stage_number = stage_number;
     this->rocket = rocket;
+    this->fdr = FlightDataRecorder(&this->rocket);
 };
 
 
-void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, const EnvironmentWind* wind, DynamicsBase::state& x0) {
+void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, EnvironmentWind* wind, DynamicsBase::state& x0) {
     namespace odeint = boost::numeric::odeint;
-    odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
+    odeint::runge_kutta_dopri5<forrocket::DynamicsBase::state> stepper;
 
-    Dynamics6dofAero dynamics_6dof_aero(*rocket, master_clock, wind);
-    // Dynamics6dofAero dynamics_6dof_aero();
+    Dynamics6dofAero dynamics_6dof_aero(&rocket, master_clock, wind);
+    Dynamics6dofProgramRate dynamics_6dof_programrate(&rocket, master_clock, wind);
+    Dynamics3dofOnLauncher dynamics_3dof_onlauncher(&rocket, master_clock);
+    Dynamics3dofParachute dynamics_3dof_parachute(&rocket, master_clock, wind);
 
     double start, end;
     double delta = 0.01;
 
     if (time_ignittion <= time_start) {
+        // 計算開始と同時に点火する場合
         rocket.IgnitionEngine(master_clock->UTC_date_init, master_clock->countup_time);
         start = time_start;
     } else {
+        // 点火が計算開始より後の場合
         // Flight start から engine ignittion まで
-        odeint::integrate_const(stepper, dynamics_6dof_aero, x0, time_start, time_ignittion, delta);
+        odeint::integrate_const(stepper, dynamics_6dof_aero, x0, time_start, time_ignittion, delta, std::ref(fdr)); // 点火までの慣性飛行計算
         start = time_ignittion;
         rocket.IgnitionEngine(master_clock->UTC_date_init, master_clock->countup_time);
+    }
+    // ここまでにIgnitionEngineが実行されている
+
+    if (enable_launcher) {
+        Rocket rocket_on_launcher = rocket;
+        SequenceClock clock_on_launcher = *master_clock;
+
+
     }
     
     if (enable_cutoff) {
@@ -59,7 +72,8 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, const E
     if (enable_sepation) {
         odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, time_separation, delta);
         start = time_separation;
-        rocket.SeparateUpperStage();
+        rocket.SeparateUpperStage(5.0);
+    }
 
     if (enable_parachute_open) {
         odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, time_opan_parachute, delta);
@@ -70,5 +84,6 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, const E
         odeint::integrate_const(stepper, dynamics_6dof_aero, x0, start, time_end, delta);
     }
 
+    Stepper.initialize(System, State2, 0, 0.1);
 
 };

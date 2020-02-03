@@ -67,6 +67,8 @@ namespace forrocket {
             double sideslip_angle;
             Moment moment;
 
+            double CdS_parachute;
+
             // Parameter Setter
             void setEngine(Engine engine);
             void setLengthCG(const InterpolateParameter length_CG);
@@ -99,11 +101,11 @@ namespace forrocket {
             // SOE Handler
             void IgnitionEngine(DateTime UTC_init, double countup_time_init);
             void CutoffEngine();
+            void DeSpin();
             void JettsonFairing(const double mass_fairing);
             void SeparateUpperStage(const double mass_upper_stage);
 
         private:
-            bool enable_program_attitude;
 
             InterpolateParameter inertia_moment_xx_src;
             InterpolateParameter inertia_moment_yy_src;
