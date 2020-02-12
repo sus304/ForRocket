@@ -7,3 +7,7 @@
 // ******************************************************
 
 #include "mass.hpp"
+
+double forrocket::Mass::Sum() {
+    return inert + propellant;
+};

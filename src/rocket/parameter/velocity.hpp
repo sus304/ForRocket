@@ -18,12 +18,12 @@
 namespace forrocket {
     class Velocity {
         public:
-            Eigen::Vector3d ECI;
-            Eigen::Vector3d ECEF;
-            Eigen::Vector3d NED;
-            // Eigen::Vector3d body;
-            Eigen::Vector3d air_body;
-            double mach_number;
+            Eigen::Vector3d ECI{0.0, 0.0, 0.0};
+            Eigen::Vector3d ECEF{0.0, 0.0, 0.0};
+            Eigen::Vector3d NED{0.0, 0.0, 0.0};
+            // Eigen::Vector3d body{0.0, 0.0, 0.0};
+            Eigen::Vector3d air_body{0.0, 0.0, 0.0};
+            double mach_number = 0.0;
 
             Velocity();
 

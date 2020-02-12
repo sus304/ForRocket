@@ -7,3 +7,7 @@
 // ******************************************************
 
 #include "fileio.hpp"
+
+#ifdef DEBUG
+#include <iostream>
+#endif

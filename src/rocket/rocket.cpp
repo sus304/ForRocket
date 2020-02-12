@@ -10,11 +10,18 @@
 
 #include <cmath>
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 forrocket::Rocket::Rocket() {
     length_thrust = 0.0;
     diameter = 0.0;
     area = 0.0;
     length = 0.0;
+    inertia_tensor << 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0;
 
     cant_angle_fin = 0.0;
 
@@ -31,9 +38,9 @@ forrocket::Rocket::Rocket() {
 // Parameter Setter //////////////////
 ////////////////////////////////////////////////////////
 
-void forrocket::Rocket::setEngine(Engine engine) {
-    this->engine = engine;
-};
+// void forrocket::Rocket::setEngine(Engine engine) {
+//     this->engine = engine;
+// };
 
 void forrocket::Rocket::setLengthCG(const InterpolateParameter length_CG) {
     this->length_CG_src = length_CG;
@@ -56,6 +63,10 @@ void forrocket::Rocket::setCNa(const InterpolateParameter CNa) {
     this->CNa_src = CNa;
 };
 
+void forrocket::Rocket::setCld(const InterpolateParameter Cld) {
+    this->Cld_src = Cld;
+};
+
 void forrocket::Rocket::setClp(const InterpolateParameter Clp) {
     this->Clp_src = Clp;
 };
@@ -72,6 +83,9 @@ void forrocket::Rocket::setInertiaTensor(const InterpolateParameter MOI_xx, cons
     this->inertia_moment_xx_src = MOI_xx;
     this->inertia_moment_yy_src = MOI_yy;
     this->inertia_moment_zz_src = MOI_zz;
+    #ifdef DEBUG
+    std::cout << "set MOI" << std::endl;
+    #endif
 };
 
 void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll) {
@@ -79,6 +93,19 @@ void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, c
     this->elevation_program_src = elevation;
     this->roll_program_src = roll;
 };
+
+void forrocket::Rocket::setCdSParachute(const double CdS_first) {
+    CdS_parachute_src.push_back(CdS_first);
+    #ifdef DEBUG
+    std::cout << "set CdS" << std::endl;
+    #endif
+};
+
+void forrocket::Rocket::setCdSParachute(const double CdS_first, const double CdS_second) {
+    CdS_parachute_src.push_back(CdS_first);
+    CdS_parachute_src.push_back(CdS_second);
+};
+
 
 
 
@@ -192,5 +219,11 @@ void forrocket::Rocket::JettsonFairing(const double mass_fairing) {
 void forrocket::Rocket::SeparateUpperStage(const double mass_upper_stage) {
     mass.inert = mass.inert - mass_upper_stage;
     if (mass.inert <= 0.0) mass.inert = 1.0;
+};
+
+void forrocket::Rocket::OpenParachute() {
+    for (int i=0; i < CdS_parachute_src.size(); ++i) {
+        CdS_parachute += CdS_parachute_src[i];
+    }
 };
 

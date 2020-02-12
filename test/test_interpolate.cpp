@@ -1,16 +1,24 @@
+#include "gtest/gtest.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "../src/pylib.hpp"
 #include "../src/interpolate.hpp"
 
+TEST(InterpolateTest, Interp1dLinearNormalInput) {
+    namespace fr = forrocket;
+    
+    std::vector<double> x;
+    x.push_back(0.0);
+    x.push_back(20.0);
+    std::vector<double> y;
+    y.push_back(1.0);
+    y.push_back(2.0);
 
-int main()
-{
-    namespace FR = ForRocket;
+    auto polator = fr::interpolate::Interp1d(x, y, "linear", "extrapolate");
 
-    Eigen::Vector3d x = Eigen::Vector3d(1,3,5);
-    Eigen::Vector3d y = Eigen::Vector3d(2,6,10);
-    FR::Interp1d inter(x, y, "same");
-    std::cout << inter(6) << std::endl;
-
-    return 0;
+    EXPECT_EQ(polator(10.0), 1.5);
 }
-
 

@@ -17,8 +17,6 @@
 #include "environment/coordinate.hpp"
 #include "environment/air.hpp"
 
-namespace odeint = boost::numeric::odeint;
-
 forrocket::Dynamics6dofProgramRate::Dynamics6dofProgramRate(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
     p_rocket = rocket;
     p_clock = clock;
@@ -88,10 +86,10 @@ void forrocket::Dynamics6dofProgramRate::operator()(const state& x, state& dx, c
     // Calculate Force
     p_rocket->force.thrust = p_rocket->getThrust(air.pressure, air_sea_level.pressure);
     p_rocket->force.aero = AeroForce();
-    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.Sum());
 
     // Calculate Acceleration
-    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.Sum());
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * (coordinate.dcm.body2NED * p_rocket->acceleration.body));
 
     // // Calculate Moment

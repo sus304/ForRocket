@@ -17,12 +17,21 @@
 #include "environment/coordinate.hpp"
 #include "environment/air.hpp"
 
-namespace odeint = boost::numeric::odeint;
-
 forrocket::Dynamics3dofOnLauncher::Dynamics3dofOnLauncher(Rocket* rocket, SequenceClock* clock) {
     p_rocket = rocket;
     p_clock = clock;
 };
+
+Eigen::Vector3d forrocket::Dynamics3dofOnLauncher::AeroForce() {
+    Eigen::Vector3d force_aero;
+
+    double force_axial = p_rocket->dynamic_pressure * p_rocket->CA * p_rocket->area;
+    double force_normal_y_axis = 0.0;
+    double force_normal_z_axis = 0.0;
+    force_aero << force_axial, force_normal_y_axis, force_normal_z_axis;
+
+    return force_aero;
+}
 
 
 void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, const double t) {
@@ -90,12 +99,18 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
 
     // Calculate Force
     p_rocket->force.thrust = p_rocket->getThrust(air.pressure, air_sea_level.pressure);
+    p_rocket->force.thrust(1) = 0.0; p_rocket->force.thrust(2) = 0.0;
     p_rocket->force.aero = AeroForce();
-    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.Sum());
+    p_rocket->force.gravity(1) = 0.0; p_rocket->force.gravity(2) = 0.0;
 
     // Calculate Acceleration
-    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.Sum());
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * (coordinate.dcm.body2NED * p_rocket->acceleration.body));
+    if (p_rocket->acceleration.body(0) < 0.0) {
+        p_rocket->acceleration.body << 0.0, 0.0, 0.0;
+        p_rocket->acceleration.ECI << 0.0, 0.0, 0.0;
+    }
 
     // // Calculate Moment
     // p_rocket->moment.gyro = GyroEffectMoment();

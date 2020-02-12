@@ -8,7 +8,7 @@
 
 #include "position.hpp"
 
-#include "sequence_clock.hpp"
+#include "environment/sequence_clock.hpp"
 
 forrocket::Position::Position() {
     ECI << 0.0, 0.0, 0.0;

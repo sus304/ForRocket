@@ -9,28 +9,28 @@
 #ifndef TRAJECTORYSOLVER_HPP_
 #define TRAJECTORYSOLVER_HPP_
 
+#include <string>
+#include <vector>
 
+#include "environment/sequence_clock.hpp"
+#include "environment/wind.hpp"
 #include "solver/rocket_stage.hpp"
 
 namespace forrocket {
-    class TrajectorySolver {
-        public:
-            TrajectorySolver() {};
+class TrajectorySolver {
+    public:
+        TrajectorySolver(std::string launch_config_json_file, std::string stage_list_json_file);
 
-            
-            RocketStage stage_1st;
-            RocketStage stage_2nd;
-            RocketStage stage_3rd;
-            RocketStage PBS;
-            double mass_satellite;
+        int number_stage;
+        std::vector<RocketStage> stage_vector;
+        SequenceClock master_clock;
+        EnvironmentWind wind;
 
-            
+        
+        void Solve();
 
-            void Solve();
-
-        private:
-            void StageSolve(DynamicsBase::state x0);
-    };
-}
+    private:
+};
+}  // namespace forrocket
 
 #endif

@@ -20,6 +20,8 @@ namespace forrocket {
 
             void operator()(const state& x, state& dx, const double t);
 
+            Eigen::Vector3d AeroForce();
+
         private:
             Rocket* p_rocket;
             SequenceClock* p_clock;

@@ -18,6 +18,11 @@ double rad2deg(const double rad) {
     return rad * 180.0 / pi;
 };
 
+forrocket::Coordinate::Coordinate() {
+    wgs = WGS84();
+    dcm = DirectionCosineMatrix(wgs);
+};
+
 void forrocket::Coordinate::setWind2Body(const double alpha, const double beta) {
     dcm.wind2body << std::cos(alpha) * std::cos(beta), std::cos(alpha) * std::sin(beta), -std::sin(alpha),
                     -std::sin(beta)                  , std::cos(beta)                  ,              0.0,
@@ -84,8 +89,8 @@ Eigen::Vector3d forrocket::Coordinate::ECEF2LLH(const Eigen::Vector3d pos_ECEF) 
 };
 
 Eigen::Vector3d forrocket::Coordinate::LLH2ECEF(const Eigen::Vector3d pos_LLH) {
-    double lat = pos_LLH[0];
-    double lon = pos_LLH[1];
+    double lat = deg2rad(pos_LLH[0]);
+    double lon = deg2rad(pos_LLH[1]);
     double height = pos_LLH[2];
     double x, y ,z;
     double N = wgs.a / std::sqrt(1 - wgs.e_square * std::pow(std::sin(lat), 2));

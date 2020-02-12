@@ -35,27 +35,27 @@ namespace forrocket {
 
             SequenceClock burn_clock;
             Engine engine;
-            double length_thrust;  // from end
+            double length_thrust = 0.0;  // from end
 
-            double diameter;
-            double area;
-            double length;
-            double length_CG;
-            double length_CP;
+            double diameter = 0.0;
+            double area = 0.0;
+            double length = 0.0;
+            double length_CG = 0.0;
+            double length_CP = 0.0;
             Mass mass;
             Eigen::Matrix3d inertia_tensor;
             
-            double CA;
-            double CNa;
-            double Cld;
-            double Clp;
-            double Cmq;
-            double Cnr;
-            double cant_angle_fin;  // rollモーメント正となるフィンカント角を正で定義
+            double CA = 0.0;
+            double CNa = 0.0;
+            double Cld = 0.0;
+            double Clp = 0.0;
+            double Cmq = 0.0;
+            double Cnr = 0.0;
+            double cant_angle_fin = 0.0;  // rollモーメント正となるフィンカント角を正で定義
 
             Position position;
             Velocity velocity;
-            double dynamic_pressure;
+            double dynamic_pressure = 0.0;
             Acceleration acceleration;
             Force force;
 
@@ -63,14 +63,14 @@ namespace forrocket {
             Eigen::Vector4d quaternion_dot;
             Eigen::Vector3d angular_velocity;
             Eigen::Vector3d angular_acceleration;
-            double angle_of_attack;
-            double sideslip_angle;
+            double angle_of_attack = 0.0;
+            double sideslip_angle = 0.0;
             Moment moment;
 
-            double CdS_parachute;
+            double CdS_parachute = 0.0;
 
             // Parameter Setter
-            void setEngine(Engine engine);
+            // void setEngine(Engine engine);
             void setLengthCG(const InterpolateParameter length_CG);
             void setLengthCP(const InterpolateParameter length_CP);
             void setCA(const InterpolateParameter CA);
@@ -83,6 +83,9 @@ namespace forrocket {
 
             void setInertiaTensor(const InterpolateParameter MOI_xx, const InterpolateParameter MOI_yy, const InterpolateParameter MOI_zz);
             void setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll);
+
+            void setCdSParachute(const double CdS_first);
+            void setCdSParachute(const double CdS_first, const double CdS_second);
 
             // Parameter Getter
             double getLengthCG();
@@ -105,6 +108,8 @@ namespace forrocket {
             void JettsonFairing(const double mass_fairing);
             void SeparateUpperStage(const double mass_upper_stage);
 
+            void OpenParachute();
+
         private:
 
             InterpolateParameter inertia_moment_xx_src;
@@ -124,6 +129,9 @@ namespace forrocket {
             InterpolateParameter Clp_src;
             InterpolateParameter Cmq_src;
             InterpolateParameter Cnr_src;
+
+            int count_open_parachute = 0;
+            std::vector<double> CdS_parachute_src;
 
     };
 

@@ -22,17 +22,18 @@ bool forrocket::interpolate::Interp1d::need_sort(const std::vector<double>& x) {
 };
 
 
-bool forrocket::interpolate::Interp1d::less(const std::pair<double, double>& a, const std::pair<double, double>& b) {
-    return (bool)((a.first < b.first) ? 1 : 0);
-};
+// bool forrocket::interpolate::Interp1d::less(const std::pair<double, double>& a, const std::pair<double, double>& b) {
+//     return (bool)((a.first < b.first) ? 1 : 0);
+// };
 
 
 void forrocket::interpolate::Interp1d::ascending_order_sort(std::vector<double>& x, std::vector<double>& y) {
-    std::vector<std::pair<double, double>> v1;
+    std::vector<std::pair<double, double> > v1;
     for (int i=0; i < x.size(); ++i) {
-        v1.push_back(std::pair<double, double>(x[i], y[i]));
+        v1.push_back(std::make_pair(x[i], y[i]));
     }
-    stable_sort(v1.begin(), v1.end(), less);
+    // stable_sort(v1.begin(), v1.end(), less);
+    stable_sort(v1.begin(), v1.end());
     for (int i=0; i < v1.size(); ++i) {
         x[i] = v1[i].first;
         y[i] = v1[i].second;
@@ -60,11 +61,41 @@ forrocket::interpolate::Interp1d::Interp1d(const std::vector<double> x, const st
     if (need_sort(x_src)) ascending_order_sort(x_src, y_src);
 
     if (kind == "linear") {
-        polator = new _Linear1D(x, y);
+        polator = new Linear1D();
     }
     else if (kind == "cubic" || kind == "spline") {
-        polator = new _CubicSpline1D(x, y);
+        polator = new CubicSpline1D(x, y);
+    } else {
+        std::cerr << "Error! Undifined polate kind" << std::endl;
+        exit(EXIT_FAILURE);
     }
+};
+
+forrocket::interpolate::Interp1d::Interp1d(const Interp1d& from) {
+    x_src = from.x_src;
+    y_src = from.y_src;
+    fill_value = from.fill_value;
+
+    if (typeid(*from.polator) == typeid(Linear1D)) {
+        polator = new Linear1D();
+    } else if (typeid(*from.polator) == typeid(CubicSpline1D)) {
+        polator = new CubicSpline1D(from.x_src, from.y_src);
+    }
+};
+
+forrocket::interpolate::Interp1d& forrocket::interpolate::Interp1d::operator=(const Interp1d& from) {
+    if (this != &from) {
+        x_src = from.x_src;
+        y_src = from.y_src;
+        fill_value = from.fill_value;
+
+        if (typeid(*from.polator) == typeid(Linear1D)) {
+            polator = new Linear1D();
+        } else if (typeid(*from.polator) == typeid(CubicSpline1D)) {
+            polator = new CubicSpline1D(from.x_src, from.y_src);
+        }  
+    }
+    return *this;
 };
 
 
@@ -93,7 +124,7 @@ Eigen::VectorXd forrocket::interpolate::Interp1d::operator()(const Eigen::Vector
 
 
 
-double forrocket::interpolate::_Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
+double forrocket::interpolate::Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
     if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {
         case 0:  // zero
@@ -109,16 +140,14 @@ double forrocket::interpolate::_Linear1D::polate(const double& x, const std::vec
             return y_src[0] + slope * (x - x_src[0]);
             break;
         }
-    }
-    else if (x >= x_src[0] && x <= x_src[x_src.size()-1]) {  // 内挿
+    } else if (x >= x_src[0] && x <= x_src[x_src.size()-1]) {  // 内挿
         for (int i=0; i < x_src.size(); ++i) {
             if (x <= x_src[i]) {
                 double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
                 return y_src[i-1] + slope * (x - x_src[i-1]);
             }
         }
-    }
-    else if (x > x_src[x_src.size()-1]) {  // 右外挿
+    } else if (x > x_src[x_src.size()-1]) {  // 右外挿
         switch (fill_value) {
         case 0:  // zero
             return 0;
@@ -138,22 +167,64 @@ double forrocket::interpolate::_Linear1D::polate(const double& x, const std::vec
 };
 
 
-forrocket::interpolate::_CubicSpline1D::_CubicSpline1D(const std::vector<double>& x, const std::vector<double>& y) {
-    solve_spline_coefficient(x, y);
+forrocket::interpolate::CubicSpline1D::CubicSpline1D(const std::vector<double>& x, const std::vector<double>& y) {
+    SolveSplineCoefficient(x, y);
 };
 
 
-forrocket::interpolate::_CubicSpline1D::~_CubicSpline1D() {
+forrocket::interpolate::CubicSpline1D::~CubicSpline1D() {
     delete[] a_spline;
     delete[] b_spline;
     delete[] c_spline;
     delete[] d_spline;
 };
 
+forrocket::interpolate::CubicSpline1D::CubicSpline1D(const CubicSpline1D& from) { 
+    array_size = from.array_size;
+    a_spline = new double[from.array_size];
+    for (int i=0; i < from.array_size; ++i) {
+        a_spline[i] = from.a_spline[i];
+    }
+    b_spline = new double[from.array_size];
+    for (int i=0; i < from.array_size; ++i) {
+        b_spline[i] = from.b_spline[i];
+    }
+    c_spline = new double[from.array_size];
+    for (int i=0; i < from.array_size; ++i) {
+        c_spline[i] = from.c_spline[i];
+    }
+    d_spline = new double[from.array_size];
+    for (int i=0; i < from.array_size; ++i) {
+        d_spline[i] = from.d_spline[i];
+    }
+};
 
-void forrocket::interpolate::_CubicSpline1D::solve_spline_coefficient(const std::vector<double>& x, const std::vector<double>& y) {
+forrocket::interpolate::CubicSpline1D& forrocket::interpolate::CubicSpline1D::operator=(const CubicSpline1D& from) {
+    if (this != &from) {
+        array_size = from.array_size;
+        a_spline = new double[from.array_size];
+        for (int i=0; i < from.array_size; ++i) {
+            a_spline[i] = from.a_spline[i];
+        }
+        b_spline = new double[from.array_size];
+        for (int i=0; i < from.array_size; ++i) {
+            b_spline[i] = from.b_spline[i];
+        }
+        c_spline = new double[from.array_size];
+        for (int i=0; i < from.array_size; ++i) {
+            c_spline[i] = from.c_spline[i];
+        }
+        d_spline = new double[from.array_size];
+        for (int i=0; i < from.array_size; ++i) {
+            d_spline[i] = from.d_spline[i];
+        }
+    }
+    return *this;
+};
+
+void forrocket::interpolate::CubicSpline1D::SolveSplineCoefficient(const std::vector<double>& x, const std::vector<double>& y) {
     // Tri-Diagonal Matrix Algorithm
-    int array_size = x.size();
+    array_size = x.size();
     double* h_spline = new double[array_size];
     double* P_tdma = new double[array_size];
     double* Q_tdma = new double[array_size];
@@ -192,7 +263,7 @@ void forrocket::interpolate::_CubicSpline1D::solve_spline_coefficient(const std:
 };
 
 
-double forrocket::interpolate::_CubicSpline1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
+double forrocket::interpolate::CubicSpline1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
     int index_target;
     if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {

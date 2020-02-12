@@ -9,12 +9,14 @@
 #ifndef ROCKETFACTORY_HPP_
 #define ROCKETFACTORY_HPP_
 
+#include <string>
+
 #include "rocket/rocket.hpp"
-#include "environment/datetime.hpp"
 
 namespace forrocket {
     class RocketFactory {
-        Rocket Create(const DateTime datetime);
+        public:
+            Rocket Create(std::string rocket_config_json_file, std::string engine_config_json_file);
     };
 }
 

@@ -9,6 +9,7 @@
 #ifndef FLIGHTDATARECORDER_HPP_
 #define FLIGHTDATARECORDER_HPP_
 
+#include <string>
 #include <vector>
 
 #include "environment/datetime.hpp"
@@ -48,6 +49,7 @@ namespace forrocket {
             std::vector<double> length_CP;
             std::vector<double> CA;
             std::vector<double> CNa;
+            std::vector<double> Cld;
             std::vector<double> Clp;
             std::vector<double> Cmq;
 
@@ -65,7 +67,9 @@ namespace forrocket {
             std::vector<Moment> moment;
 
 
-            void operator()(const DynamicsBase::state& x, DynamicsBase::state& dx, const double t);
+            void operator()(const DynamicsBase::state& x, const double t);
+
+            void dump_csv(const std::string file_name);
     };
 };
 

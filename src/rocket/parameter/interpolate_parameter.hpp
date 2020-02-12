@@ -16,10 +16,12 @@
 namespace forrocket {
     class InterpolateParameter {
         public:
-            InterpolateParameter() {};
+            InterpolateParameter();
             InterpolateParameter(const double value);
             InterpolateParameter(const std::vector<double> x_axis_src, const std::vector<double> value_src, std::string fill_value);
             InterpolateParameter(const std::vector<double> x_axis_src, const std::vector<double> y_axis_src, const std::vector<double> value_src, std::string fill_value);
+            InterpolateParameter(const InterpolateParameter& from);
+            InterpolateParameter& operator=(const InterpolateParameter& from);
 
             double operator()(const double x_axis_value);
             double operator()(const double x_axis_value, const double y_axis_value);

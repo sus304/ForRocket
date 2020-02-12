@@ -12,12 +12,11 @@
 
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
+#include "Eigen/Dense"
 #include "boost/numeric/odeint.hpp"
 
 #include "environment/coordinate.hpp"
 #include "environment/air.hpp"
-
-namespace odeint = boost::numeric::odeint;
 
 forrocket::Dynamics6dofAero::Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
     p_rocket = rocket;
@@ -92,10 +91,10 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     // Calculate Force
     p_rocket->force.thrust = p_rocket->getThrust(air.pressure, air_sea_level.pressure);
     p_rocket->force.aero = AeroForce();
-    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.Sum());
 
     // Calculate Acceleration
-    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.inert + p_rocket->mass.propellant);
+    p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.Sum());
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * (coordinate.dcm.body2NED * p_rocket->acceleration.body));
 
     // Calculate Moment
@@ -109,7 +108,7 @@ void forrocket::Dynamics6dofAero::operator()(const state& x, state& dx, const do
     p_rocket->angular_acceleration = p_rocket->getInertiaTensor().inverse() * p_rocket->moment.Sum();
 
     // Calculate Quaternion
-    p_rocket->quaternion_dot = 0.5 * QuaternionDiff();
+    p_rocket->quaternion_dot = 0.5 * (QuaternionDiff() * p_rocket->attitude.quaternion);
 
 
     dx[0] = p_rocket->velocity.ECI[0];  // vel_ECI => pos_ECI

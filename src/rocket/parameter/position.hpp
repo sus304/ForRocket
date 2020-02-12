@@ -16,23 +16,20 @@
 #include "environment/coordinate.hpp"
 
 namespace forrocket {
-    class Position {
-        public:
-            Eigen::Vector3d ECI;
-            Eigen::Vector3d ECEF;
-            Eigen::Vector3d LLH;
+class Position {
+    public:
+        Eigen::Vector3d ECI{0.0, 0.0, 0.0};
+        Eigen::Vector3d ECEF{0.0, 0.0, 0.0};
+        Eigen::Vector3d LLH{0.0, 0.0, 0.0};
+        // double& altitude = LLH(2);
 
-            Position();
+        Position();
 
-            void Initialize(const DateTime datetime, const Eigen::Vector3d& LLH);
-            void Update(Coordinate& coordinate, const Eigen::Vector3d& ECI);
+        void Initialize(const DateTime datetime, const Eigen::Vector3d& LLH);
+        void Update(Coordinate& coordinate, const Eigen::Vector3d& ECI);
 
-        private:
-            
-
-    };
-
-}
+};
+}  // namespace forrocket
 
 
 #endif

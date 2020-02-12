@@ -16,7 +16,7 @@ template <class T> std::vector<T> forrocket::arange(const T start, const T stop,
         value = value + step;
     }
     return array;
-}
+};
 
 template <class T> std::vector<T> forrocket::linspace(const T start, const T stop, const int num) {
     std::vector<T> array;
@@ -25,4 +25,4 @@ template <class T> std::vector<T> forrocket::linspace(const T start, const T sto
         array.push_back(start + i * step);
     }
     return array;
-}
+};
