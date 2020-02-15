@@ -1,6 +1,6 @@
 import datetime
 import numpy as np
-import pymap3d as pm
+# import pymap3d as pm
 
 import Simulator.coordinate as coord
 import Simulator.environment as env
@@ -13,14 +13,15 @@ def _dynamics(pos_ECI, vel_ECI, omega_BODY, quat, t, rocket):
     # Translation coordinate
     DCM_NED2BODY = coord.DCM_NED2BODY_quat(quat)
     DCM_BODY2NED = DCM_NED2BODY.transpose()
-    DCM_ECEF2NED = coord.DCM_ECEF2NED(rocket.pos0_LLH)
-    DCM_NED2ECEF = DCM_ECEF2NED.transpose()
     DCM_ECI2ECEF = coord.DCM_ECI2ECEF(t)
     DCM_ECEF2ECI = DCM_ECI2ECEF.transpose()
+    pos_ECEF = DCM_ECI2ECEF.dot(pos_ECI)
+    pos_LLH = coord.ECEF2LLH(pos_ECEF)
+    DCM_ECEF2NED = coord.DCM_ECEF2NED(pos_LLH)
+    DCM_NED2ECEF = DCM_ECEF2NED.transpose()
     DCM_BODY2ECI = DCM_ECEF2ECI.dot(DCM_NED2ECEF.dot(DCM_BODY2NED))
 
-    pos_ECEF = DCM_ECI2ECEF.dot(pos_ECI)
-    pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
+    # pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
     # pos_LLH = pm.eci2geodetic(pos_ECI, date_current)
 
     vel_ECEF = coord.vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI)

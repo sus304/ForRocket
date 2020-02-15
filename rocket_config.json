@@ -23,8 +23,8 @@
 	},
 
 	"Wind":{
-		"Wind File Exist": true,
-		"Wind File": "wind_momo2.csv"
+		"Wind File Exist": false,
+		"Wind File": "wind.csv"
 	},
 
 	"Launch Pad": {

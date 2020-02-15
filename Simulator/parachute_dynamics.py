@@ -1,6 +1,6 @@
 import datetime
 import numpy as np
-import pymap3d as pm
+# import pymap3d as pm
 
 import Simulator.coordinate as coord
 import Simulator.environment as env
@@ -11,10 +11,11 @@ def parachute_dynamics(x, t, rocket):
 
     DCM_ECI2ECEF = coord.DCM_ECI2ECEF(t)    
     pos_ECEF = DCM_ECI2ECEF.dot(pos_ECI)
-    pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
+    pos_LLH = coord.ECEF2LLH(pos_ECEF)
+    # pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
     
     altitude = pos_LLH[2]
-    DCM_ECEF2NED = coord.DCM_ECEF2NED(rocket.pos0_LLH)
+    DCM_ECEF2NED = coord.DCM_ECEF2NED(pos_LLH)
     vel_ECEF = coord.vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI)
     vel_NED = DCM_ECEF2NED.dot(vel_ECEF)
     vel_decent = vel_NED[2]
@@ -50,10 +51,11 @@ def payload_parachute_dynamics(x, t, rocket):
 
     DCM_ECI2ECEF = coord.DCM_ECI2ECEF(t)    
     pos_ECEF = DCM_ECI2ECEF.dot(pos_ECI)
-    pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
+    pos_LLH = coord.ECEF2LLH(pos_ECEF)
+    # pos_LLH = pm.ecef2geodetic(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2])
     
     altitude = pos_LLH[2]
-    DCM_ECEF2NED = coord.DCM_ECEF2NED(rocket.pos0_LLH)
+    DCM_ECEF2NED = coord.DCM_ECEF2NED(pos_LLH)
     vel_ECEF = coord.vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI)
     vel_NED = DCM_ECEF2NED.dot(vel_ECEF)
     vel_decent = vel_NED[2]

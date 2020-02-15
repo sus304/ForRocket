@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import interpolate
 from scipy.integrate import odeint
-import pymap3d as pm
+import pymap3d.timeconv as pm_timeconv
 
 import Simulator.coordinate as coord
 import Simulator.environment as env
@@ -236,7 +236,7 @@ class Rocket:
         # Initial Condition #############################
         self.azimuth0 = launch_pad.get('Launch Azimuth [deg]')
         self.elevation0 = launch_pad.get('Launch Elevation [deg]')
-        self.launch_date = pm.timeconv.str2dt(launch_pad.get('Date'))  # datetime
+        self.launch_date = pm_timeconv.str2dt(launch_pad.get('Date'))  # datetime
         self.pos0_LLH = launch_pad.get('Site')  # lat, lon, height
         self.launcher_rail = launch_pad.get('Launcher Rail Length [m]')
 

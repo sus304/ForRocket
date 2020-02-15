@@ -3,8 +3,8 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 import simplekml
-import pymap3d as pm
-import pymap3d.vincenty
+# import pymap3d as pm
+import pymap3d.vincenty as vincenty
 
 import Simulator.coordinate as coord
 
@@ -77,17 +77,21 @@ class Result:
     # downrange_decent_log @ make_log
 
     def __make_log(self, rocket):
-        self.pos_onlauncer_LLH_log = np.array([pm.ned2geodetic(pos_NED[0], pos_NED[1], pos_NED[2], rocket.pos0_LLH[0], rocket.pos0_LLH[1], rocket.pos0_LLH[2]) for pos_NED in self.pos_onlauncher_NED_log])
-        self.downrange_log = np.array([pm.vincenty.vdist(rocket.pos0_LLH[0], rocket.pos0_LLH[1], pos[0], pos[1]) for pos in self.pos_LLH_log])[:, 0]
+        pos_onlauncher_ECEF_log = np.array([coord.DCM_ECEF2NED(rocket.pos0_LLH).transpose().dot(pos) for pos in self.pos_onlauncher_NED_log])
+        self.pos_onlauncer_LLH_log = np.array([coord.ECEF2LLH(pos) for pos in pos_onlauncher_ECEF_log])
+        self.downrange_log = np.array([vincenty.vdist(rocket.pos0_LLH[0], rocket.pos0_LLH[1], pos[0], pos[1]) for pos in self.pos_LLH_log])[:, 0]
         self.vel_AIR_BODYframe_abs_log = np.array([np.linalg.norm(vel) for vel in self.vel_AIR_BODYframe_log])
         DCM_NED2BODY_log = np.array([coord.DCM_NED2BODY_quat(quat) for quat in self.quat_log])
         self.attitude_log = np.array([coord.quat2euler(DCM) for DCM in DCM_NED2BODY_log])
-        self.pos_NED_log = np.array([pm.ecef2ned(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2], rocket.pos0_LLH[0], rocket.pos0_LLH[1], rocket.pos0_LLH[2]) for pos_ECEF in self.pos_ECEF_log])
+        DCM_ECEF2NED_log = np.array([coord.DCM_ECEF2NED(pos) for pos in self.pos_LLH_log])
+        self.pos_NED_log = np.array([DCM.dot(pos_ECEF - self.pos_ECEF_log[0]) for pos_ECEF, DCM in zip(self.pos_ECEF_log, DCM_ECEF2NED_log)])
+        # self.pos_NED_log = np.array([pm.ecef2ned(pos_ECEF[0], pos_ECEF[1], pos_ECEF[2], rocket.pos0_LLH[0], rocket.pos0_LLH[1], rocket.pos0_LLH[2]) for pos_ECEF in self.pos_ECEF_log])
 
         self.pos_decent_ECEF_log = np.array([coord.DCM_ECI2ECEF(t).dot(pos_ECI) for pos_ECI, t in zip(self.pos_decent_ECI_log, self.time_decent_log)])
-        self.pos_decent_LLH_log = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in self.pos_decent_ECEF_log])
+        self.pos_decent_LLH_log = np.array([coord.ECEF2LLH(pos) for pos in self.pos_decent_ECEF_log])
+        # self.pos_decent_LLH_log = np.array([pm.ecef2geodetic(pos[0], pos[1], pos[2]) for pos in self.pos_decent_ECEF_log])
         self.vel_decent_NED_log = np.array([coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(vel_eci, coord.DCM_ECI2ECEF(t), pos_eci)) for vel_eci, t, pos_eci in zip(self.vel_decent_ECI_log, self.time_decent_log, self.pos_decent_ECI_log)])
-        self.downrange_decent_log = np.array([pm.vincenty.vdist(rocket.pos0_LLH[0], rocket.pos0_LLH[1], pos[0], pos[1]) for pos in self.pos_decent_LLH_log])[:, 0]
+        self.downrange_decent_log = np.array([vincenty.vdist(rocket.pos0_LLH[0], rocket.pos0_LLH[1], pos[0], pos[1]) for pos in self.pos_decent_LLH_log])[:, 0]
 
         self.pos_hard_LLH_log = np.r_[self.pos_onlauncer_LLH_log, self.pos_LLH_log]
         index = np.argmax(self.time_log > self.time_decent_log[0])
@@ -123,12 +127,12 @@ class Result:
         # Ballistic Landing
         self.time_hard_landing = self.time_log[-1]
         self.downrange_hard_landing = self.downrange_log[-1]
-        self.vel_hard_landing = np.linalg.norm(coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_log[-1]), self.pos_ECI_log[-1, :])))
+        self.vel_hard_landing = np.linalg.norm(coord.DCM_ECEF2NED(self.pos_hard_LLH_log[-1, :]).dot(coord.vel_ECI2ECEF(self.vel_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_log[-1]), self.pos_ECI_log[-1, :])))
 
         # Decent Landing
         self.time_soft_landing = self.time_decent_log[-1]
         self.downrange_soft_landing = self.downrange_decent_log[-1]
-        self.vel_soft_landing = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_decent_log[-1]), self.pos_decent_ECI_log[-1, :]))[2]
+        self.vel_soft_landing = coord.DCM_ECEF2NED(self.pos_soft_LLH_log[-1, :]).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[-1, :], coord.DCM_ECI2ECEF(self.time_decent_log[-1]), self.pos_decent_ECI_log[-1, :]))[2]
 
         # 2nd Separation
         if rocket.timer_mode:
@@ -136,11 +140,11 @@ class Result:
         else:
             index_sepa2 = np.argmax(self.pos_decent_LLH_log[:, 2] <= rocket.alt_sepa2)
         self.time_separation_2nd = self.time_decent_log[index_sepa2]
-        self.vel_decent_1st = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[index_sepa2, :], coord.DCM_ECI2ECEF(self.time_decent_log[index_sepa2]), self.pos_decent_ECI_log[index_sepa2, :]))[2]
+        self.vel_decent_1st = coord.DCM_ECEF2NED(self.pos_soft_LLH_log[index_sepa2, :]).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[index_sepa2, :], coord.DCM_ECI2ECEF(self.time_decent_log[index_sepa2]), self.pos_decent_ECI_log[index_sepa2, :]))[2]
 
         # 1st Separation
         self.time_separation_1st = self.time_decent_log[0]
-        self.vel_separation_1st = coord.DCM_ECEF2NED(rocket.pos0_LLH).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[0, :], coord.DCM_ECI2ECEF(self.time_decent_log[0]), self.pos_decent_ECI_log[0, :]))[2]
+        self.vel_separation_1st = coord.DCM_ECEF2NED(self.pos_decent_LLH_log[0, :]).dot(coord.vel_ECI2ECEF(self.vel_decent_ECI_log[0, :], coord.DCM_ECI2ECEF(self.time_decent_log[0]), self.pos_decent_ECI_log[0, :]))[2]
 
         txt = open(self.result_dir + '/result.txt', mode='w')
         if rocket.input_mag_dec:

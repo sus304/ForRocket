@@ -103,13 +103,13 @@ def DCM_ECI2ECEF(t_sec):
     DCM_ECI2ECEF = np.array([DCM_0, DCM_1, DCM_2])
     return DCM_ECI2ECEF
 
-def DCM_ECEF2NED(pos0_LLH):
+def DCM_ECEF2NED(pos_LLH):
     '''
     Input: [deg], [deg], [m]
     '''
     # from MATLAB
-    lat = np.deg2rad(pos0_LLH[0])
-    lon = np.deg2rad(pos0_LLH[1])
+    lat = np.deg2rad(pos_LLH[0])
+    lon = np.deg2rad(pos_LLH[1])
     DCM_0 = [-np.sin(lat) * np.cos(lon), -np.sin(lat) * np.sin(lon), np.cos(lat)]
     DCM_1 = [-np.sin(lon), np.cos(lon), 0]
     DCM_2 = [-np.cos(lat) * np.cos(lon), -np.cos(lat) * np.sin(lon), -np.sin(lat)]
@@ -122,7 +122,7 @@ def vel_ECI2ECEF(vel_ECI, DCM_ECI2ECEF, pos_ECI):
     DCM_1 = [omega_e, 0, 0]
     DCM_2 = [0, 0, 0]
     omega_ECI2ECEF = np.array([DCM_0, DCM_1, DCM_2])
-    vel_ECEF = DCM_ECI2ECEF.dot(vel_ECI) - omega_ECI2ECEF.dot(pos_ECI)
+    vel_ECEF = DCM_ECI2ECEF.dot(vel_ECI - omega_ECI2ECEF.dot(pos_ECI))
     return vel_ECEF
 
 def vel_ECEF2ECI(vel_ECEF, DCM_ECI2ECEF, pos_ECI):
@@ -131,8 +131,42 @@ def vel_ECEF2ECI(vel_ECEF, DCM_ECI2ECEF, pos_ECI):
     DCM_1 = [omega_e, 0, 0]
     DCM_2 = [0, 0, 0]
     omega_ECI2ECEF = np.array([DCM_0, DCM_1, DCM_2])
-    vel_ECI = DCM_ECI2ECEF.transpose().dot(vel_ECEF) + omega_ECI2ECEF.dot(pos_ECI)
+    vel_ECI = DCM_ECI2ECEF.transpose().dot(vel_ECEF + omega_ECI2ECEF.dot(pos_ECI))
     return vel_ECI
 
 
+def ECEF2LLH(pos_ECEF):
+    wgs_a = 6378137.0
+    inv_f = 298.257223563
+    f = 1.0 / inv_f
+    wgs_b = wgs_a * (1.0 - f)
+    e_square = 2.0 * f - (f ** 2)
 
+    x = pos_ECEF[0]
+    y = pos_ECEF[1]
+    z = pos_ECEF[2]
+
+    p = np.sqrt(x ** 2 + y ** 2)
+    theta = np.arctan2(z * wgs_a, p * wgs_b)
+    e_dash_square = (wgs_a ** 2 - wgs_b ** 2) / (wgs_b ** 2)
+    lat = np.arctan2(z + e_dash_square * wgs_b * (np.sin(theta) ** 3), p - e_square * wgs_a * (np.cos(theta) ** 3))
+    lon = np.arctan2(y, x)
+    N = wgs_a / np.sqrt(1.0 - e_square * np.sin(lat) ** 2)
+    height = p / np.cos(lat) - N
+    return np.array([np.rad2deg(lat), np.rad2deg(lon), height])
+
+def LLH2ECEF(pos_LLH):
+    wgs_a = 6378137.0
+    inv_f = 298.257223563
+    f = 1.0 / inv_f
+    e_square = 2.0 * f - (f ** 2)
+
+    lat = np.deg2rad(pos_LLH[0])
+    lon = np.deg2rad(pos_LLH[1])
+    height = pos_LLH[2]
+
+    N = wgs_a / np.sqrt(1.0 - e_square * np.sin(lat) ** 2)
+    x = (N + height) * np.cos(lat) * np.cos(lon)
+    y = (N + height) * np.cos(lat) * np.sin(lon)
+    z = (N * (1 - e_square) + height) * np.sin(lat)
+    return np.array([x, y, z])
