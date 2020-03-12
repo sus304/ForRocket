@@ -20,11 +20,13 @@ namespace forrocket {
 class JsonControl {
     public:
         JsonControl(std::string json_file_path);
+        JsonControl(nlohmann::json json_obj);
 
         std::string getString(std::string key);
         int getInt(std::string key);
         double getDouble(std::string key);
         bool getBool(std::string key);
+        JsonControl getSubItem(std::string key);
     
     private:
         nlohmann::json json_obj;

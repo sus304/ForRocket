@@ -17,7 +17,6 @@
 namespace forrocket {
     class Dynamics6dofAero : public DynamicsBase {
         public:
-            // Dynamics6dofAero() {};
             Dynamics6dofAero(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind);
 
             void operator()(const state& x, state& dx, const double t);

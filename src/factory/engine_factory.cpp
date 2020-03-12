@@ -10,19 +10,40 @@
 
 #include <cmath>
 
-const double pi = 3.14159265;
+#include "degrad.hpp"
+#include "fileio.hpp"
+#include "json_control.hpp"
 
-forrocket::Engine forrocket::EngineFactory::Create() {
-    double diameter_throat = 15.0 / 1e3;
-    double area_throat = 0.25 * std::pow(diameter_throat, 2) * pi;
-    double area_exit = area_throat * 3.5;
 
-    double tb = 1.5;
-    double thrust = 300.0;
-    double Isp = 180.0;
-    double mdot_p = thrust / (Isp * 9.80665);
+forrocket::Engine forrocket::EngineFactory::Create(std::string engine_config_json_file) {
+    JsonControl jc(engine_config_json_file);
 
-    Engine engine(tb, thrust, mdot_p, area_exit);
+    double diameter_exit = jc.getDouble("Nozzle Exit Diameter [mm]") / 1e3;
+    double area_exit = 0.25 * std::pow(diameter_exit, 2) * pi;
 
-    return engine;
+    bool enable_mis_alignment = jc.getBool("Enable Engine Miss Alignment");
+    if (jc.getBool("Enable Thrust File")) {
+        JsonControl jc_file = jc.getSubItem("Thrust File");
+        auto thrust_log = LoadCsvLog(jc_file.getString("Thrust at vacuum File Path"));
+        if (enable_mis_alignment) {
+            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * 3.14159265;
+            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * 3.14159265;
+            return Engine(thrust_log[0], thrust_log[1], thrust_log[2], area_exit, mis_alignment_y, mis_alignment_z);
+        } else {
+            return Engine(thrust_log[0], thrust_log[1], thrust_log[2], area_exit);
+        }
+    } else {
+        JsonControl jc_const = jc.getSubItem("Constant Thrust");
+        double thrust = jc_const.getDouble("Thrust at vacuum [N]");
+        double mdot_p = jc_const.getDouble("Propellant Mass Flow Rate [kg/s]");
+        double burn_duration = jc_const.getDouble("Burn Duration [sec]");
+        if (enable_mis_alignment) {
+            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * 3.14159265;
+            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * 3.14159265;
+            return Engine(burn_duration, thrust, mdot_p, area_exit, mis_alignment_y, mis_alignment_z);
+        } else {
+            return Engine(burn_duration, thrust, mdot_p, area_exit);
+        }
+    }
 };
+

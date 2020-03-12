@@ -19,9 +19,9 @@ namespace forrocket {
         public:
 
             RocketStage Create(const int stage_number,
-                                                    std::string rocket_config_json_file, 
-                                                    std::string engine_config_json_file,
-                                                    std::string sequence_of_event_json_file);
+                                std::string rocket_config_json_file, 
+                                std::string engine_config_json_file,
+                                std::string sequence_of_event_json_file);
     };
 }
 

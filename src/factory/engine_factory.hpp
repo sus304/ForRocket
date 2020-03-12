@@ -14,7 +14,7 @@
 namespace forrocket {
     class EngineFactory {
         public:
-            Engine Create();
+            Engine Create(std::string engine_config_json_file);
     };
 }
 

@@ -97,7 +97,7 @@ namespace forrocket {
             double getCmq(const double mach_number);
             double getCnr(const double mach_number);
 
-            Eigen::Vector3d getThrust(const double air_pressure, const double air_pressure_sea_level);
+            Eigen::Vector3d getThrust(const double air_pressure);
             Eigen::Matrix3d getInertiaTensor();
             Eigen::Vector3d getAttitude();
 

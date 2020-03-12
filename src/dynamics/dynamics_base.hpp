@@ -28,19 +28,19 @@ class DynamicsBase {
 
         virtual void operator()(const state& x, state& dx, const double t) = 0;
 
-        Eigen::Vector3d AeroForce();
-        Eigen::Vector3d GyroEffectMoment();
-        Eigen::Vector3d ThrustMoment();
-        Eigen::Vector3d AeroForceMoment();
-        Eigen::Vector3d AeroDampingMoment();
-        Eigen::Vector3d JetDampingMoment();
+        Eigen::Vector3d AeroForce(Rocket* p_rocket);
+        Eigen::Vector3d GyroEffectMoment(Rocket* p_rocket);
+        Eigen::Vector3d ThrustMoment(Rocket* p_rocket);
+        Eigen::Vector3d AeroForceMoment(Rocket* p_rocket);
+        Eigen::Vector3d AeroDampingMoment(Rocket* p_rocket);
+        Eigen::Vector3d JetDampingMoment(Rocket* p_rocket);
         
-        Eigen::Matrix4d QuaternionDiff();
+        Eigen::Matrix4d QuaternionDiff(Rocket* p_rocket);
 
     private:
-        Rocket* p_rocket;
-        SequenceClock* p_clock;
-        EnvironmentWind* p_wind;
+        // Rocket* p_rocket;
+        // SequenceClock* p_clock;
+        // EnvironmentWind* p_wind;
 };
 }  // namespace forrocket
 

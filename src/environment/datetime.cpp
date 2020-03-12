@@ -10,6 +10,8 @@
 
 #include <cmath>
 
+#include "fileio.hpp"
+
 forrocket::DateTime::DateTime() {
     year = 2000;
     month = 1;
@@ -65,36 +67,80 @@ forrocket::DateTime::DateTime(unsigned int year, unsigned int month, unsigned in
 };
 
 
-forrocket::DateTime forrocket::DateTime::operator+(const double sec) {
-    unsigned int sec_int = static_cast<unsigned int>(sec);
+forrocket::DateTime::DateTime(std::string datetime_str) {
+    auto datetime_str_vec = split(datetime_str, ' ');
+    auto date_str = datetime_str_vec[0];
+    auto time_str = datetime_str_vec[1];
 
-    unsigned int ms = static_cast<unsigned int>((sec - sec_int) * 1000.0);
-    msec += ms;
-    if (msec >= 1000) {
-        this->sec += 1;
-        msec -= 1000;
+    auto date_str_vec = split(date_str, '/');
+    year = std::stoi(date_str_vec[0]);
+    month = std::stoi(date_str_vec[1]);
+    day = std::stoi(date_str_vec[2]);
+
+    auto time_str_vec = split(time_str, ':');
+    hour = std::stoi(time_str_vec[0]);
+    min = std::stoi(time_str_vec[1]);
+    auto sec_str_vec = split(time_str_vec[2], '.');
+    sec = std::stoi(sec_str_vec[0]);
+    msec = std::stoi(sec_str_vec[1]);
+};
+
+
+forrocket::DateTime::DateTime(const DateTime& from) {
+    year = from.year;
+    month = from.month;
+    day = from.day;
+    hour = from.hour;
+    min = from.min;
+    sec = from.sec;
+    msec = from.msec;
+};
+
+forrocket::DateTime& forrocket::DateTime::operator=(const DateTime& from) {
+    if (this != &from) {
+        year = from.year;
+        month = from.month;
+        day = from.day;
+        hour = from.hour;
+        min = from.min;
+        sec = from.sec;
+        msec = from.msec;
+    }
+    return *this;
+};
+
+
+forrocket::DateTime forrocket::DateTime::operator+(const double sec_double) {
+    DateTime new_datetime = *this;
+    unsigned int sec_int = static_cast<unsigned int>(sec_double);
+
+    unsigned int ms = static_cast<unsigned int>((sec_double - sec_int) * 1000.0);
+    new_datetime.msec += ms;
+    if (new_datetime.msec >= 1000) {
+        new_datetime.sec += 1;
+        new_datetime.msec -= 1000;
     }
 
-    this->sec += sec_int;
-    if (this->sec >= 60) {
-        unsigned int m = static_cast<unsigned int>(this->sec / 60);
-        this->min += m;
-        this->sec -= m * 60;
+    new_datetime.sec += sec_int;
+    if (new_datetime.sec >= 60) {
+        unsigned int m = static_cast<unsigned int>(new_datetime.sec / 60);
+        new_datetime.min += m;
+        new_datetime.sec -= m * 60;
     }
 
-    if (min >= 60) {
-        unsigned int h = static_cast<unsigned int>(min / 60);
-        hour += h;
-        min -= h * 60;
+    if (new_datetime.min >= 60) {
+        unsigned int h = static_cast<unsigned int>(new_datetime.min / 60);
+        new_datetime.hour += h;
+        new_datetime.min -= h * 60;
     }
 
-    if (hour >= 24) {
-        unsigned int d = static_cast<unsigned int>(hour / 24);
-        day += d;
-        hour -= d * 24;
+    if (new_datetime.hour >= 24) {
+        unsigned int d = static_cast<unsigned int>(new_datetime.hour / 24);
+        new_datetime.day += d;
+        new_datetime.hour -= d * 24;
     }
 
     // TODO:Month update
-
+    return new_datetime;
 };
 

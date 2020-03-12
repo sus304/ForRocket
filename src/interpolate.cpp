@@ -125,7 +125,18 @@ Eigen::VectorXd forrocket::interpolate::Interp1d::operator()(const Eigen::Vector
 
 
 double forrocket::interpolate::Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
-    if (x < x_src[0]) {  // 左外挿
+    if (x >= x_src[0] && x <= x_src.back()) {  // 内挿
+        // TODO: binary search
+        for (int i=0; i < x_src.size(); ++i) {
+            if (x == x_src[i]) {
+                return y_src[i];
+            }
+            if (x < x_src[i]) {
+                double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
+                return y_src[i-1] + slope * (x - x_src[i-1]);
+            }
+        }
+    } else if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {
         case 0:  // zero
             return 0;
@@ -139,13 +150,6 @@ double forrocket::interpolate::Linear1D::polate(const double& x, const std::vect
             double slope = (y_src[1] - y_src[0]) / (x_src[1] - x_src[0]);
             return y_src[0] + slope * (x - x_src[0]);
             break;
-        }
-    } else if (x >= x_src[0] && x <= x_src[x_src.size()-1]) {  // 内挿
-        for (int i=0; i < x_src.size(); ++i) {
-            if (x <= x_src[i]) {
-                double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
-                return y_src[i-1] + slope * (x - x_src[i-1]);
-            }
         }
     } else if (x > x_src[x_src.size()-1]) {  // 右外挿
         switch (fill_value) {

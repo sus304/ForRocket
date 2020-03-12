@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "../src/pylib.hpp"
 #include "../src/interpolate.hpp"
 
 TEST(InterpolateTest, Interp1dLinearNormalInput) {

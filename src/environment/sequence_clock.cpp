@@ -10,8 +10,13 @@
 
 #include <cmath>
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 void forrocket::SequenceClock::UpdateJulianDate() {
-    julian_data = UTC2JulianDate(UTC_date_init + countup_time);
+    DateTime UTC_date = UTC_date_init + countup_time;
+    julian_data = UTC2JulianDate(UTC_date);
     modified_julian_date = JulianDate2ModifiedJulianDate(julian_data);
     greenwich_sidereal_time = JulianDate2GreenwichSiderealTime(julian_data);
 };
@@ -43,20 +48,24 @@ void forrocket::SequenceClock::SyncSolverTime(const double t) {
 };
 
 
-double forrocket::SequenceClock::UTC2JulianDate(DateTime UTC) {
-    return 365 * UTC.year - static_cast<int>(7 * (UTC.year + static_cast<int>(UTC.month + 9) / 12) / 4) + static_cast<int>(275 * UTC.month / 9);
+double forrocket::SequenceClock::UTC2JulianDate(DateTime& UTC) {
+    // return 367 * UTC.year - static_cast<int>(7 * (UTC.year + static_cast<int>((UTC.month + 9) / 12)) / 4) + static_cast<int>(275 * UTC.month / 9)
+    //             + UTC.day + 1721013.5 + ((UTC.sec / 60.0 + UTC.min) / 60.0 + UTC.hour) / 24.0;
+    return 367 * UTC.year - static_cast<int>(7 * (UTC.year + static_cast<int>((UTC.month + 9) / 12)) / 4) + static_cast<int>(275 * UTC.month / 9)
+                + UTC.day + 1721013.5 + ((UTC.sec / 60.0 + UTC.min) / 60.0 + UTC.hour) / 24.0;
 };
 
 
 double forrocket::SequenceClock::JulianDate2GreenwichSiderealTime(const double julian) {
     double julian_century = (julian - 2451545.0) / 36525.0;
-    double greenwich_sidereal = 67310.54841 + (876600 + 8640184.812866) * julian_century + 0.093104 * std::pow(julian_century, 2) - 0.0000062 * std::pow(julian_century, 3);
+    double greenwich_sidereal = 67310.54841 + (876600.0 * 3600.0 + 8640184.812866) * julian_century + 0.093104 * std::pow(julian_century, 2) - 6.2e-6 * std::pow(julian_century, 3);
     // double green_sidereal_deg = greenwich_sidereal_time / 240.0;
+    greenwich_sidereal = greenwich_sidereal * std::fmod((2.0 * 3.14159265) / 86400.0, (2.0 * 3.14159265));
     return greenwich_sidereal;
 };
 
 
-double forrocket::SequenceClock::UTC2GreenwichSiderealTime(DateTime UTC) {
+double forrocket::SequenceClock::UTC2GreenwichSiderealTime(DateTime& UTC) {
     double julian = UTC2JulianDate(UTC);
     return JulianDate2GreenwichSiderealTime(julian);
 };

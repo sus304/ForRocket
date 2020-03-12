@@ -8,10 +8,6 @@
 
 #include "interpolate_parameter.hpp"
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 forrocket::InterpolateParameter::InterpolateParameter() {
     enable_1dlog = false;
     enable_2dlog = false;
@@ -50,9 +46,6 @@ forrocket::InterpolateParameter::InterpolateParameter(const InterpolateParameter
     if (from.enable_1dlog) polator_1d = from.polator_1d;
     else if (from.enable_2dlog) polator_2d = from.polator_2d;
     else {
-        #ifdef DEBUG
-        std::cout << "IP value copy" << std::endl;
-        #endif
         value_const = from.value_const;
     }
 };
@@ -65,10 +58,6 @@ forrocket::InterpolateParameter& forrocket::InterpolateParameter::operator=(cons
         if (from.enable_1dlog) polator_1d = from.polator_1d;
         else if (from.enable_2dlog) polator_2d = from.polator_2d;
         else {
-            #ifdef DEBUG
-            std::cout << "IP value eq" << std::endl;
-            std::cout << from.value_const << std::endl;
-            #endif
             value_const = from.value_const;
         }
     }

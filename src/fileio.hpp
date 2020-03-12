@@ -9,8 +9,12 @@
 #ifndef FILEIO_HPP_
 #define FILEIO_HPP_
 
-namespace forrocket {
+#include <string>
+#include <vector>
 
+namespace forrocket {
+    std::vector<std::vector<double>> LoadCsvLog(std::string file_path, int skip_rows=1);
+    std::vector<std::string> split(std::string& line, char delimiter);
 }
 
 #endif

@@ -16,6 +16,7 @@
 
 #include "environment/coordinate.hpp"
 #include "environment/air.hpp"
+#include "environment/gravity.hpp"
 
 forrocket::Dynamics3dofParachute::Dynamics3dofParachute(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
     p_rocket = rocket;
@@ -32,7 +33,7 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
     p_rocket->burn_clock.SyncSolverTime(t);
 
     // Update Flight Infomation
-    coordinate.setECI2ECEF(p_clock->greenwich_sidereal_time);
+    coordinate.setECI2ECEF(t);
 
     p_rocket->position.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data());
     p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
@@ -41,7 +42,7 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
     coordinate.setECEF2NED(p_rocket->position.LLH);
 
     p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
-    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI;
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
     p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
     double decent_velosity = p_rocket->velocity.NED(2);
 

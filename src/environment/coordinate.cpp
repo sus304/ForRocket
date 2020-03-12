@@ -10,13 +10,8 @@
 
 #include <cmath>
 
-const double pi = 3.14159265;
-double deg2rad(const double deg) {
-    return deg * pi / 180.0;
-};
-double rad2deg(const double rad) {
-    return rad * 180.0 / pi;
-};
+#include "degrad.hpp"
+
 
 forrocket::Coordinate::Coordinate() {
     wgs = WGS84();
@@ -24,6 +19,7 @@ forrocket::Coordinate::Coordinate() {
 };
 
 void forrocket::Coordinate::setWind2Body(const double alpha, const double beta) {
+    // Input: radian
     dcm.wind2body << std::cos(alpha) * std::cos(beta), std::cos(alpha) * std::sin(beta), -std::sin(alpha),
                     -std::sin(beta)                  , std::cos(beta)                  ,              0.0,
                     std::sin(alpha) * std::cos(beta) , std::sin(alpha) * std::sin(beta), std::cos(alpha);
@@ -32,6 +28,7 @@ void forrocket::Coordinate::setWind2Body(const double alpha, const double beta) 
 
 
 void forrocket::Coordinate::setNED2Body(const Eigen::Vector3d euler_angle) {
+    // Input: radian
     double azi = euler_angle(0);
     double elv = euler_angle(1);
     double rol = euler_angle(2);
@@ -63,6 +60,7 @@ void forrocket::Coordinate::setECI2ECEF(const double epoch_time) {
 
 
 void forrocket::Coordinate::setECEF2NED(const Eigen::Vector3d pos_LLH) {
+    // Input: degree
     double lat = deg2rad(pos_LLH(0));
     double lon = deg2rad(pos_LLH(1));
 
@@ -74,6 +72,7 @@ void forrocket::Coordinate::setECEF2NED(const Eigen::Vector3d pos_LLH) {
 
 
 Eigen::Vector3d forrocket::Coordinate::ECEF2LLH(const Eigen::Vector3d pos_ECEF) {
+    // return: degree
     double x = pos_ECEF[0];
     double y = pos_ECEF[1];
     double z = pos_ECEF[2];
@@ -89,20 +88,23 @@ Eigen::Vector3d forrocket::Coordinate::ECEF2LLH(const Eigen::Vector3d pos_ECEF) 
 };
 
 Eigen::Vector3d forrocket::Coordinate::LLH2ECEF(const Eigen::Vector3d pos_LLH) {
+    // Input: degree
     double lat = deg2rad(pos_LLH[0]);
     double lon = deg2rad(pos_LLH[1]);
     double height = pos_LLH[2];
     double x, y ,z;
     double N = wgs.a / std::sqrt(1 - wgs.e_square * std::pow(std::sin(lat), 2));
+    // double N = std::pow(wgs.a, 2) / std::sqrt(std::pow(wgs.a, 2) * std::pow(std::cos(lat), 2) + std::pow(wgs.b, 2) * std::pow(std::sin(lat), 2));
     x = (N + height) * std::cos(lat) * std::cos(lon);
     y = (N + height) * std::cos(lat) * std::sin(lon);
     z = (N * (1 - wgs.e_square) + height) * std::sin(lat);
+    // z = (N * std::pow(wgs.b / wgs.a, 2) + height) * std::sin(lat);
     return Eigen::Vector3d(x, y, z);
 };
 
 
-
 Eigen::Vector4d forrocket::Coordinate::Quaternion(const Eigen::Vector3d euler_angle) {
+    // Input: radian
     setNED2Body(euler_angle);
     Eigen::Vector4d q;
     q(0) = 0.5 * std::sqrt(1.0 + dcm.NED2body(0, 0) - dcm.NED2body(1, 1) - dcm.NED2body(2, 2));
@@ -146,6 +148,7 @@ Eigen::Vector4d forrocket::Coordinate::Quaternion(const Eigen::Vector3d euler_an
 
 
 Eigen::Vector3d forrocket::Coordinate::EulerAngle() {
+    // return: radian
     double azimuth = std::atan2(dcm.NED2body(0, 1), dcm.NED2body(0, 0));
     double elevation = -std::asin(dcm.NED2body(0, 2));
     double roll = std::atan2(dcm.NED2body(1, 2), dcm.NED2body(2, 2));

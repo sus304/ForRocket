@@ -16,6 +16,7 @@
 
 #include "environment/coordinate.hpp"
 #include "environment/air.hpp"
+#include "environment/gravity.hpp"
 
 forrocket::Dynamics6dofProgramRate::Dynamics6dofProgramRate(Rocket* rocket, SequenceClock* clock, EnvironmentWind* wind) {
     p_rocket = rocket;
@@ -32,7 +33,7 @@ void forrocket::Dynamics6dofProgramRate::operator()(const state& x, state& dx, c
     p_rocket->burn_clock.SyncSolverTime(t);
 
     // Update Flight Infomation
-    coordinate.setECI2ECEF(p_clock->greenwich_sidereal_time);
+    coordinate.setECI2ECEF(t);
 
     p_rocket->position.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data());
     p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
@@ -41,7 +42,7 @@ void forrocket::Dynamics6dofProgramRate::operator()(const state& x, state& dx, c
     coordinate.setECEF2NED(p_rocket->position.LLH);
 
     p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
-    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI;
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
     p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
 
     p_rocket->attitude.euler_angle = p_rocket->getAttitude();
@@ -49,7 +50,6 @@ void forrocket::Dynamics6dofProgramRate::operator()(const state& x, state& dx, c
     p_rocket->attitude.quaternion = coordinate.Quaternion(p_rocket->attitude.euler_angle);
 
     p_rocket->mass.propellant = x[13];
-    if (p_rocket->mass.propellant <= 0.0) p_rocket->engine.Cutoff();
 
 
     // Update Environment
@@ -64,28 +64,30 @@ void forrocket::Dynamics6dofProgramRate::operator()(const state& x, state& dx, c
     p_rocket->velocity.mach_number = p_rocket->velocity.air_body.norm() / air.speed_of_sound;
 
     // Update time and mach parameter
-    // p_rocket->inertia_tensor = p_rocket->getInertiaTensor();
+    p_rocket->inertia_tensor = p_rocket->getInertiaTensor();
 
     p_rocket->length_CG = p_rocket->getLengthCG();    
-    // p_rocket->length_CP = p_rocket->getLengthCP(p_rocket->velocity.mach_number);
+    p_rocket->length_CP = p_rocket->getLengthCP(p_rocket->velocity.mach_number);
     p_rocket->CA = p_rocket->getCA(p_rocket->velocity.mach_number);
     p_rocket->CNa = p_rocket->getCNa(p_rocket->velocity.mach_number);
-    // p_rocket->Cld = p_rocket->getCld(p_rocket->velocity.mach_number);
-    // p_rocket->Clp = p_rocket->getClp(p_rocket->velocity.mach_number);
-    // p_rocket->Cmq = p_rocket->getCmq(p_rocket->velocity.mach_number);
-    // p_rocket->Cnr = p_rocket->getCnr(p_rocket->velocity.mach_number);
+    p_rocket->Cld = p_rocket->getCld(p_rocket->velocity.mach_number);
+    p_rocket->Clp = p_rocket->getClp(p_rocket->velocity.mach_number);
+    p_rocket->Cmq = p_rocket->getCmq(p_rocket->velocity.mach_number);
+    p_rocket->Cnr = p_rocket->getCnr(p_rocket->velocity.mach_number);
 
     // Calculate AoA
-    p_rocket->angle_of_attack = std::atan2(p_rocket->velocity.air_body[2], p_rocket->velocity.air_body[0]);
+    // p_rocket->angle_of_attack = std::atan2(p_rocket->velocity.air_body[2], p_rocket->velocity.air_body[0]);
     if (p_rocket->velocity.air_body.norm() <= 0.0) {
+        p_rocket->angle_of_attack = 0.0;
         p_rocket->sideslip_angle = 0.0;
     } else {
+        p_rocket->angle_of_attack = std::asin(p_rocket->velocity.air_body[2] / p_rocket->velocity.air_body.norm());
         p_rocket->sideslip_angle = std::asin(-p_rocket->velocity.air_body[1] / p_rocket->velocity.air_body.norm());
     }
 
     // Calculate Force
-    p_rocket->force.thrust = p_rocket->getThrust(air.pressure, air_sea_level.pressure);
-    p_rocket->force.aero = AeroForce();
+    p_rocket->force.thrust = p_rocket->getThrust(air.pressure);
+    p_rocket->force.aero = AeroForce(p_rocket);
     p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.Sum());
 
     // Calculate Acceleration

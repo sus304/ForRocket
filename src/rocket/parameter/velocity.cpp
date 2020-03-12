@@ -25,7 +25,7 @@ void forrocket::Velocity::Initialize(const DateTime datetime, const Eigen::Vecto
     this->NED = NED;
     coordinate.setECEF2NED(pos_LLH);
     this->ECEF = coordinate.dcm.NED2ECEF * this->NED;
-    coordinate.setECI2ECEF(clock.greenwich_sidereal_time);
+    coordinate.setECI2ECEF(clock.countup_time);
     this->ECI = coordinate.dcm.ECEF2ECI * this->ECEF + coordinate.dcm.EarthRotate * pos_ECI;
 };
 

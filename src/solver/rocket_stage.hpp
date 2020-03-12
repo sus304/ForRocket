@@ -68,10 +68,11 @@ class RocketStage {
         ///////////////////////
 
         double time_end;
+        double time_step;
 
         void FlightSequence(SequenceClock* master_clock, EnvironmentWind* wind, DynamicsBase::state& x0);
-        void SwitchDynamics(const double time_start, DynamicsBase* dynamics,
-                            DynamicsBase* dynamics_aero, DynamicsBase* dynamics_program);
+        void SwitchDynamics(const double time_start, DynamicsBase** dynamics,
+                            SequenceClock* master_clock, EnvironmentWind* wind);
 
 };
 }  // namespace forrocket

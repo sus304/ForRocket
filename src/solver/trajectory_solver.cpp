@@ -18,63 +18,66 @@
 #include "rocket/rocket.hpp"
 #include "dynamics/dynamics_base.hpp"
 
-forrocket::TrajectorySolver::TrajectorySolver(std::string launch_config_json_file, std::string stage_list_json_file) {
-    JsonControl stage_list_json(stage_list_json_file);
+#ifdef DEBUG
+#include <iostream>
+#endif
 
-    // number_stage = stage_list_json.getInt("number of stage");
-    number_stage = 1;
+forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_file) {
+    JsonControl jc_solver_config(solver_config_json_file);
+    
+    model_id = jc_solver_config.getString("Model ID");
+    number_stage = jc_solver_config.getInt("Number of Stage");
 
+    // Making Stage instance
     RocketStageFactory stage_factory;
-    stage_vector.push_back(stage_factory.Create(1, "r.json", "e.json", "soe.json"));
+    for (int i=1; i <= number_stage; ++i) {
+        auto jc_stage = JsonControl(jc_solver_config.getString("Stage"+std::to_string(i)+" Config File List"));
+        stage_vector.push_back(stage_factory.Create(i, 
+                                                jc_stage.getString("Rocket Configuration File Path"),
+                                                jc_stage.getString("Engine Configuration File Path"),
+                                                jc_stage.getString("Sequence of Event File Path")));
+    }
 
     for (auto& stage : stage_vector) {
         stage.fdr = FlightDataRecorder(&stage.rocket);
     }
 
     // Prepare Launch - Master Clock
-    DateTime launch_date;
+    DateTime launch_date(jc_solver_config.getString("Launch DateTime"));
     master_clock = SequenceClock(launch_date, 0.0);
 
     // Prepare Launch - Position Velocity Attitude
     Rocket& rocket_first_stage = stage_vector[0].rocket;
-    JsonControl launch_config_json(launch_config_json_file);
-    
-    Eigen::Vector3d pllh;
-    pllh << 35.2, 135.3, 10.0;
-    rocket_first_stage.position.Initialize(master_clock.UTC_date_init, pllh);
-    #ifdef DEBUG_NO
-        std::cout << rocket_first_stage.position.LLH << std::endl;
-        std::cout << rocket_first_stage.position.ECEF << std::endl;
-    #endif
+    auto jc_launch = jc_solver_config.getSubItem("Launch Condition");
 
-    Eigen::Vector3d vned;
-    vned << 0.0, 0.0, 0.0;
-    rocket_first_stage.velocity.Initialize(master_clock.UTC_date_init, vned, pllh, rocket_first_stage.position.ECI);
-    #ifdef DEBUG_NO
-        std::cout << rocket_first_stage.velocity.NED << std::endl;
-        std::cout << rocket_first_stage.velocity.ECEF << std::endl;
-    #endif
+    Eigen::Vector3d pos_init_LLH;
+    pos_init_LLH << jc_launch.getDouble("Latitude [deg]"), jc_launch.getDouble("Longitude [deg]"), jc_launch.getDouble("Height for WGS84 [deg]");
 
-    double elv_init = 85.0 / 180.0 * 3.14159265;
-    double azi_init = 275.0 / 180.0 * 3.14159265;
-    double roll_init = 0.0 / 180.0 * 3.14159265;
+    rocket_first_stage.position.Initialize(master_clock.UTC_date_init, pos_init_LLH);
+
+    Eigen::Vector3d vel_init_NED;
+    vel_init_NED << jc_launch.getDouble("North Velocity [m/s]"), jc_launch.getDouble("East Velocity [m/s]"), jc_launch.getDouble("Down Velocity [m/s]");
+    rocket_first_stage.velocity.Initialize(master_clock.UTC_date_init, vel_init_NED, pos_init_LLH, rocket_first_stage.position.ECI);
+
     Eigen::Vector3d euler;
-    euler << azi_init, elv_init, roll_init;
+    euler << jc_launch.getDouble("Azimuth [deg]"), jc_launch.getDouble("Elevation [deg]"), 0.0;
+    euler = euler / 180.0 * 3.14159265;
     rocket_first_stage.attitude.Initialize(euler);
+
     rocket_first_stage.angular_velocity << 0.0, 0.0, 0.0;
 
     // Prepare Launch - Wind
-    wind = EnvironmentWind();
+    auto jc_wind = jc_solver_config.getSubItem("Wind Condition");
+    if (jc_wind.getBool("Enable Wind")) {
+        wind = EnvironmentWind(jc_wind.getString("Wind File Path"));
+    } else {
+        wind = EnvironmentWind(false);
+    }
 };
 
 
 void forrocket::TrajectorySolver::Solve() {
-    #ifdef DEBUG
-        std::cout << "Trajectory Solver Start" << std::endl;
-    #endif
-
-    // ECI pos, ECI vel, quat, angle vel, mass
-    DynamicsBase::state x0;
+    DynamicsBase::state x0;  // ECI pos, ECI vel, quat, angle vel, mass
     for (int i=0; i < stage_vector.size(); ++i) {
         RocketStage& stage = stage_vector[i];
         Rocket& rocket = stage.rocket;
@@ -84,11 +87,8 @@ void forrocket::TrajectorySolver::Solve() {
                 rocket.angular_velocity(0),rocket.angular_velocity(1),rocket.angular_velocity(2),
                 rocket.mass.propellant};
         stage_vector[i].FlightSequence(&master_clock, &wind, x0);
+        stage_vector[i].fdr.dump_csv(model_id + "_stage" + std::to_string(stage_vector[i].stage_number) + "_flight_log.csv");
     }
     
-    #ifdef DEBUG
-        std::cout << "Trajectory Solver End" << std::endl;
-    #endif
-
 };
 

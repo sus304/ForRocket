@@ -32,9 +32,9 @@ class SequenceClock {
 
         void UpdateJulianDate();
 
-        double UTC2JulianDate(DateTime UTC);
+        double UTC2JulianDate(DateTime& UTC);
         double JulianDate2GreenwichSiderealTime(const double julian);
-        double UTC2GreenwichSiderealTime(DateTime UTC);
+        double UTC2GreenwichSiderealTime(DateTime& UTC);
         double JulianDate2ModifiedJulianDate(const double julian);
         DateTime ModifiedJulianDate2UTC(const double modified_julian);
 };

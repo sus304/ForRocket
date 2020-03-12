@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
+#include "Eigen/Core"
+
 #include "environment/datetime.hpp"
 #include "environment/sequence_clock.hpp"
 #include "environment/wind.hpp"
@@ -42,18 +45,21 @@ namespace forrocket {
             std::vector<double> thrust;
             std::vector<double> mdot_prop;
             std::vector<bool> burning;
+            std::vector<double> gimbal_angle_y_axis;
+            std::vector<double> gimbal_angle_z_axis;
 
             std::vector<double> mass_prop;
             std::vector<double> mass;
             std::vector<double> length_CG;
             std::vector<double> length_CP;
+            std::vector<Eigen::Matrix3d> inertia_tensor;
             std::vector<double> CA;
             std::vector<double> CNa;
             std::vector<double> Cld;
             std::vector<double> Clp;
             std::vector<double> Cmq;
 
-            std::vector<Position> postion;
+            std::vector<Position> position;
             std::vector<Velocity> velocity;
             std::vector<double> dynamic_pressure;
             std::vector<Acceleration> acceleration;

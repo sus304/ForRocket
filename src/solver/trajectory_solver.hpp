@@ -19,8 +19,9 @@
 namespace forrocket {
 class TrajectorySolver {
     public:
-        TrajectorySolver(std::string launch_config_json_file, std::string stage_list_json_file);
+        TrajectorySolver(std::string solver_config_json_file);
 
+        std::string model_id;
         int number_stage;
         std::vector<RocketStage> stage_vector;
         SequenceClock master_clock;

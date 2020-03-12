@@ -19,6 +19,11 @@ forrocket::JsonControl::JsonControl(std::string json_file_path) {
     json_ifs.close();
 };
 
+forrocket::JsonControl::JsonControl(nlohmann::json json_obj) {
+    this->json_obj = json_obj;
+};
+
+
 std::string forrocket::JsonControl::getString(std::string key) {
     return json_obj[key].get<std::string>();
 };
@@ -35,3 +40,7 @@ bool forrocket::JsonControl::getBool(std::string key) {
     return json_obj[key].get<bool>();
 };
 
+forrocket::JsonControl forrocket::JsonControl::getSubItem(std::string key) {
+    JsonControl jc(json_obj[key]);
+    return jc;
+};

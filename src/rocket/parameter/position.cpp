@@ -21,7 +21,7 @@ void forrocket::Position::Initialize(const DateTime datetime, const Eigen::Vecto
     Coordinate coordinate;
     this->LLH = LLH;
     ECEF = coordinate.LLH2ECEF(this->LLH);
-    coordinate.setECI2ECEF(clock.greenwich_sidereal_time);
+    coordinate.setECI2ECEF(clock.countup_time);
     ECI = coordinate.dcm.ECEF2ECI * ECEF;
 };
 

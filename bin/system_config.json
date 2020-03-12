@@ -1,8 +1,0 @@
-{
-	"Project Name": "sample",
-	"Stage Config json": ["stage_condig.json"],
-	"Running Mode": {
-		"Multi": false,
-		"Fast": false
-	}
-}

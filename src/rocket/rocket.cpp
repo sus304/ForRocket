@@ -83,9 +83,6 @@ void forrocket::Rocket::setInertiaTensor(const InterpolateParameter MOI_xx, cons
     this->inertia_moment_xx_src = MOI_xx;
     this->inertia_moment_yy_src = MOI_yy;
     this->inertia_moment_zz_src = MOI_zz;
-    #ifdef DEBUG
-    std::cout << "set MOI" << std::endl;
-    #endif
 };
 
 void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll) {
@@ -96,9 +93,6 @@ void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, c
 
 void forrocket::Rocket::setCdSParachute(const double CdS_first) {
     CdS_parachute_src.push_back(CdS_first);
-    #ifdef DEBUG
-    std::cout << "set CdS" << std::endl;
-    #endif
 };
 
 void forrocket::Rocket::setCdSParachute(const double CdS_first, const double CdS_second) {
@@ -145,22 +139,31 @@ double forrocket::Rocket::getCld(const double mach_number) {
 
 double forrocket::Rocket::getClp(const double mach_number) {
     this->Clp = Clp_src(mach_number);
+    if (this->Clp > 0.0) {
+        this->Clp *= -1.0;
+    }
     return this->Clp;
 };
 
 double forrocket::Rocket::getCmq(const double mach_number) {
     this->Cmq = Cmq_src(mach_number);
+    if (this->Cmq > 0.0) {
+        this->Cmq *= -1.0;
+    }
     return this->Cmq;
 };
 
 double forrocket::Rocket::getCnr(const double mach_number) {
     this->Cnr = Cnr_src(mach_number);
+    if (this->Cnr > 0.0) {
+        this->Cnr *= -1.0;
+    }
     return this->Cnr;
 };
 
 
-Eigen::Vector3d forrocket::Rocket::getThrust(const double air_pressure, const double air_pressure_sea_level) {
-    engine.Update(burn_clock.countup_time, air_pressure_sea_level, air_pressure);
+Eigen::Vector3d forrocket::Rocket::getThrust(const double air_pressure) {
+    engine.Update(burn_clock.countup_time, air_pressure, mass.propellant);
 
     Eigen::Vector3d thrust;
     if (engine.burning) {

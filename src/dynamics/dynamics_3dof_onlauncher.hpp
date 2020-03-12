@@ -20,7 +20,7 @@ namespace forrocket {
 
             void operator()(const state& x, state& dx, const double t);
 
-            Eigen::Vector3d AeroForce();
+            Eigen::Vector3d AeroForce(Rocket* p_rocket);
 
         private:
             Rocket* p_rocket;
