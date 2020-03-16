@@ -67,6 +67,8 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     double start, end;
     double time_step_on_launcher = 0.001;  // 1000 Hz
     double time_step_decent_parachute = 0.1;  // 10 Hz
+    fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
+
     DynamicsBase::state x0_in_stage = x0;
 
     if (time_ignittion <= time_start) {

@@ -29,6 +29,7 @@ class TrajectorySolver {
 
         
         void Solve();
+        void DumpResult(bool minimum_dump = false);
 
     private:
 };

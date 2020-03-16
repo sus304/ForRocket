@@ -35,6 +35,7 @@ TEST_INCLUDES=-I./test -I./lib/googletest/include -Lgoogletest -lgtest -lgtest_m
 ## コンパイル順序は依存関係を満たすように
 ## 上から順にコンパイル
 SRCS +=$(SRCDIR)/degrad.cpp
+SRCS +=$(SRCDIR)/commandline_option.cpp
 SRCS +=$(SRCDIR)/fileio.cpp
 SRCS +=$(SRCDIR)/json_control.cpp
 SRCS +=$(SRCDIR)/interpolate.cpp

@@ -87,8 +87,15 @@ void forrocket::TrajectorySolver::Solve() {
                 rocket.angular_velocity(0),rocket.angular_velocity(1),rocket.angular_velocity(2),
                 rocket.mass.propellant};
         stage_vector[i].FlightSequence(&master_clock, &wind, x0);
-        stage_vector[i].fdr.dump_csv(model_id + "_stage" + std::to_string(stage_vector[i].stage_number) + "_flight_log.csv");
     }
     
 };
+
+void forrocket::TrajectorySolver::DumpResult(bool minimum_dump) {
+    for (int i=0, size=stage_vector.size(); i < size; ++i) {
+        std::string name = model_id + "_stage" + std::to_string(stage_vector[i].stage_number) + "_flight_log";
+        stage_vector[i].fdr.DumpCsv(name + ".csv", !minimum_dump);
+    }
+};
+
 

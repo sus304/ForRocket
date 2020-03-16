@@ -9,6 +9,7 @@
 #ifndef FLIGHTDATARECORDER_HPP_
 #define FLIGHTDATARECORDER_HPP_
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -73,9 +74,11 @@ namespace forrocket {
             std::vector<Moment> moment;
 
 
+            void ReserveCapacity(const int capacity);
             void operator()(const DynamicsBase::state& x, const double t);
 
-            void dump_csv(const std::string file_name);
+            void DumpCsv(const std::string file_name, bool full_dump = true);
+        
     };
 };
 
