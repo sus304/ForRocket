@@ -168,8 +168,8 @@ Eigen::Vector3d forrocket::Rocket::getThrust(const double air_pressure) {
     Eigen::Vector3d thrust;
     if (engine.burning) {
         Eigen::Vector3d gimbal_angle(std::cos(engine.gimbal_angle_y_axis) * std::cos(engine.gimbal_angle_y_axis),
-                                    std::sin(engine.gimbal_angle_y_axis),
-                                    -std::sin(engine.gimbal_angle_z_axis));
+                                    std::sin(engine.gimbal_angle_z_axis),
+                                    -std::sin(engine.gimbal_angle_y_axis));
         thrust << engine.thrust * gimbal_angle.array();
     } else {
         thrust << 0.0, 0.0, 0.0;
