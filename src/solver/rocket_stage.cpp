@@ -69,7 +69,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     double time_step_decent_parachute = 0.1;  // 10 Hz
     fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
 
-    DynamicsBase::state x0_in_stage = x0;
+    DynamicsBase::state x0_in_stage = x0;  // x0はソルバで次段のために共有するので内部用にコピー
 
     if (time_ignittion <= time_start) {
         // 計算開始と同時に点火する場合
@@ -150,7 +150,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_separation, time_step, std::ref(fdr));
         start = time_separation;
         rocket.SeparateUpperStage(mass_upper_stage);
-        x0 = x0_in_stage;
+        x0 = x0_in_stage;  // 次段のために分離情報をコピー
     }
 
     if (!enable_parachute_open) {

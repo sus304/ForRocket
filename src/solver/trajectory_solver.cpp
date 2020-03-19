@@ -86,7 +86,28 @@ void forrocket::TrajectorySolver::Solve() {
                 rocket.attitude.quaternion(0),rocket.attitude.quaternion(1),rocket.attitude.quaternion(2),rocket.attitude.quaternion(3),
                 rocket.angular_velocity(0),rocket.angular_velocity(1),rocket.angular_velocity(2),
                 rocket.mass.propellant};
-        stage_vector[i].FlightSequence(&master_clock, &wind, x0);
+        stage.FlightSequence(&master_clock, &wind, x0);
+
+        // Update next stage
+        if (stage_vector.size() != i+1 && stage.enable_sepation) {
+            RocketStage& next_stage = stage_vector[i+1];
+
+            next_stage.time_start = stage.time_separation;
+
+            next_stage.rocket.position.ECI(0) = x0[0];
+            next_stage.rocket.position.ECI(1) = x0[1];
+            next_stage.rocket.position.ECI(2) = x0[2];
+            next_stage.rocket.velocity.ECI(0) = x0[3];
+            next_stage.rocket.velocity.ECI(1) = x0[4];
+            next_stage.rocket.velocity.ECI(2) = x0[5];
+            next_stage.rocket.attitude.quaternion(0) = x0[6];
+            next_stage.rocket.attitude.quaternion(1) = x0[7];
+            next_stage.rocket.attitude.quaternion(2) = x0[8];
+            next_stage.rocket.attitude.quaternion(3) = x0[9];
+            next_stage.rocket.angular_velocity(0) = x0[10];
+            next_stage.rocket.angular_velocity(1) = x0[11];
+            next_stage.rocket.angular_velocity(2) = x0[12];
+        }
     }
     
 };
