@@ -1,0 +1,18 @@
+# Output Style
+
+出力csvファイルは "[model name]_stage[stage number]_flight_log.csv" となる。
+
+csvテーブル形式(デフォルト)
+| Time [s] | Burn Time [s] | AirDensity [kg/m3] | AirPressure [kPa] | AirTemprature [K] | SpeedOfSound [m/s] | Propellant Mass [kg] | Mass [kg] | X-C.G. [%] | X-C.P. [%] | StaticMargin [%] | xx_InertiaTensor [kg-m2] | xy_InertiaTensor [kg-m2] | xz_InertiaTensor [kg-m2] | yx_InertiaTensor [kg-m2] | yy_InertiaTensor [kg-m2] | yz_InertiaTensor [kg-m2] | zx_InertiaTensor [kg-m2] | zy_InertiaTensor [kg-m2] | zz_InertiaTensor [kg-m2] | Thrust [N] | Mdot [kg/s] | Burning [0/1] | y-Gimbal [deg] | z-Gimbal [deg] | CA [-] | CNa [-] | Cld [-] | Clp [-] | Cmq [-] | AoA [deg] | AoS [deg] | Fx-aero [N] | Fy-aero [N] | Fz-aero [N] | Fx-thrust [N] | Fy-thrust [N] | Fz-thrust [N] | Fx-gravity [N] | Fy-gravity [N] | Fz-gravity [N] | Accx-body [m/s2] | Accy-body [m/s2] | Accz-body [m/s2] | Gccx-body [G] | Gccy-body [G] | Gccz-body [G] | Accx-ECI [m/s2] | Accy-ECI [m/s2] | Accz-ECI [m/s2] | Vx-body [m/s] | Vy-body [m/s] | Vz-body [m/s] | MachNumber [-] | DynamicPressure [kPa] | Vx-NED [m/s] | Vy-NED [m/s] | Vz-NED [m/s] | Vx-ECEF [m/s] | Vy-ECEF [m/s] | Vz-ECEF [m/s] | Vx-ECI [m/s] | Vy-ECI [m/s] | Vz-ECI [m/s] | X-ECEF [km] | Y-ECEF [km] | Z-ECEF [km] | X-ECI [km] | Y-ECI [km] | Z-ECI [km] | Latitude [deg] | Longitude [deg] | Altitude [m] | Downrange [m] | Mx-thrust [Nm] | My-thrust [Nm] | Mz-thrust [Nm] | Mx-aero [Nm] | My-aero [Nm] | Mz-aero [Nm] | Mx-aerodump [Nm] | My-aerodump [Nm] | Mz-aerodump [Nm] | Mx-jetdump [Nm] | My-jetdump [Nm] | Mz-jetdump [Nm] | Mx-gyroeffect [Nm] | My-gyroeffect [Nm] | Mz-gyroeffect [Nm] | AngleAccx [rad/s2] | AngleAccy [rad/s2] | AngleAccz [rad/s2] | AngleVelx [deg/s] | AngleVely [deg/s] | AngleVelz [deg/s] | q1 [-] | q2 [-] | q3 [-] | q4 [-] | Azimuth [deg] | Elvation [deg] | Roll [deg] | Time [s] | Time of IIP [s] | Latitude of IIP [deg] | Longitude of IIP [deg] | Downrange of IIP [m] | 
+| ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+
+csvテーブル形式(-m オプション追加時ミニマム出力)
+| Time [s] | Burn Time [s] | Latitude [deg] | Latitude [deg] | Altitude [m] | Downrange [m] |
+| ---- | ---- | ---- | ---- | ---- | ---- |
+| 0.0 | 0.0 | 35.2 | 140.0 | 25.0 | 0.0 |
+| ... | ... | ... | ... | ... | ... |
+| 74.2 | 74.2 | 36.1 | 138.9 | 0.0 | 20000.0 |
+
+
+
