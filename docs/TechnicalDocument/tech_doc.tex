@@ -1,0 +1,321 @@
+﻿\documentclass[a4paper]{jsarticle}
+
+\usepackage{bm}
+\usepackage{here}
+\usepackage{amsmath}
+
+\begin{document}
+
+\title{ForRocket \\ Technical Document}
+\author{Susumu Tanaka}
+\maketitle
+
+\section{Introduction}
+6DoFロケットフライトシミュレータであるForRocketに実装されている計算モデルをまとめる。
+
+
+
+\section{Model}
+\subsection{座標系}
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{|l|l|l|l|}
+  \hline
+  座標系                                                                                      & 記号                                                                & 原点   &                                                                                                        \\ \hline
+  \begin{tabular}[c]{@{}l@{}}地球中心慣性座標系\\ ECI\\ (Earth Center, Inertia)\end{tabular}        & \begin{tabular}[c]{@{}l@{}}I\\ ($X^I$, $Y^I$, $Z^I$)\end{tabular} & 地球中心 & \begin{tabular}[c]{@{}l@{}}$X^I$:$t=0$で緯度経度0 deg方向\\ $Y^I$:右手直交座標となる方向\\ $Z^I$:地球自転軸で北極方向\end{tabular} \\ \hline
+  \begin{tabular}[c]{@{}l@{}}地球中心地球固定座標系\\ ECEF\\ (Earth Center, Earth Fixed)\end{tabular} & \begin{tabular}[c]{@{}l@{}}E\\ ($X^E$, $Y^E$, $Z^E$)\end{tabular} & 地球中心 & \begin{tabular}[c]{@{}l@{}}$X^E$:緯度経度0 deg方向\\ $Y^E$:右手直交座標となる方向\\ $Z^E$:地球自転軸で北極方向\end{tabular}       \\ \hline
+  \begin{tabular}[c]{@{}l@{}}局所水平面座標系\\ NED\\ (North, East, Down)\end{tabular}             & \begin{tabular}[c]{@{}l@{}}L\\ ($X^L$, $Y^L$, $Z^L$)\end{tabular} & 機体重心 & \begin{tabular}[c]{@{}l@{}}$X^L$:局所水平面内で北方向\\ $Y^L$:局所水平面内で東方向\\ $Z^L$:水平面垂直に地球中心方向\end{tabular}       \\ \hline
+  \begin{tabular}[c]{@{}l@{}}機体座標系\\ BODY\end{tabular}                                     & \begin{tabular}[c]{@{}l@{}}B\\ ($X^B$, $Y^B$, $Z^B$)\end{tabular} & 機体重心 & \begin{tabular}[c]{@{}l@{}}$X^B$:機軸方向(ロール軸)\\ $Y^B$:頭上げ方向(ピッチ軸)\\ $Z^B$:右首振り方向(ヨー軸)\end{tabular}       \\ \hline
+  \begin{tabular}[c]{@{}l@{}}測地座標系\\ LLH\\ (Latitude, Longitude, Height)\end{tabular}      & \begin{tabular}[c]{@{}l@{}}G\\ ($X^G$, $Y^G$, $Z^G$)\end{tabular} & -    & \begin{tabular}[c]{@{}l@{}}$X^G$:地理緯度 {[}deg{]}\\ $Y^G$:経度 {[}deg{]}\\ $Z^G$:海抜高度 {[}m{]}\end{tabular} \\ \hline
+  \end{tabular}
+\end{table}
+
+\subsection{座標変換}
+異なる座標系で表現されているベクトルの座標系変換は座標変換行列を用いて表現する。
+座標変換行列は方向余弦行列 (Direct Cosine Matrix, DCM) で定義され、
+J座標系をK座標系に変換するDCMを $C^{KJ}$ と表す。
+
+例えば、I系の速度ベクトル $v^I$ をE系に変換するには
+\begin{equation}
+v^E = C^{EI} \cdot v^I
+\end{equation}
+となる。
+
+
+\subsection{並進運動方程式}
+並進運動では慣性座標系で定義した運動方程式を解く。
+\begin{eqnarray}
+\frac{d\bm{r}^I}{dt} &=& \bm{v}^I \\
+\frac{d\bm{v}^I}{dt} &=& \frac{\bm{F}^I}{m} \\
+&=& \frac{C^{IB} \cdot \bm{F}^B}{m}
+\end{eqnarray}
+
+
+\subsection{外力}
+運動方程式中に表れる機体座標系の外力 $F^B$ の詳細について記す。
+\begin{equation}
+\bm{F}^B = \bm{F}^B_T + \bm{F}^B_A + \bm{F}^B_g
+\end{equation}
+
+\subsubsection{ロケットエンジン/モータ推力}
+ロケットエンジンによる推力 $T$ を機体座標系で定義すれば
+\begin{equation}
+\bm{F}^B_T = [T, 0, 0]^T
+\end{equation}
+ForRocketにおける推力入力は真空中推力[N]であるため、大気圧環境下では圧力推力補正をかける。
+\begin{equation}
+T = T_{vac} - P_a A_e
+\end{equation}
+さらに、機体軸に対する推力軸のミスアライメントを$\varepsilon_y$、$\varepsilon_z$で定義すると
+\begin{equation}
+\bm{T}^B = T \cdot [\cos{\varepsilon_y} \cos{\varepsilon_z}, \sin{\varepsilon_y}, -\sin{\varepsilon_y}]^T
+\end{equation}
+したがって、機体座標系の推力 $\bm{F}^B_T$ は以下となる。
+\begin{equation}
+\bm{F}^B_T = (T_{vac} - P_aA_e) \cdot [\cos{\varepsilon_y} \cos{\varepsilon_z}, \sin{\varepsilon_y}, -\sin{\varepsilon_y}]^T
+\end{equation}
+
+\subsubsection{空気力}
+空気力は機体座標系で定義し、軸力 $F_A$ と法線力 $F_N$ で扱う。航空機でよく用いられる抗力 $F_D$ と揚力 $F_L$ とは軸が異なるため注意。
+
+風の影響を含めるため対気速度 $\bm{v}_{air}$ から迎角 $\alpha$ 、横滑り角 $\beta$ と動圧 $Q$ を算出する。
+\begin{eqnarray}
+\bm{v}_{air}^B &=& C^{BL} \cdot (\bm{v}^L - \bm{v}_{wind}^L) \\
+\alpha &=& \arcsin{\frac{\bm{v}_{air,z}}{\begin{vmatrix}\bm{v}_{air}\end{vmatrix}}} \\
+\beta &=& \arcsin{\frac{-\bm{v}_{air,y}}{\begin{vmatrix}\bm{v}_{air}\end{vmatrix}}} \\
+Q &=& \frac{1}{2} \rho \begin{vmatrix}\bm{v}_{air}\end{vmatrix}^2
+\end{eqnarray}
+yおよびz軸の法線力と軸力で機体座標系の空力を表す。
+\begin{eqnarray}
+\bm{F}_A^B &=& [-F_A, F_{N,y}, -F_{N,z}]^T  \\
+F_A &=& Q \cdot C_{A} \cdot S \\
+F_{N,z} &=& Q \cdot C_{N\alpha} \cdot S \cdot \alpha \\
+F_{N,y} &=& Q \cdot C_{N\alpha} \cdot S \cdot \beta
+\end{eqnarray}
+なお、軸力係数 $C_A$ および法線力傾斜 $C_{N\alpha}$ はMach数の関数として入力される。
+本来は迎角の関数でもあるが、ロケットは大きな迎角を持って飛行することが少なく、影響が限定的であるため無視している。一応、ForRocketの機能として、入力処理はないものの、Mach数と迎角の2変数関数として扱う機能は実装されている。
+
+
+\subsubsection{重力}
+重力はL系で定義し、地球を球とした簡易計算を行う。
+\begin{eqnarray}
+g &=& \frac{GM}{h^2} \\
+\bm{g}^L &=& [0, 0, g]^T
+\end{eqnarray}
+
+外力としての重力は
+\begin{equation}
+\bm{F}_g^B = m \cdot C^{BL} \cdot \bm{g}^L
+\end{equation}
+で計算する。
+
+
+\subsection{回転運動方程式}
+回転運動では機体座標系で定義した運動方程式を解く。機体座標系は剛体に固定された座標系であるため、見かけの力としてジャイロモーメントを加える。
+\begin{equation}
+\bm{M}^B = \frac{d\bm{L}}{dt} + \bm{\omega^B} \times \bm{L}
+\end{equation}
+$L = I \omega$を用いれば
+\begin{equation}
+\bm{M}^B = 
+\dot{\bm{I}} \bm{\omega^B}
++ \bm{I} \dot{\bm{\omega}}^B
++ \bm{\omega^B} \times \bm{I} \bm{\omega^B}
+\end{equation}
+となり、整理すれば
+\begin{equation}
+\bm{I} \dot{\bm{\omega}}^B = 
+\bm{M}^B
+- \dot{\bm{I}} \bm{\omega^B}
+- \bm{\omega^B} \times \bm{I} \bm{\omega^B}
+\end{equation}
+が解くべき回転の運動方程式となる。
+ただし、慣性テンソルが一定であると仮定すれば第2項を省略でき
+\begin{equation}
+\bm{I} \dot{\bm{\omega}}^B = 
+\bm{M}^B
+- \bm{\omega^B} \times \bm{I} \bm{\omega^B}
+\end{equation}
+として扱うことができる。
+慣性モーメントの変化が小さいロケットであれば、この仮定でも大きな影響はないと思われる。
+
+一般的に回転の運動方程式で目にするのはこれを展開した式となる。
+\begin{equation}
+\bm{\omega}^B = [p, q, r]^T
+\end{equation}
+\begin{eqnarray}
+I_{xx} \dot{p} &= (I_{yy}-I_{zz})qr+M_p \\
+I_{yy} \dot{q} &= (I_{zz}-I_{xx})rp+M_q \\
+I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
+\end{eqnarray}
+
+\subsection{モーメント}
+運動方程式中に表れる機体座標系のモーメント $M^B$ の詳細について記す。
+
+\begin{equation}
+\bm{M}^B = \bm{M}^B_T + \bm{M}^B_A + \bm{M}^B_{AD} + \bm{M}^B_{JD}
+\end{equation}
+
+\subsubsection{推力モーメント}
+推力軸のミスアライメントなどによって発生する。
+
+外力として計算されている機体座標系での推力ベクトルと、回転中心となる重心 $X_{CG}$ と推力入力点 $X_T$ の距離をモーメントアームとして計算する。
+\begin{eqnarray}
+\bm{r}_T &=& [X_{CG} - X_T, 0, 0]^T \\
+\bm{M}^B_T &=& \bm{F}^B_T \times \bm{r}_T
+\end{eqnarray}
+
+\subsubsection{空気力モーメント}
+外力として計算されている機体座標系での空気力ベクトルと、重心と圧力中心位置 $X_{CP}$ の距離をモーメントアームとして計算する。
+\begin{eqnarray}
+\bm{r}_A &=& [X_{CG} - X_{CP}, 0, 0]^T \\
+\bm{M}^B_A &=& \bm{F}^B_A \times \bm{r}_A
+\end{eqnarray}
+ロール軸の空気力モーメントについては尾翼のカント角 $\delta$ によるモーメントのみを考慮する。
+カント角によるロールモーメント係数 $C_{l\delta}$ を用いて
+\begin{equation}
+M^B_{A,x} = Q \cdot C_{l\delta} \cdot S \cdot L \cdot \delta
+\end{equation}
+で計算する。
+ここで $L$ は機体全長、$\delta$ は尾翼1枚あたりのカント角である。
+入力する $C_{l\delta}$ の次元に留意すること。
+
+\subsubsection{空気力減衰モーメント}
+空気力減衰モーメントは各軸の減衰モーメント係数を用いて計算する。
+\begin{eqnarray}
+C_{ad} &=& [C_{lp}, C_{mq}, C_{nr}]^T \\
+\bm{M}^B_{AD} &=& Q \cdot C_{ad} \cdot S \cdot \frac{L^2}{2 \bm{v^B}} \cdot \omega^B
+\end{eqnarray}
+軸対称のロケットであれば $C_{mq}$ と $C_{nr}$ は同等である。
+
+\subsubsection{ジェット減衰モーメント}
+ロケットエンジンの排気による慣性モーメントの変化や角運動量の減少、ロケットモータのグレイン形状によって計算されるモーメントであるが、計算中ではゼロにしている。
+\begin{equation}
+\bm{M}^B_{JD} = [0, 0, 0]^T
+\end{equation}
+
+
+\subsection{オイラー角}
+姿勢表示にはL系とB系間のオイラー角を用いる。
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{|l|l|l|}
+  \hline
+  姿勢角                                                              & 定義                                   & 対応するB系回転軸                                                 \\ \hline
+  \begin{tabular}[c]{@{}l@{}}方位角\\ Azimuth $\psi$\end{tabular}     & $X^L-Y^L$ 面への $X^B$ 軸の射影と $X^L$ がなす角 & \begin{tabular}[c]{@{}l@{}}$Z^B$ 軸回転\\ ヨー回転\end{tabular}  \\ \hline
+  \begin{tabular}[c]{@{}l@{}}上下角\\ Elevation $\theta$\end{tabular} & $X^B$ 軸と $X^L-Y^L$ 面がなす角             & \begin{tabular}[c]{@{}l@{}}$Y^B$ 軸回転\\ ピッチ回転\end{tabular} \\ \hline
+  \begin{tabular}[c]{@{}l@{}}ロール角\\ Roll $\phi$\end{tabular}       & $X^B$ 軸まわりの回転角                       & \begin{tabular}[c]{@{}l@{}}$X^B$ 軸回転\\ ロール回転\end{tabular} \\ \hline
+  \end{tabular}
+\end{table}
+
+\subsection{クォータニオン}
+オイラー角によるL系からB系への座標変換行列を表すと
+\begin{equation}
+C^{BL} = 
+\begin{bmatrix}
+ \cos\psi \cos\theta & sin\psi \cos\theta & -sin\theta \\
+ -sin\psi \cos\phi + \cos\psi sin\theta sin\phi & \cos\psi \cos\phi + sin\psi sin\theta sin\phi & \cos\theta sin\phi \\
+ sin\psi sin\phi + \cos\psi sin\theta \cos\phi & -\cos\psi sin\phi + sin\psi sin\theta \cos\phi & \cos\theta \cos\phi
+\end{bmatrix}
+\end{equation}
+となるが、$\theta=\pm{\frac{\pi}{2}}$ の時に
+\begin{equation}
+C^{BL} = 
+\begin{bmatrix}
+ 0 & 0 & -1 \\
+ -sin\psi \cos\phi + \cos\psi sin\phi & \cos\psi \cos\phi + sin\psi sin\phi & 0 \\
+ sin\psi sin\phi + \cos\psi \cos\phi & -\cos\psi sin\phi + sin\psi \cos\phi & 0
+\end{bmatrix}
+\end{equation}
+となるため、1軸 (方位角) の回転しか表せない。
+このようなオイラー角の特異点を回避するため、計算ではクォータニオンを用いる。
+
+クォータニオンを用いたL系からB系への座標変換行列は
+\begin{equation}
+C^{BL} = 
+\begin{bmatrix}
+ q_0^2 - q_1^2 - q_2^2 + q_3^2 & 2 (q_0  q_1 + q_2  q_3) & 2 (q_0  q_2 - q_1  q_3) \\
+ 2 (q_0  q_1 - q_2  q_3) & q_1^2 - q_0^2 - q_2^2 + q_3^2 & 2 (q_1  q_2 + q_0  q_3) \\
+ 2 (q_0  q_2 + q_1  q_3) & 2 (q_1  q_2 - q_0  q_3) & q_2^2 - q_0^2 - q_1^2 + q_3^2
+\end{bmatrix}
+\end{equation}
+となり、クォータニオンの時間微分は
+\begin{equation}
+\bm{\omega}^B = [p, q, r]^T
+\end{equation}
+\begin{equation}
+\frac{d\bm{q}}{dt} = \frac{1}{2}
+\begin{bmatrix}
+ 0 & r & -q & p \\
+ -r & 0 & p & q \\
+ q & -p & 0 & r \\
+ -p & -q & -r & 0
+\end{bmatrix}
+\bm{q}
+\end{equation}
+となる。姿勢の積分にはこちらを用いる。
+
+
+\subsection{離散化}
+並進、回転ともにDormand-Princeの方法で離散化を行い、微分方程式を解く。
+
+Runge-Kutta-Dormand-Prince (RKDP) は陽的ルンゲクッタ法の1種である。
+7段5次の精度だが、FSAL(First Same As Last)という性質を持つため実質的に6段5次の精度を有する。
+また、埋込み型公式のため、刻み幅自動調整が可能である。
+
+RKDPでの1ステップの計算が
+\begin{eqnarray}
+k_1 &=& hf(t_k, y_k) \\
+k_2 &=& hf(t_k + \frac{1}{5}h, y_k + \frac{1}{5}k_1) \\
+k_3 &=& hf(t_k + \frac{3}{10}h, y_k + \frac{3}{40}k_1 + \frac{9}{40}k_2) \\
+k_4 &=& hf(t_k + \frac{4}{5}h, y_k + \frac{44}{45}k_1 - \frac{56}{15}k_2 + \frac{32}{9}k_3) \\
+k_5 &=& hf(t_k + \frac{8}{9}h, y_k + \frac{19372}{6561}k_1 - \frac{25360}{2187}k_2 + \frac{64448}{6561}k_3 - \frac{212}{729}k_4) \\
+k_6 &=& hf(t_k + h, y_k + \frac{9017}{3168}k_1 - \frac{355}{33}k_2 - \frac{46732}{5247}k_3 + \frac{49}{176}k_4 - \frac{5103}{18656}k_5) \\
+k_7 &=& hf(t_k + h, y_k + \frac{35}{384}k_1 + \frac{500}{1113}k_3 + \frac{125}{192}k_4 - \frac{2187}{6784}k_5 + \frac{11}{84}k_6) 
+\end{eqnarray}
+となり、次ステップの値が
+\begin{equation}
+y_{k+1} = y_k + \frac{35}{384}k_1 + \frac{500}{1113}k_3 + \frac{125}{192}k_4 - \frac{2187}{6784}k_5 + \frac{11}{84}k_6
+\end{equation}
+となる。
+さらに誤差評価用の計算を行う。
+\begin{equation}
+t_{k+1} = y_k + \frac{5179}{57600}k_1 + \frac{7571}{16695}k_3 + \frac{393}{640}k_4 - \frac{92097}{339200}k_5 + \frac{187}{2100}k_6 + \frac{1}{40}k_7
+\end{equation}
+$y_{k+1}$ の誤差として差分をとれば
+\begin{equation}
+\begin{vmatrix}t_{k+1} - y_{k+1}\end{vmatrix} = 
+\begin{vmatrix}
+\frac{71}{57600}k_1
+- \frac{71}{16695}k_3
++ \frac{71}{1920}k_4
+- \frac{17253}{339200}k_5
++ \frac{22}{525}k_6
+- \frac{1}{40}k_7
+\end{vmatrix}
+\end{equation}
+この誤差から求める刻み修正係数 $s$ に安全率0.9をかけて新たな刻み幅 $h_o$ を決定する。
+\begin{equation}
+s = 0.9 \biggl(\frac{\varepsilon h}{\begin{vmatrix}t_{k+1} - y_{k+1}\end{vmatrix}}\biggr)^\frac{1}{5}
+\end{equation}
+\begin{equation}
+h_o = s \cdot h
+\end{equation}
+なお、$\varepsilon$ は許容誤差限界である。
+
+\section{Ref}
+\begin{itemize}
+  \item Peter, H., "Modeing and Simulation of Aerospace Vehicle Dynamics"
+  \item 戸川 隼人, 石黒 登美子, 山本 浩通, "スピンを伴うロケットの運動を計算するプログラム", 航空宇宙技術研究所資料 TM-145, 1968
+  \item 秋葉 鐐二郎, 松尾 弘毅, 佐伯 信吾, "L-3H-1,2,3およびL-4S-1,2の性能計算", 東京大学宇宙航空研究所報告, 1967, vol.3, no.1, p.173-182
+  \item 山口 功, 木田 隆, 岡本 修, 狼 嘉彰, "クォータニオンとオイラー角によるキネマティックス表現の比較について", 航空宇宙技術研究所資料 TM-636, 1991
+  \item National Imagery and Mapping Agency, "Department of Defense World Geodetic System 1984 Its Definition and Relationships with Local Geodetic System", National Imagery and Mapping Agency Technical Report 8350.2
+  \item U.S. Government Pringing Office, "U.S. Standard Atmosphere", 1976
+  \item 長坂 直彦, "回転楕円体上の測地線及び航程線の算出について", 海上保安庁海洋情報部研究報告, 2013, 第50号, p.37-57
+  \item Ahn, J., Roh, W., "Noniterative Instantaneous Impact Point Prediction Algorithm for Launch Operations", Journal of Guidance, Control, and Dynamics, 2012, vol.35, no.2, p.645-648
+  \item Dormand, J. R., Prince, P. J., "A family of embedded Runge-Kutta formulae", Journal of Computational and Applied Mathematics, 6 (1): p.19–26
+\end{itemize}
+
+\end{document}
