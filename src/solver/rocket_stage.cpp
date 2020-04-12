@@ -46,21 +46,20 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
 
     // Sterpper Select
     ////////////////////////////////////
+    // 4th Order Runge-Kutta Method
+    odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
+
     double eps_abs = 1.0e-12;
     double eps_rel = 1.0e-7;
-    // 4th Order Runge-Kutta Method
-    // odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
-
-    // 5th Order Runge-Kutta-Dormand-Prince Method : Controled : Dense output : Internal info
-    using base_stepper_type = odeint::runge_kutta_dopri5<forrocket::DynamicsBase::state>;
-    auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
+    // 5th Order Runge-Kutta-Dormand-Prince Method : Controlled : Dense output : Internal info
+    // #define CONTROLLED_STEPPER
+    // using base_stepper_type = odeint::runge_kutta_dopri5<forrocket::DynamicsBase::state>;
+    // auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
 
     // 8th Order Runge-Kutta-Fehlberg Method : Controled
     // using base_stepper_type = odeint::runge_kutta_fehlberg78<forrocket::DynamicsBase::state>;
     // auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
 
-    // Dynamics6dofAero dynamics_6dof_aero(&rocket, master_clock, wind);
-    // Dynamics6dofProgramRate dynamics_6dof_programrate(&rocket, master_clock, wind);
     DynamicsBase* p_dynamics;
     p_dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);
 
@@ -94,26 +93,29 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         p_dynamics = new Dynamics3dofOnLauncher(&rocket_on_launcher, &clock_on_launcher);
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+1.0, time_step_on_launcher, std::ref(fdr_on_launcher));
         
-        # ifdef DEBUG_NO
-        fdr_on_launcher.dump_csv("test_estimate_launcher.csv");
+        # ifdef DEBUG
+        fdr_on_launcher.DumpCsv("test_estimate_launcher.csv");
         # endif
         
         for (int i=0; i < fdr_on_launcher.countup_burn_time.size(); ++i) {
             double distance = (fdr_on_launcher.position[i].LLH(2) - fdr_on_launcher.position[0].LLH(2)) / sin(fdr_on_launcher.attitude[i].euler_angle(1));
             if (distance >= length_launcher_rail) {
                 end = time_step_on_launcher * i;
+                std::cout << distance << ' ' << fdr_on_launcher.position[i].LLH(2) << ' ' << fdr_on_launcher.position[0].LLH(2) << ' ' << sin(fdr_on_launcher.attitude[i].euler_angle(1)) << std::endl;
+                std::cout << i << ' ' << end << std::endl;
                 break;
             }
         }
 
         // ランチャ滑走の本ちゃん
         p_dynamics = new Dynamics3dofOnLauncher(&rocket, master_clock);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, start + end, time_step_on_launcher, std::ref(fdr));
-        // odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, start + end, time_step_on_launcher, std::ref(fdr));
         start = start + end;
         #ifdef DEBUG
-        fdr.dump_csv("debug_onlauncher_log.csv");
+        fdr.DumpCsv("debug_onlauncher_log.csv");
         #endif
     }
     // ここまでに慣性飛行からの点火もしくはランチクリアまでが実行されている
@@ -121,7 +123,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     if (enable_cutoff) {
         // engine cutoff まで 
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_cutoff, time_step, std::ref(fdr));
         start = time_cutoff;
         rocket.CutoffEngine();
@@ -130,7 +134,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
 
     if (enable_despin) {
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_despin, time_step, std::ref(fdr));
         start = time_despin;
         rocket.DeSpin();
@@ -138,7 +144,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
 
     if (enable_fairing_jettson) {
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_jettson_fairing, time_step, std::ref(fdr));
         start = time_jettson_fairing;
         rocket.JettsonFairing(mass_fairing);
@@ -146,7 +154,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
 
     if (enable_sepation) {
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_separation, time_step, std::ref(fdr));
         start = time_separation;
         rocket.SeparateUpperStage(mass_upper_stage);
@@ -156,7 +166,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     if (!enable_parachute_open) {
         // 弾道で落ちるまで
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_end, time_step, std::ref(fdr));
     } else {
         // パラシュート開傘
@@ -187,7 +199,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         }
         // 開傘までの慣性飛行本ちゃん
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, end, time_step, std::ref(fdr));
         start = end;
 
