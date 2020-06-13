@@ -47,7 +47,8 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
     p_rocket->burn_clock.SyncSolverTime(t);
 
     // Update Flight Infomation
-    coordinate.setECI2ECEF(t);
+    // coordinate.setECI2ECEF(t);
+    coordinate.setECI2ECEF(0.0);
 
     p_rocket->position.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data());
     p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
@@ -56,8 +57,8 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
     coordinate.setECEF2NED(p_rocket->position.LLH);
 
     p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
-    // p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI;
-    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
+    // p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI;
     p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
     #ifdef DEBUG_NO
     std::cout << p_rocket->velocity.ECI << std::endl;
@@ -116,6 +117,11 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
     p_rocket->force.aero = AeroForce(p_rocket);
     p_rocket->force.gravity = (coordinate.dcm.NED2body * gravity_NED) * (p_rocket->mass.Sum());
     p_rocket->force.gravity(1) = 0.0; p_rocket->force.gravity(2) = 0.0;
+
+    // Friction between launcher rail and launcher lug
+    double friction_coefficient = 0.2;  // about
+    double friction_force = p_rocket->mass.Sum() * gravity_NED[2] * std::cos(p_rocket->attitude.euler_angle(1)) * friction_coefficient;
+    p_rocket->force.thrust(0) -= friction_force;  // decrease from thrust, not prepare friction force parameter in rocket class
 
     // Calculate Acceleration
     p_rocket->acceleration.body = p_rocket->force.Sum() / (p_rocket->mass.Sum());

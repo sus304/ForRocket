@@ -64,7 +64,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     p_dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);
 
     double start, end;
-    double time_step_on_launcher = 0.001;  // 1000 Hz
+    double time_step_on_launcher = 0.0001;  // 1000 Hz
     double time_step_decent_parachute = 0.1;  // 10 Hz
     fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
 
@@ -85,10 +85,16 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     // ここまでにIgnitionEngineが実行されている
 
     if (enable_launcher) {
+        // 地球といっしょにまわすためにECI速度を0にしておく
+        // dynamics_3dof_on_launcherでは地球の回転も0にしている
+        x0_in_stage[3] = 0.0;
+        x0_in_stage[4] = 0.0;
+        x0_in_stage[5] = 0.0;
+
         // ランチクリア時刻確定のためにコピー品で短時間回す
         Rocket rocket_on_launcher = rocket;
         SequenceClock clock_on_launcher = *master_clock; // copy
-        DynamicsBase::state x0_on_launcher = x0;
+        DynamicsBase::state x0_on_launcher = x0_in_stage;
         FlightDataRecorder fdr_on_launcher(&rocket_on_launcher);
         p_dynamics = new Dynamics3dofOnLauncher(&rocket_on_launcher, &clock_on_launcher);
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+1.0, time_step_on_launcher, std::ref(fdr_on_launcher));
@@ -117,6 +123,11 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         #ifdef DEBUG
         fdr.DumpCsv("debug_onlauncher_log.csv");
         #endif
+
+        // ランチクリア時点でECI速度を戻す
+        x0_in_stage[3] += x0[3];
+        x0_in_stage[4] += x0[4];
+        x0_in_stage[5] += x0[5];
     }
     // ここまでに慣性飛行からの点火もしくはランチクリアまでが実行されている
     

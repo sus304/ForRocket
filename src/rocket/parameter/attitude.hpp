@@ -17,10 +17,7 @@
 namespace forrocket {
     class Attitude {
         public:
-            Eigen::Vector3d euler_angle;
-            // double& azimuth = euler_angle(0);
-            // double& elevation = euler_angle(1);
-            // double& roll = euler_angle(2);
+            Eigen::Vector3d euler_angle;  // radian
             Eigen::Vector4d quaternion;
 
             Attitude();
