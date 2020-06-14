@@ -225,8 +225,9 @@ void forrocket::Rocket::SeparateUpperStage(const double mass_upper_stage) {
 };
 
 void forrocket::Rocket::OpenParachute() {
-    for (int i=0; i < CdS_parachute_src.size(); ++i) {
-        CdS_parachute += CdS_parachute_src[i];
+    if (count_open_parachute < CdS_parachute_src.size()) {
+        CdS_parachute += CdS_parachute_src[count_open_parachute];
     }
+    ++count_open_parachute;
 };
 

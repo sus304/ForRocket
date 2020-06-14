@@ -64,14 +64,16 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
     rocket_stage.enable_parachute_open = jc.getBool("Enable Parachute Open");
     if (rocket_stage.enable_parachute_open) {
         auto jc_parachute = jc.getSubItem("Parachute");
-        rocket_stage.enable_apogee_parachute_open = jc_parachute.getDouble("Enable Forced Apogee Open");
+        rocket_stage.enable_apogee_parachute_open = jc_parachute.getBool("Enable Forced Apogee Open");
         rocket_stage.time_open_parachute = jc_parachute.getDouble("Open Time [s]");
+        rocket_stage.rocket.setCdSParachute(jc_parachute.getDouble("Drag Factor Cd*S [m2]"));
     }
 
     rocket_stage.exist_second_parachute = jc.getBool("Enable Secondary Parachute Open");
     if (rocket_stage.exist_second_parachute) {
         auto jc_secondary_parachute = jc.getSubItem("Secondary Parachute");
         rocket_stage.time_open_second_parachute = jc_secondary_parachute.getDouble("Open Time [s]");
+        rocket_stage.rocket.setCdSParachute(jc_secondary_parachute.getDouble("Drag Factor Cd*S [m2]"));
     }
     
     if (jc.getBool("Enable Auto Terminate SubOrbital Flight")) {
