@@ -40,9 +40,9 @@ class RocketStage {
         bool enable_cutoff;
         double time_cutoff;
 
-        bool enable_program_attitude;
-        double time_start_attitude_controll;
-        double time_end_attitude_controll;
+        // bool enable_program_attitude;
+        // double time_start_attitude_controll;
+        // double time_end_attitude_controll;
         ///////////////////////
 
         ///////////////////////

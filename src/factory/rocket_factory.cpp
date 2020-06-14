@@ -30,12 +30,15 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     rocket.mass.inert = jc.getSubItem("Mass").getDouble("Inert [kg]");
     rocket.mass.propellant = jc.getSubItem("Mass").getDouble("Propellant [kg]");
     
-    if (jc.getBool("Enable Program Attitude")) {
+    rocket.enable_program_attitude = jc.getBool("Enable Program Attitude");
+    if (rocket.enable_program_attitude) {
         auto attitude_program = LoadCsvLog(jc.getSubItem("Program Attitude File").getString("Program Attitude File Path"));
         auto azi = InterpolateParameter(attitude_program[0], attitude_program[1], "same");
         auto elv = InterpolateParameter(attitude_program[0], attitude_program[2], "same");
         auto roll = InterpolateParameter(attitude_program[0], attitude_program[3], "same");
         rocket.setAttitudeProgram(azi, elv, roll);
+        rocket.time_start_attitude_controll = attitude_program[0].front();
+        rocket.time_end_attitude_controll = attitude_program[0].back();
     }
 
     if (jc.getBool("Enable X-C.G. File")) {

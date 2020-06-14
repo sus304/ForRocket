@@ -60,6 +60,10 @@ namespace forrocket {
             Force force;
 
             Attitude attitude;
+            bool enable_program_attitude;
+            double time_start_attitude_controll;
+            double time_end_attitude_controll;
+
             Eigen::Vector4d quaternion_dot;
             Eigen::Vector3d angular_velocity;
             Eigen::Vector3d angular_acceleration;

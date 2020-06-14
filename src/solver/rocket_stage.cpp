@@ -31,8 +31,8 @@ forrocket::RocketStage::RocketStage(int stage_number, Rocket rocket) {
 void forrocket::RocketStage::SwitchDynamics(const double time_start, DynamicsBase** dynamics,
                                             SequenceClock* master_clock, EnvironmentWind* wind) {
     // delete *dynamics;
-    if (enable_program_attitude) {
-        if (time_start >= time_start_attitude_controll && time_start < time_end_attitude_controll) {
+    if (rocket.enable_program_attitude) {
+        if (time_start >= rocket.time_start_attitude_controll && time_start < rocket.time_end_attitude_controll) {
             *dynamics = new Dynamics6dofProgramRate(&rocket, master_clock, wind);
             return;
         }
@@ -189,7 +189,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
             SequenceClock clock_apogee_estimate = *master_clock; // copy
             DynamicsBase::state x0_apogee_estimate = x0;
             FlightDataRecorder fdr_apogee_estimate(&rocket_apogee_estimate);
-            if (enable_program_attitude) {
+            if (rocket.enable_program_attitude) {
                 p_dynamics = new Dynamics6dofProgramRate(&rocket, &clock_apogee_estimate, wind);
             } else {
                 p_dynamics = new Dynamics6dofAero(&rocket, &clock_apogee_estimate, wind);

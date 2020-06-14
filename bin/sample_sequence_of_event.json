@@ -13,12 +13,6 @@
 		"Cutoff Time [s]": 0.0
 	},
 
-	"Enable Program Attitude": false,
-	"Attitude Control": {
-		"Start Time [s]": 0.0,
-		"End Time [s]": 100.0
-	},
-
 	"Enable Stage Separation": false,
 	"Upper Stage": {
 		"Stage Separation Time [s]": 0.0,

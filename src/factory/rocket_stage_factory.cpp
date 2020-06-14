@@ -35,12 +35,12 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
         rocket_stage.rocket.engine.burn_duration = rocket_stage.time_cutoff;
     }
     
-    rocket_stage.enable_program_attitude = jc.getBool("Enable Program Attitude");
-    if (rocket_stage.enable_program_attitude) {
-        auto jc_attitude_control = jc.getSubItem("Attitude Control");
-        rocket_stage.time_start_attitude_controll = jc_attitude_control.getDouble("Start Time [s]");
-        rocket_stage.time_end_attitude_controll = jc_attitude_control.getDouble("End Time [s]");
-    }
+    // rocket_stage.enable_program_attitude = jc.getBool("Enable Program Attitude");
+    // if (rocket_stage.enable_program_attitude) {
+    //     auto jc_attitude_control = jc.getSubItem("Attitude Control");
+    //     rocket_stage.time_start_attitude_controll = jc_attitude_control.getDouble("Start Time [s]");
+    //     rocket_stage.time_end_attitude_controll = jc_attitude_control.getDouble("End Time [s]");
+    // }
 
     rocket_stage.enable_sepation = jc.getBool("Enable Stage Separation");
     if (rocket_stage.enable_sepation) {
