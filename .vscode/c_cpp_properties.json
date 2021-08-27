@@ -5,14 +5,21 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "./lib",
-                "./src",
-                "./lib/googletest/include"
+                "./inc",
+                "./inc/dynamics",
+                "./inc/environment",
+                "./inc/factory",
+                "./inc/rocket",
+                "./inc/rocket/parameter",
+                "./inc/solver"
             ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
+            "defines": [
+                "EIGEN_MPL2_ONLY"
+            ],
+            "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
             "cStandard": "c11",
             "cppStandard": "c++11",
-            "intelliSenseMode": "clang-x64"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
