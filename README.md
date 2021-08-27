@@ -18,12 +18,18 @@
 ```sh
 $ git clone https://github.com/sus304/ForRocket.git
 $ cd ForRocket
-$ make release
+$ ./setup_libs.sh
+$ mkdir build && cd build
+$ cmake ..
+$ make
+$ cd ..
 ```
 
 ### Sample Execute
 ```sh
-$ ForRocket sample_solver_config.json
+$ cp build/ForRocket.exe examples/
+$ cd examples
+$ ./ForRocket.exe sample_config_solver.json
 ```
 
 ### Input file
@@ -38,7 +44,6 @@ $ ForRocket sample_solver_config.json
 * [boost](https://www.boost.org/)
 * [Eigen](http://eigen.tuxfamily.org/)
 * [json @nlohman](https://github.com/nlohmann/json)
-* [Google Test](https://github.com/google/googletest)
 
 
 ## License
