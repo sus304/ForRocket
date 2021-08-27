@@ -64,8 +64,8 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     p_dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);
 
     double start, end;
-    double time_step_on_launcher = 0.0001;  // 1000 Hz
-    double time_step_decent_parachute = 0.1;  // 10 Hz
+    double time_step_on_launcher = 0.01;  // 10 ms
+    double time_step_decent_parachute = 0.1;  // 100 ms
     fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
 
     DynamicsBase::state x0_in_stage = x0;  // x0はソルバで次段のために共有するので内部用にコピー
@@ -107,8 +107,6 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
             double distance = (fdr_on_launcher.position[i].LLH(2) - fdr_on_launcher.position[0].LLH(2)) / sin(fdr_on_launcher.attitude[i].euler_angle(1));
             if (distance >= length_launcher_rail) {
                 end = time_step_on_launcher * i;
-                std::cout << distance << ' ' << fdr_on_launcher.position[i].LLH(2) << ' ' << fdr_on_launcher.position[0].LLH(2) << ' ' << sin(fdr_on_launcher.attitude[i].euler_angle(1)) << std::endl;
-                std::cout << i << ' ' << end << std::endl;
                 break;
             }
         }
