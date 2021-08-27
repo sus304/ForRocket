@@ -9,7 +9,6 @@
 #ifndef COORDINATE_HPP_
 #define COORDINATE_HPP_
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "environment/wgs84.hpp"

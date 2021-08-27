@@ -10,7 +10,6 @@
 
 #include <cmath>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "boost/numeric/odeint.hpp"

@@ -11,7 +11,6 @@
 
 #include <string>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "rocket/parameter/interpolate_parameter.hpp"

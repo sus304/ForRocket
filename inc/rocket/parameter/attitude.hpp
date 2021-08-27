@@ -9,7 +9,6 @@
 #ifndef ATTITUDE_HPP_
 #define ATTITUDE_HPP_
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "environment/coordinate.hpp"

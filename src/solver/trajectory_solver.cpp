@@ -8,7 +8,6 @@
 
 #include "trajectory_solver.hpp"
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "json_control.hpp"

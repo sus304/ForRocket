@@ -9,7 +9,6 @@
 #ifndef VELOCITY_HPP_
 #define VELOCITY_HPP_
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 #include "environment/datetime.hpp"

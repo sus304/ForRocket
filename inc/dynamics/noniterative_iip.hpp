@@ -11,7 +11,6 @@
 
 #include <utility>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 namespace forrocket {

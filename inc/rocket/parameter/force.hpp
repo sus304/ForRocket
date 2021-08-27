@@ -9,7 +9,6 @@
 #ifndef FORCE_HPP_
 #define FORCE_HPP_
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 
 namespace forrocket {
