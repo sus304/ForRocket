@@ -44,7 +44,7 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
     p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
     p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
     p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
-    double decent_velosity = p_rocket->velocity.NED(2);
+    double decent_velocity = p_rocket->velocity.NED(2);
 
     // Update Environment
     double altitude = p_rocket->position.LLH[2];
@@ -52,7 +52,7 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
     EnvironmentAir air_sea_level(0.0);
     Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
 
-    Eigen::Vector3d drag_NED(0.0, 0.0, -0.5 * air.density * decent_velosity * abs(decent_velosity) * p_rocket->CdS_parachute);
+    Eigen::Vector3d drag_NED(0.0, 0.0, -0.5 * air.density * decent_velocity * abs(decent_velocity) * p_rocket->CdS_parachute);
     Eigen::Vector3d acceleration_NED = drag_NED / (p_rocket->mass.Sum()) + gravity_NED;
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * acceleration_NED);
 
