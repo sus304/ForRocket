@@ -57,6 +57,8 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * acceleration_NED);
 
     Eigen::Vector3d wind_NED = p_wind->getNED(altitude);
+    p_rocket->velocity.NED[0] *= 0.1;  // 開傘前速度の打ち消し
+    p_rocket->velocity.NED[1] *= 0.1;
     p_rocket->velocity.NED += wind_NED;
     p_rocket->velocity.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * p_rocket->velocity.NED) + coordinate.dcm.EarthRotate * p_rocket->position.ECI;
 
