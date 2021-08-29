@@ -17,11 +17,6 @@ mkdir ${PACKAGE_DIR}
 
 cp build/ForRocket.exe ${PACKAGE_DIR}
 
-cp examples/runner.py ${PACKAGE_DIR}
-cp -ra examples/runner_tool/ ${PACKAGE_DIR}/runner_tool/
-cp examples/post.py ${PACKAGE_DIR}
-cp -ra examples/post_tool/ ${PACKAGE_DIR}/post_tool/
-
 cp examples/sample_CA.csv ${PACKAGE_DIR}
 cp examples/sample_config_area.json ${PACKAGE_DIR}
 cp examples/sample_param_engine.json ${PACKAGE_DIR}
