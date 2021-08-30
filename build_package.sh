@@ -1,7 +1,7 @@
 #!/bin/bash
 
-FORROCKET_VER_DOT="4.1.4"
-FORROCKET_VER_US="4_1_4"
+FORROCKET_VER_DOT="4.1.5"
+FORROCKET_VER_US="4_1_5"
 CURRENT_DATE=`date '+%Y%m%d%H%M%S'`
 PACKAGE_DIR=ForRocket_v${FORROCKET_VER_DOT}_${CURRENT_DATE}
 
@@ -9,7 +9,7 @@ rm -rf build/
 
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -G "MSYS Makefiles"
+cmake .. -DCMAKE_CXX_FLAGS="-Wall -static -lstdc++ -lgcc -lwinpthread" -DCMAKE_BUILD_TYPE=Release -G "MSYS Makefiles"
 make
 cd ..
 
