@@ -5,7 +5,7 @@
 	"Launch Condition": {
 		"Latitude [deg]": 40.242865,
 		"Longitude [deg]": 140.01045,
-		"Height for WGS84 [deg]": 20.0,
+		"Height for WGS84 [m]": 20.0,
 		
 		"Azimuth [deg]": 270.0,
 		"Elevation [deg]": 85.0,

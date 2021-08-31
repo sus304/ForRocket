@@ -50,7 +50,7 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
     auto jc_launch = jc_solver_config.getSubItem("Launch Condition");
 
     Eigen::Vector3d pos_init_LLH;
-    pos_init_LLH << jc_launch.getDouble("Latitude [deg]"), jc_launch.getDouble("Longitude [deg]"), jc_launch.getDouble("Height for WGS84 [deg]");
+    pos_init_LLH << jc_launch.getDouble("Latitude [deg]"), jc_launch.getDouble("Longitude [deg]"), jc_launch.getDouble("Height for WGS84 [m]");
 
     rocket_first_stage.position.Initialize(master_clock.UTC_date_init, pos_init_LLH);
 
