@@ -117,8 +117,6 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     }
 
 
-    rocket.setCdSParachute(1.5);
-
     return rocket;
 };
 
