@@ -14,8 +14,8 @@
 #include "commandline_option.hpp"
 #include "solver/trajectory_solver.hpp"
 
-const std::string program_ver = "4.1.5";
-const std::string release_date = "2021 Aug 27";
+const std::string program_ver = "4.1.6";
+const std::string release_date = "2021 Aug 31";
 
 int main(int argc, char* argv[]) {
     // arg parse
