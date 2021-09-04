@@ -84,11 +84,6 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     // ここまでにIgnitionEngineが実行されている
 
     if (enable_launcher) {
-        // 地球といっしょにまわすためにECI速度を0にしておく
-        // dynamics_3dof_on_launcherでは地球の回転も0にしている
-        x0_in_stage[3] = 0.0;
-        x0_in_stage[4] = 0.0;
-        x0_in_stage[5] = 0.0;
 
         // ランチクリア時刻確定のためにコピー品で短時間回す
         Rocket rocket_on_launcher = rocket;
@@ -116,15 +111,11 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
         #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, start + end, time_step_on_launcher, std::ref(fdr));
-        start = start + end;
+        start = start + end + time_step;
         #ifdef DEBUG
         fdr.DumpCsv("debug_onlauncher_log.csv");
         #endif
 
-        // ランチクリア時点でECI速度を戻す
-        x0_in_stage[3] += x0[3];
-        x0_in_stage[4] += x0[4];
-        x0_in_stage[5] += x0[5];
     }
     // ここまでに慣性飛行からの点火もしくはランチクリアまでが実行されている
     

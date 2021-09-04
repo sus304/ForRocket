@@ -46,8 +46,7 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
     p_rocket->burn_clock.SyncSolverTime(t);
 
     // Update Flight Infomation
-    // coordinate.setECI2ECEF(t);
-    coordinate.setECI2ECEF(0.0);
+    coordinate.setECI2ECEF(t);
 
     p_rocket->position.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+0, x.begin()+3).data());
     p_rocket->position.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->position.ECI;
@@ -56,8 +55,7 @@ void forrocket::Dynamics3dofOnLauncher::operator()(const state& x, state& dx, co
     coordinate.setECEF2NED(p_rocket->position.LLH);
 
     p_rocket->velocity.ECI = Eigen::Map<Eigen::Vector3d>(std::vector<double>(x.begin()+3, x.begin()+6).data());
-    // p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
-    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * p_rocket->velocity.ECI;
+    p_rocket->velocity.ECEF = coordinate.dcm.ECI2ECEF * (p_rocket->velocity.ECI - coordinate.dcm.EarthRotate * p_rocket->position.ECI);
     p_rocket->velocity.NED = coordinate.dcm.ECEF2NED * p_rocket->velocity.ECEF;
     #ifdef DEBUG_NO
     std::cout << p_rocket->velocity.ECI << std::endl;
