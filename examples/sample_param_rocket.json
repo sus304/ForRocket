@@ -64,7 +64,7 @@
     "Fin Cant Angle [deg]": 0.0,
     "Enable Cld File": false,
     "Cld File": {
-        "CldFile Path": "Cld.csv"
+        "Cld File Path": "Cld.csv"
     },
     "Constant Cld": {
         "Constant Cld [1/rad]": 0.0
