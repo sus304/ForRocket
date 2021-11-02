@@ -1,11 +1,15 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.13)
 
 project(ForRocket CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "-Wall -static -lstdc++ -lgcc -lwinpthread")
+if (WIN32)
+	set(CMAKE_CXX_FLAGS "-Wall -static -lstdc++ -lgcc -lwinpthread")
+else()
+	set(CMAKE_CXX_FLAGS "-Wall -lpthread")
+endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
