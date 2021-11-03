@@ -203,13 +203,13 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
     // pitch
     // yaw
     // nutation
-    if (full_dump) {
-        ofs << "Time [s],";
-        ofs << "Time of IIP [s],";
-        ofs << "Latitude of IIP [deg],";
-        ofs << "Longitude of IIP [deg],";
-        ofs << "Downrange of IIP [m],";
-    }
+    // if (full_dump) {
+    //     ofs << "Time [s],";
+    //     ofs << "Time of IIP [s],";
+    //     ofs << "Latitude of IIP [deg],";
+    //     ofs << "Longitude of IIP [deg],";
+    //     ofs << "Downrange of IIP [m],";
+    // }
 
     ofs << std::endl;
     
@@ -334,14 +334,14 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         // flight path angle
         // 軌道情報
 
-        if (full_dump) {
-            ofs << std::setprecision(4) << countup_burn_time[i] << ",";
-            auto iip = IIP(position[i].ECI, velocity[i].ECI);
-            ofs << std::setprecision(4) << iip.first << ",";  // [s]
-            ofs << std::setprecision(8) << iip.second(0) << ",";  // [deg]
-            ofs << std::setprecision(8) << iip.second(1) << ",";  // [deg]
-            ofs << std::setprecision(8) << vdownrange(position[0].LLH, iip.second).first << ",";
-        }
+        // if (full_dump) {
+        //     ofs << std::setprecision(4) << countup_burn_time[i] << ",";
+        //     auto iip = IIP(position[i].ECI, velocity[i].ECI);
+        //     ofs << std::setprecision(4) << iip.first << ",";  // [s]
+        //     ofs << std::setprecision(8) << iip.second(0) << ",";  // [deg]
+        //     ofs << std::setprecision(8) << iip.second(1) << ",";  // [deg]
+        //     ofs << std::setprecision(8) << vdownrange(position[0].LLH, iip.second).first << ",";
+        // }
 
         ofs << std::endl;
     }

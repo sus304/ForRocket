@@ -60,7 +60,7 @@ set(srcs
 	src/dynamics/dynamics_3dof_parachute.cpp
 	src/dynamics/dynamics_6dof_aero.cpp
 	src/dynamics/dynamics_6dof_programrate.cpp
-	src/dynamics/noniterative_iip.cpp
+	# src/dynamics/noniterative_iip.cpp
 	src/factory/engine_factory.cpp
 	src/factory/rocket_factory.cpp
 	src/factory/rocket_stage_factory.cpp
