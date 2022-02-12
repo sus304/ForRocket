@@ -184,12 +184,12 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
             // 頂点時刻確定のためにコピー品で回す
             Rocket rocket_apogee_estimate = rocket;
             SequenceClock clock_apogee_estimate = *master_clock; // copy
-            DynamicsBase::state x0_apogee_estimate = x0;
+            DynamicsBase::state x0_apogee_estimate = x0_in_stage;
             FlightDataRecorder fdr_apogee_estimate(&rocket_apogee_estimate);
             if (rocket.enable_program_attitude) {
-                p_dynamics = new Dynamics6dofProgramRate(&rocket, &clock_apogee_estimate, wind);
+                p_dynamics = new Dynamics6dofProgramRate(&rocket_apogee_estimate, &clock_apogee_estimate, wind);
             } else {
-                p_dynamics = new Dynamics6dofAero(&rocket, &clock_apogee_estimate, wind);
+                p_dynamics = new Dynamics6dofAero(&rocket_apogee_estimate, &clock_apogee_estimate, wind);
             }
             odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_apogee_estimate, start, time_end, time_step, std::ref(fdr_apogee_estimate));
             double max_alt = 0.0;
