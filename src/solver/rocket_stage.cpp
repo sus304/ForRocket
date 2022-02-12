@@ -46,7 +46,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     // Sterpper Select
     ////////////////////////////////////
     // 4th Order Runge-Kutta Method
-    odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
+    // odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
 
     double eps_abs = 1.0e-12;
     double eps_rel = 1.0e-7;
@@ -56,8 +56,8 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
     // auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
 
     // 8th Order Runge-Kutta-Fehlberg Method : Controled
-    // using base_stepper_type = odeint::runge_kutta_fehlberg78<forrocket::DynamicsBase::state>;
-    // auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
+    using base_stepper_type = odeint::runge_kutta_fehlberg78<forrocket::DynamicsBase::state>;
+    auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
 
     DynamicsBase* p_dynamics;
     p_dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);

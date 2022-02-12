@@ -12,7 +12,11 @@ wget -O boost_${BOOST_VER_US}.tar.gz https://sourceforge.net/projects/boost/file
 tar xzvf boost_${BOOST_VER_US}.tar.gz
 cd boost_${BOOST_VER_US}/
 ./bootstrap.sh
-./b2.exe headers
+if [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
+	./b2 headers
+else
+	./b2.exe headers
+fi
 
 cd ../../
 cp -r -a setup/boost_${BOOST_VER_US}/boost/ boost/
