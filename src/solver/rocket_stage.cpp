@@ -162,6 +162,15 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         x0 = x0_in_stage;  // 次段のために分離情報をコピー
     }
 
+    if (rocket.enable_program_attitude == true && time_end > rocket.time_end_attitude_controll) {
+        SwitchDynamics(start, &p_dynamics, master_clock, wind);
+        #ifdef CONTROLLED_STEPPER
+        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
+        #endif
+        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, rocket.time_end_attitude_controll, time_step, std::ref(fdr));
+        start = rocket.time_end_attitude_controll;
+    }
+
     if (!enable_parachute_open) {
         // 弾道で落ちるまで
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
