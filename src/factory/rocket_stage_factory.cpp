@@ -77,7 +77,7 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
     }
     
     if (jc.getBool("Enable Auto Terminate SubOrbital Flight")) {
-        double safety_factor = 1.4;
+        double safety_factor = 5.0;
         rocket_stage.time_end = safety_factor * std::abs(60.0 * std::log(rocket_stage.rocket.engine.total_impulse) - 410.0);        
     } else {
         rocket_stage.time_end = jc.getDouble("Flight End Time [s]");
