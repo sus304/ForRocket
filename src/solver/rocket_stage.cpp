@@ -111,7 +111,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
         #endif
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, start + end, time_step_on_launcher, std::ref(fdr));
-        start = start + end + time_step;
+        start = start + end;
         #ifdef DEBUG
         fdr.DumpCsv("debug_onlauncher_log.csv");
         #endif
