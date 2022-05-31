@@ -91,7 +91,7 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         DynamicsBase::state x0_on_launcher = x0_in_stage;
         FlightDataRecorder fdr_on_launcher(&rocket_on_launcher);
         p_dynamics = new Dynamics3dofOnLauncher(&rocket_on_launcher, &clock_on_launcher);
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+1.0, time_step_on_launcher, std::ref(fdr_on_launcher));
+        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+5.0, time_step_on_launcher, std::ref(fdr_on_launcher));
         
         # ifdef DEBUG
         fdr_on_launcher.DumpCsv("test_estimate_launcher.csv");
