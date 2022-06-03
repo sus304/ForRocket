@@ -8,7 +8,7 @@ rm -rf Eigen/
 mkdir setup
 cd setup
 
-wget https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VER_DOT}/eigen-${EIGEN_VER_DOT}.tar.gz
+wget --local-encoding=UTF-8 https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VER_DOT}/eigen-${EIGEN_VER_DOT}.tar.gz
 tar xzvf eigen-${EIGEN_VER_DOT}.tar.gz
 
 cd ../

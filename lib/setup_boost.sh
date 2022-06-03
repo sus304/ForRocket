@@ -8,7 +8,7 @@ rm -rf boost/
 mkdir setup
 cd setup
 
-wget -O boost_${BOOST_VER_US}.tar.gz https://sourceforge.net/projects/boost/files/boost/${BOOST_VER_DOT}/boost_${BOOST_VER_US}.tar.gz/download
+wget --local-encoding=UTF-8 -O boost_${BOOST_VER_US}.tar.gz https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER_DOT}/source/boost_${BOOST_VER_US}.tar.gz
 tar xzvf boost_${BOOST_VER_US}.tar.gz
 cd boost_${BOOST_VER_US}/
 ./bootstrap.sh

@@ -1,17 +1,19 @@
 #!/bin/bash
 
-FORROCKET_VER_DOT="4.1.10"
-FORROCKET_VER_US="4_1_10"
+cat ./src/ForRocket.cpp | while read line
+do
+    if [[ "$line" =~ "program_ver" ]]; then
+        echo "$line" | sed -e 's/^.*"\(.*\)".*$/\1/' > ver
+        break
+    fi
+done
+
+FORROCKET_VER_DOT=$(sed -n 1p ver)
+rm ver
+
+FORROCKET_VER_US=${FORROCKET_VER_DOT//./_}
 CURRENT_DATE=`date '+%Y%m%d%H%M%S'`
 PACKAGE_DIR=ForRocket_v${FORROCKET_VER_DOT}_${CURRENT_DATE}
-
-rm -rf build/
-
-mkdir build
-cd build
-cmake .. -DCMAKE_CXX_FLAGS="-Wall" -DCMAKE_BUILD_TYPE=Release -G "MSYS Makefiles"
-make
-cd ..
 
 mkdir ${PACKAGE_DIR}
 
