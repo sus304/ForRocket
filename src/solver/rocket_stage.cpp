@@ -24,7 +24,7 @@
 
 forrocket::RocketStage::RocketStage(int stage_number, Rocket rocket) {
     this->stage_number = stage_number;
-    this->rocket = rocket;  
+    this->rocket = rocket;
 };
 
 void forrocket::RocketStage::SwitchDynamics(const double time_start, DynamicsBase** dynamics,
@@ -41,6 +41,47 @@ void forrocket::RocketStage::SwitchDynamics(const double time_start, DynamicsBas
 
 
 void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, EnvironmentWind* wind, DynamicsBase::state& x0) {
+    // New Routine Area
+
+    // X+0から着地までここで積分する
+
+    double time_step_on_launcher = 0.01;  // 10 ms
+    double time_step_decent_parachute = 0.1;  // 100 ms
+    fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
+
+    DynamicsBase::state x0_in_stage = x0;  // x0はソルバで次段のために共有するので内部用にコピー
+
+    DynamicsBase* p_dynamics;
+
+
+    while(1) {
+        // Event
+        //// Ignition event
+        if (master_clock->countup_time >= time_ignittion
+                && rocket.burn_clock.countup_time < rocket.engine.burn_duration) {
+            rocket.IgnitionEngine(master_clock->UTC_date_init, master_clock->countup_time);
+        }
+
+        //// Cutoff event
+
+        //// Despin event
+
+        //// JettsonFaring event
+
+        //// Separate Stage event
+
+        //// Deploy Parachute event
+
+        // Time Evolute
+        //// on launcher
+
+        //// flight
+
+    }
+
+
+    ////////////////////////////////////////////
+
     namespace odeint = boost::numeric::odeint;
 
     // Sterpper Select
@@ -92,11 +133,11 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
         FlightDataRecorder fdr_on_launcher(&rocket_on_launcher);
         p_dynamics = new Dynamics3dofOnLauncher(&rocket_on_launcher, &clock_on_launcher);
         odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+5.0, time_step_on_launcher, std::ref(fdr_on_launcher));
-        
+
         # ifdef DEBUG
         fdr_on_launcher.DumpCsv("test_estimate_launcher.csv");
         # endif
-        
+
         for (int i=0; i < fdr_on_launcher.countup_burn_time.size(); ++i) {
             double distance = (fdr_on_launcher.position[i].LLH(2) - fdr_on_launcher.position[0].LLH(2)) / sin(fdr_on_launcher.attitude[i].euler_angle(1));
             if (distance >= length_launcher_rail) {
@@ -118,9 +159,9 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, Environ
 
     }
     // ここまでに慣性飛行からの点火もしくはランチクリアまでが実行されている
-    
+
     if (enable_cutoff) {
-        // engine cutoff まで 
+        // engine cutoff まで
         SwitchDynamics(start, &p_dynamics, master_clock, wind);
         #ifdef CONTROLLED_STEPPER
         stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);

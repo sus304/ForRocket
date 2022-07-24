@@ -101,9 +101,7 @@ forrocket::Engine::Engine(const std::vector<double> time_vector, const std::vect
 
 
 void forrocket::Engine::Update(const double t, const double pressure, const double mass_prop) {
-    if (t <= burn_duration && mass_prop > 0.0) {
-        Ignittion();
-    } else {
+    if (t > burn_duration || mass_prop <= 0.0) {
         Cutoff();
     }
 

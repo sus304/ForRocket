@@ -19,6 +19,7 @@ class SequenceClock {
         SequenceClock(DateTime UTC_init, double countup_time_init);
 
         void SyncSolverTime(const double t);
+        void Update(const double dt);
 
         double julian_data;  // ユリウス日
         double modified_julian_date;  // 準ユリウス日

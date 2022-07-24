@@ -47,6 +47,10 @@ void forrocket::SequenceClock::SyncSolverTime(const double t) {
     UpdateJulianDate();
 };
 
+void forrocket::SequenceClock::Update(const double dt) {
+    countup_time += dt;
+    UpdateJulianDate();
+};
 
 double forrocket::SequenceClock::UTC2JulianDate(DateTime& UTC) {
     // return 367 * UTC.year - static_cast<int>(7 * (UTC.year + static_cast<int>((UTC.month + 9) / 12)) / 4) + static_cast<int>(275 * UTC.month / 9)
