@@ -3,7 +3,7 @@
 // File Name       : ForRocket.cpp
 // Creation Date   : 2019/07/19
  
-// Copyright © 2019 Susumu Tanaka. All rights reserved.
+// Copyright c 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
 #include <iostream>
@@ -14,8 +14,8 @@
 #include "commandline_option.hpp"
 #include "solver/trajectory_solver.hpp"
 
-const std::string program_ver = "4.1.10";
-const std::string release_date = "2022 May 31";
+const std::string program_ver = "4.1.11";
+const std::string release_date = "2022 July 24";
 
 int main(int argc, char* argv[]) {
     // arg parse
