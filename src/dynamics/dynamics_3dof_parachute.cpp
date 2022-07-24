@@ -53,26 +53,26 @@ void forrocket::Dynamics3dofParachute::operator()(const state& x, state& dx, con
 
     Eigen::Vector3d drag_NED(0.0, 0.0, -0.5 * air.density * decent_velocity * abs(decent_velocity) * p_rocket->CdS_parachute);
     Eigen::Vector3d acceleration_NED = drag_NED / (p_rocket->mass.Sum()) + gravity_NED;
+    acceleration_NED[0] = -3.5 * p_rocket->velocity.NED[0];  // 開傘前速度の打ち消し
+    acceleration_NED[1] = -3.5 * p_rocket->velocity.NED[1];
     p_rocket->acceleration.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * acceleration_NED);
 
     Eigen::Vector3d wind_NED = p_wind->getNED(altitude);
-    p_rocket->velocity.NED[0] *= 0.1;  // 開傘前速度の打ち消し
-    p_rocket->velocity.NED[1] *= 0.1;
     p_rocket->velocity.NED += wind_NED;
     p_rocket->velocity.ECI = coordinate.dcm.ECEF2ECI * (coordinate.dcm.NED2ECEF * p_rocket->velocity.NED) + coordinate.dcm.EarthRotate * p_rocket->position.ECI;
 
     dx[0] = p_rocket->velocity.ECI[0];  // vel_ECI => pos_ECI
-    dx[1] = p_rocket->velocity.ECI[1];  // 
-    dx[2] = p_rocket->velocity.ECI[2];  // 
+    dx[1] = p_rocket->velocity.ECI[1];  //
+    dx[2] = p_rocket->velocity.ECI[2];  //
     dx[3] = p_rocket->acceleration.ECI[0];  // acc_ECI => vel_ECI
-    dx[4] = p_rocket->acceleration.ECI[1];  // 
-    dx[5] = p_rocket->acceleration.ECI[2];  // 
+    dx[4] = p_rocket->acceleration.ECI[1];  //
+    dx[5] = p_rocket->acceleration.ECI[2];  //
     dx[6] = 0.0;  // quatdot => quat
-    dx[7] = 0.0;  // 
-    dx[8] = 0.0;  // 
-    dx[9] = 0.0;  // 
+    dx[7] = 0.0;  //
+    dx[8] = 0.0;  //
+    dx[9] = 0.0;  //
     dx[10] = 0.0;  // angular_acceleration => angular_velocity
-    dx[11] = 0.0;  // 
-    dx[12] = 0.0;  // 
+    dx[11] = 0.0;  //
+    dx[12] = 0.0;  //
     dx[13] = 0.0;  // massdot => mass_prop
 };
