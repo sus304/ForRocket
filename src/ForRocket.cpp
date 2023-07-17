@@ -2,7 +2,7 @@
 // Project Name    : ForRocket
 // File Name       : ForRocket.cpp
 // Creation Date   : 2019/07/19
- 
+
 // Copyright c 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
@@ -14,8 +14,8 @@
 #include "commandline_option.hpp"
 #include "solver/trajectory_solver.hpp"
 
-const std::string program_ver = "4.1.11";
-const std::string release_date = "2022 July 24";
+const std::string program_ver = "4.1.12";
+const std::string release_date = "2023 July 15";
 
 int main(int argc, char* argv[]) {
     // arg parse
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    
+
     if (json_index.size() == 0) {
         std::cerr << "Error! missing argument json file.";
         return 1;
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (enable_msg) std::cout << "ForRocket v" << program_ver << " Contact." << std::endl;
-    
+
     // Timer Start
     auto start = std::chrono::system_clock::now();
 

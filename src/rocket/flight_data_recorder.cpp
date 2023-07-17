@@ -125,6 +125,7 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         ofs << "Cld [-],";
         ofs << "Clp [-],";
         ofs << "Cmq [-],";
+        ofs << "Cma [-],";  // pitch moment coefficient
         ofs << "AoA [deg],";
         ofs << "AoS [deg],";
         ofs << "Fx-aero [N],";
@@ -186,6 +187,9 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         ofs << "Mx-gyroeffect [Nm],";
         ofs << "My-gyroeffect [Nm],";
         ofs << "Mz-gyroeffect [Nm],";
+        ofs << "Mx [Nm],";
+        ofs << "My [Nm],";
+        ofs << "Mz [Nm],";
         ofs << "AngleAccx [rad/s2],";
         ofs << "AngleAccy [rad/s2],";
         ofs << "AngleAccz [rad/s2],";
@@ -212,7 +216,7 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
     // }
 
     ofs << std::endl;
-    
+
     double g0 = gravity(0.0);
     ofs << std::fixed;
     for (int i=0; i < countup_burn_time.size(); ++i) {
@@ -252,6 +256,7 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(4) << Cld[i] << ",";
             ofs << std::setprecision(4) << Clp[i] << ",";
             ofs << std::setprecision(4) << Cmq[i] << ",";
+            ofs << std::setprecision(4) << CNa[i] * (length_CG[i] - length_CP[i]) / p_rocket->length << ",";
             ofs << std::setprecision(8) << rad2deg(angle_of_attack[i]) << ",";  // [deg]
             ofs << std::setprecision(8) << rad2deg(sideslip_angle[i]) << ",";  // [deg]
             ofs << std::setprecision(8) << force[i].aero(0) << ",";
@@ -313,6 +318,9 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(8) << moment[i].gyro(0) << ",";
             ofs << std::setprecision(8) << moment[i].gyro(1) << ",";
             ofs << std::setprecision(8) << moment[i].gyro(2) << ",";
+            ofs << std::setprecision(8) << moment[i].Sum()(0) << ",";
+            ofs << std::setprecision(8) << moment[i].Sum()(1) << ",";
+            ofs << std::setprecision(8) << moment[i].Sum()(2) << ",";
             ofs << std::setprecision(8) << angular_acceleration[i](0) << ",";  // [rad/s2]
             ofs << std::setprecision(8) << angular_acceleration[i](1) << ",";  // [rad/s2]
             ofs << std::setprecision(8) << angular_acceleration[i](2) << ",";  // [rad/s2]
