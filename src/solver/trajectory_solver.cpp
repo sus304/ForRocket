@@ -23,7 +23,7 @@
 
 forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_file) {
     JsonControl jc_solver_config(solver_config_json_file);
-    
+
     model_id = jc_solver_config.getString("Model ID");
     number_stage = jc_solver_config.getInt("Number of Stage");
 
@@ -31,7 +31,7 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
     RocketStageFactory stage_factory;
     for (int i=1; i <= number_stage; ++i) {
         auto jc_stage = JsonControl(jc_solver_config.getString("Stage"+std::to_string(i)+" Config File List"));
-        stage_vector.push_back(stage_factory.Create(i, 
+        stage_vector.push_back(stage_factory.Create(i,
                                                 jc_stage.getString("Rocket Configuration File Path"),
                                                 jc_stage.getString("Engine Configuration File Path"),
                                                 jc_stage.getString("Sequence of Event File Path")));
@@ -63,7 +63,10 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
     euler = euler / 180.0 * 3.14159265;
     rocket_first_stage.attitude.Initialize(euler);
 
-    rocket_first_stage.angular_velocity << 0.0, 0.0, 0.0;
+    rocket_first_stage.angular_velocity << jc_launch.getDouble("Roll Angular Velocity [deg/s]"),
+                                            jc_launch.getDouble("Pitch Angular Velocity [deg/s]"),
+                                            jc_launch.getDouble("Yaw Angular Velocity [deg/s]");
+    rocket_first_stage.angular_velocity = rocket_first_stage.angular_velocity / 180.0 * 3.14159265;
 
     // Prepare Launch - Wind
     auto jc_wind = jc_solver_config.getSubItem("Wind Condition");
@@ -108,7 +111,7 @@ void forrocket::TrajectorySolver::Solve() {
             next_stage.rocket.angular_velocity(2) = x0[12];
         }
     }
-    
+
 };
 
 void forrocket::TrajectorySolver::DumpResult(bool minimum_dump) {

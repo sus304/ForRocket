@@ -6,13 +6,17 @@
 		"Latitude [deg]": 40.242865,
 		"Longitude [deg]": 140.01045,
 		"Height for WGS84 [m]": 20.0,
-		
+
 		"Azimuth [deg]": 270.0,
 		"Elevation [deg]": 85.0,
-		
+
 		"North Velocity [m/s]": 0.0,
 		"East Velocity [m/s]": 0.0,
-		"Down Velocity [m/s]": 0.0
+		"Down Velocity [m/s]": 0.0,
+
+		"Yaw Angular Velocity [deg/s]": 0.0,
+		"Pitch Angular Velocity [deg/s]": 0.0,
+		"Roll Angular Velocity [deg/s]": 0.0
 	},
 
 	"Wind Condition": {
