@@ -154,7 +154,7 @@ I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
 運動方程式中に表れる機体座標系のモーメント $M^B$ の詳細について記す。
 
 \begin{equation}
-\bm{M}^B = \bm{M}^B_T + \bm{M}^B_A + \bm{M}^B_{AD} + \bm{M}^B_{JD}
+\bm{M}^B = \bm{M}^B_T + \bm{M}^B_A + \bm{M}^B_{AD} + \bm{M}^B_{JD} + \bm{M}^B_{GJ}
 \end{equation}
 
 \subsubsection{推力モーメント}
@@ -194,6 +194,22 @@ C_{ad} &=& [C_{lp}, C_{mq}, C_{nr}]^T \\
 \begin{equation}
 \bm{M}^B_{JD} = [0, 0, 0]^T
 \end{equation}
+
+\subsubsection{ガスジェットモーメント}
+スピン安定化を目的としたコールドガスジェットによるロールモーメントを表す。
+ランチクリア（レール離脱）を検出した時刻 $t_{LC}$ を起点とし、設定された作動時間 $\Delta t_{GJ}$ の間のみモーメントを印加する。
+
+\begin{equation}
+\bm{M}^B_{GJ} =
+\begin{cases}
+[M_{GJ}, 0, 0]^T & (t_{LC} \leq t \leq t_{LC} + \Delta t_{GJ}) \\
+[0, 0, 0]^T & (\text{otherwise})
+\end{cases}
+\end{equation}
+
+ここで $M_{GJ}$ はロール軸（機体 $X^B$ 軸）まわりの入力ローリングモーメント [N·m] であり、正値でスピンアップ方向とする。
+$M_{GJ}$ および $\Delta t_{GJ}$ はユーザー入力パラメータとして与える。
+レール離脱の検出は、ランチャ走行距離 $d = \Delta h / \sin\theta$ が有効レール長 $L_{rail}$ に達した時刻として行われる（時刻ベースではなく位置ベースの検出）。
 
 
 \subsection{オイラー角}

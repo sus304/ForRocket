@@ -10,7 +10,7 @@
 #define DEGRAD_HPP_
 
 namespace forrocket {
-    const double pi = 3.14159265;
+    const double pi = 3.141592653589793;
     double deg2rad(const double deg);
     double rad2deg(const double rad);
 };

@@ -6,9 +6,19 @@
         "Propellant [kg]": 41.0
     },
 
+    "Enable Gas Jet": false,
+    "Gas Jet": {
+        "Rolling Moment [N.m]": 5.0,
+        "Duration [s]": 2.5
+    },
+
     "Enable Program Attitude": false,
-    "Program Attitude File": {
-        "Program Attitude File Path": "attitude.csv"
+    "Program Attitude": {
+        "Mode": "Angle",
+        "Enable Yaw": true,
+        "Enable Pitch": true,
+        "Enable Roll": true,
+        "File Path": "attitude.csv"
     },
 
     "Enable X-C.G. File": false,

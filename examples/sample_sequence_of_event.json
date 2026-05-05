@@ -27,7 +27,7 @@
 	"Enable Fairing Jettson": false,
 	"Fairing": {
 		"Jettson Time [s]": 0.0,
-		"Mass [s]": 1.0
+		"Mass [kg]": 1.0
 	},
 
 	"Enable Parachute Open": false,

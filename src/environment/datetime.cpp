@@ -110,6 +110,15 @@ forrocket::DateTime& forrocket::DateTime::operator=(const DateTime& from) {
 };
 
 
+static unsigned int days_in_month(unsigned int month, unsigned int year) {
+    static const unsigned int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month == 2) {
+        bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        return leap ? 29 : 28;
+    }
+    return days[month - 1];
+}
+
 forrocket::DateTime forrocket::DateTime::operator+(const double sec_double) {
     DateTime new_datetime = *this;
     unsigned int sec_int = static_cast<unsigned int>(sec_double);
@@ -140,7 +149,15 @@ forrocket::DateTime forrocket::DateTime::operator+(const double sec_double) {
         new_datetime.hour -= d * 24;
     }
 
-    // TODO:Month update
+    while (new_datetime.day > days_in_month(new_datetime.month, new_datetime.year)) {
+        new_datetime.day -= days_in_month(new_datetime.month, new_datetime.year);
+        new_datetime.month += 1;
+        if (new_datetime.month > 12) {
+            new_datetime.month = 1;
+            new_datetime.year += 1;
+        }
+    }
+
     return new_datetime;
 };
 

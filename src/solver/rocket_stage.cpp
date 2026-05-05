@@ -8,224 +8,225 @@
 
 #include "rocket_stage.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
+#include <memory>
+#include <vector>
 
 #include "Eigen/Core"
 #include "boost/numeric/odeint.hpp"
 
-#include "dynamics/dynamics_6dof_aero.hpp"
-#include "dynamics/dynamics_6dof_programrate.hpp"
-#include "dynamics/dynamics_3dof_onlauncher.hpp"
-#include "dynamics/dynamics_3dof_parachute.hpp"
+#include "dynamics/flight_dynamics.hpp"
+#include "solver/flight_event.hpp"
 
 #ifdef DEBUG
-    #include <iostream>
+#include <iostream>
 #endif
+
 
 forrocket::RocketStage::RocketStage(int stage_number, Rocket rocket) {
     this->stage_number = stage_number;
-    this->rocket = rocket;  
-};
+    this->rocket = rocket;
+    this->separated = false;
+    this->time_at_separation = 0.0;
+    this->state_at_separation.fill(0.0);
+}
 
-void forrocket::RocketStage::SwitchDynamics(const double time_start, DynamicsBase** dynamics,
-                                            SequenceClock* master_clock, EnvironmentWind* wind) {
-    // delete *dynamics;
-    if (rocket.enable_program_attitude) {
-        if (time_start >= rocket.time_start_attitude_controll && time_start < rocket.time_end_attitude_controll) {
-            *dynamics = new Dynamics6dofProgramRate(&rocket, master_clock, wind);
-            return;
+
+void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock,
+                                            EnvironmentWind* wind,
+                                            DynamicsBase::state& x0) {
+    namespace odeint = boost::numeric::odeint;
+    typedef DynamicsBase::state state_t;
+
+    // ------------------------------------------------------------------
+    // 1. イベントリスト構築（時刻順ソート）
+    // ------------------------------------------------------------------
+    std::vector<std::unique_ptr<FlightEvent> > events;
+
+    events.push_back(std::unique_ptr<FlightEvent>(
+            new IgnitionEvent(time_ignittion, master_clock)));
+
+    if (enable_cutoff) {
+        events.push_back(std::unique_ptr<FlightEvent>(new CutoffEvent(time_cutoff)));
+    }
+    if (enable_despin) {
+        events.push_back(std::unique_ptr<FlightEvent>(new DespinEvent(time_despin)));
+    }
+    if (enable_fairing_jettson) {
+        events.push_back(std::unique_ptr<FlightEvent>(
+                new JettisonFairingEvent(time_jettson_fairing, mass_fairing)));
+    }
+    if (enable_sepation) {
+        SeparationEvent::Callback on_separate =
+                [this](double t, const state_t& s) {
+                    this->separated = true;
+                    this->time_at_separation = t;
+                    this->state_at_separation = s;
+                };
+        events.push_back(std::unique_ptr<FlightEvent>(
+                new SeparationEvent(time_separation, mass_upper_stage, on_separate)));
+    }
+
+    bool apogee_pending = false;
+    if (enable_parachute_open) {
+        if (enable_apogee_parachute_open) {
+            apogee_pending = true;
+        } else {
+            events.push_back(std::unique_ptr<FlightEvent>(
+                    new ParachuteOpenEvent(time_open_parachute)));
+        }
+        if (exist_second_parachute) {
+            events.push_back(std::unique_ptr<FlightEvent>(
+                    new ParachuteOpenEvent(time_open_second_parachute)));
         }
     }
-    *dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);
-};
 
+    std::sort(events.begin(), events.end(),
+              [](const std::unique_ptr<FlightEvent>& a,
+                 const std::unique_ptr<FlightEvent>& b) {
+                  return a->Time() < b->Time();
+              });
 
-void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock, EnvironmentWind* wind, DynamicsBase::state& x0) {
-    namespace odeint = boost::numeric::odeint;
+    // ------------------------------------------------------------------
+    // 2. ダイナミクスとステッパ準備
+    // ------------------------------------------------------------------
+    FlightDynamics dynamics(&rocket, master_clock, wind);
+    if (enable_launcher) {
+        dynamics.SetRegime(FlightDynamics::kOnLauncher);
+    } else {
+        dynamics.SetRegime(FlightDynamics::kInAir);
+    }
 
-    // Sterpper Select
-    ////////////////////////////////////
-    // 4th Order Runge-Kutta Method
-    // odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
+    const double eps_abs = 1.0e-9;
+    const double eps_rel = 1.0e-7;
+    auto stepper = odeint::make_dense_output(
+            eps_abs, eps_rel,
+            odeint::runge_kutta_dopri5<state_t>());
 
-    double eps_abs = 1.0e-12;
-    double eps_rel = 1.0e-7;
-    // 5th Order Runge-Kutta-Dormand-Prince Method : Controlled : Dense output : Internal info
-    // #define CONTROLLED_STEPPER
-    // using base_stepper_type = odeint::runge_kutta_dopri5<forrocket::DynamicsBase::state>;
-    // auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
-
-    // 8th Order Runge-Kutta-Fehlberg Method : Controled
-    using base_stepper_type = odeint::runge_kutta_fehlberg78<forrocket::DynamicsBase::state>;
-    auto stepper = make_controlled( eps_abs , eps_rel , base_stepper_type());
-
-    DynamicsBase* p_dynamics;
-    p_dynamics = new Dynamics6dofAero(&rocket, master_clock, wind);
-
-    double start, end;
-    double time_step_on_launcher = 0.01;  // 10 ms
-    double time_step_decent_parachute = 0.1;  // 100 ms
     fdr.ReserveCapacity(static_cast<int>((time_end - time_start) / time_step) * 1.3);
 
-    DynamicsBase::state x0_in_stage = x0;  // x0はソルバで次段のために共有するので内部用にコピー
+    // ランチャ滑走距離計算用の初期高度（射点の絶対高度）
+    const double altitude_init = rocket.position.LLH(2);
 
-    if (time_ignittion <= time_start) {
-        // 計算開始と同時に点火する場合
-        rocket.IgnitionEngine(master_clock->UTC_date_init, master_clock->countup_time);
-        start = time_start;
-    } else {
-        // 点火が計算開始より後の場合
-        // Flight start から engine ignittion まで
-        SwitchDynamics(time_start, &p_dynamics, master_clock, wind);
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, time_start, time_ignittion, time_step, std::ref(fdr)); // 点火までの慣性飛行計算
-        start = time_ignittion;
-        rocket.IgnitionEngine(master_clock->UTC_date_init, master_clock->countup_time);
+    state_t x = x0;
+    std::size_t next_event_idx = 0;
+
+    // ------------------------------------------------------------------
+    // 3. プリループ：t_start 以前/同時刻に発火するイベントを先に処理
+    // ------------------------------------------------------------------
+    while (next_event_idx < events.size()
+           && events[next_event_idx]->Time() <= time_start) {
+        events[next_event_idx]->Apply(rocket, x);
+        if (rocket.CdS_parachute > 0.0
+                && dynamics.regime() != FlightDynamics::kParachute) {
+            dynamics.SetRegime(FlightDynamics::kParachute);
+            apogee_pending = false;
+        }
+        ++next_event_idx;
     }
-    // ここまでにIgnitionEngineが実行されている
+    x0 = x;
 
-    if (enable_launcher) {
+    stepper.initialize(x, time_start, time_step);
 
-        // ランチクリア時刻確定のためにコピー品で短時間回す
-        Rocket rocket_on_launcher = rocket;
-        SequenceClock clock_on_launcher = *master_clock; // copy
-        DynamicsBase::state x0_on_launcher = x0_in_stage;
-        FlightDataRecorder fdr_on_launcher(&rocket_on_launcher);
-        p_dynamics = new Dynamics3dofOnLauncher(&rocket_on_launcher, &clock_on_launcher);
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_on_launcher, start, start+5.0, time_step_on_launcher, std::ref(fdr_on_launcher));
-        
-        # ifdef DEBUG
-        fdr_on_launcher.DumpCsv("test_estimate_launcher.csv");
-        # endif
-        
-        for (int i=0; i < fdr_on_launcher.countup_burn_time.size(); ++i) {
-            double distance = (fdr_on_launcher.position[i].LLH(2) - fdr_on_launcher.position[0].LLH(2)) / sin(fdr_on_launcher.attitude[i].euler_angle(1));
-            if (distance >= length_launcher_rail) {
-                end = time_step_on_launcher * i;
-                break;
+    // 頂点検出用の前回 NED 速度 z 成分（NaN は未初期化）
+    double prev_velocity_NED_down = std::numeric_limits<double>::quiet_NaN();
+
+    // ------------------------------------------------------------------
+    // 4. メイン積分ループ
+    // ------------------------------------------------------------------
+    while (stepper.current_time() < time_end) {
+        stepper.do_step(std::ref(dynamics));
+        double t_curr = stepper.current_time();
+        double t_prev = stepper.previous_time();
+        state_t x_curr = stepper.current_state();
+
+        // 4-1. 時刻イベント発火
+        bool stepper_reinitialized = false;
+        while (next_event_idx < events.size()
+               && events[next_event_idx]->Time() <= t_curr) {
+            double t_event = events[next_event_idx]->Time();
+            state_t x_event;
+            stepper.calc_state(t_event, x_event);
+            events[next_event_idx]->Apply(rocket, x_event);
+
+            if (rocket.CdS_parachute > 0.0
+                    && dynamics.regime() != FlightDynamics::kParachute) {
+                dynamics.SetRegime(FlightDynamics::kParachute);
+                apogee_pending = false;
             }
+
+            stepper.initialize(x_event, t_event, time_step);
+            stepper_reinitialized = true;
+            ++next_event_idx;
+        }
+        if (stepper_reinitialized) {
+            t_curr = stepper.current_time();
+            x_curr = stepper.current_state();
+            // 不連続点直後はダイナミクスを再評価して状態変数を同期
+            state_t dx_dummy;
+            dynamics(x_curr, dx_dummy, t_curr);
         }
 
-        // ランチャ滑走の本ちゃん
-        p_dynamics = new Dynamics3dofOnLauncher(&rocket, master_clock);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, start + end, time_step_on_launcher, std::ref(fdr));
-        start = start + end;
-        #ifdef DEBUG
-        fdr.DumpCsv("debug_onlauncher_log.csv");
-        #endif
-
-    }
-    // ここまでに慣性飛行からの点火もしくはランチクリアまでが実行されている
-    
-    if (enable_cutoff) {
-        // engine cutoff まで 
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_cutoff, time_step, std::ref(fdr));
-        start = time_cutoff;
-        rocket.CutoffEngine();
-    }
-    // enable_cutoff=false の場合は質量0で自動cutoffされる（Engineクラス側）
-
-    if (enable_despin) {
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_despin, time_step, std::ref(fdr));
-        start = time_despin;
-        rocket.DeSpin();
-    }
-
-    if (enable_fairing_jettson) {
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_jettson_fairing, time_step, std::ref(fdr));
-        start = time_jettson_fairing;
-        rocket.JettsonFairing(mass_fairing);
-    }
-
-    if (enable_sepation) {
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_separation, time_step, std::ref(fdr));
-        start = time_separation;
-        rocket.SeparateUpperStage(mass_upper_stage);
-        x0 = x0_in_stage;  // 次段のために分離情報をコピー
-    }
-
-    if (rocket.enable_program_attitude == true && time_end > rocket.time_end_attitude_controll) {
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, rocket.time_end_attitude_controll, time_step, std::ref(fdr));
-        start = rocket.time_end_attitude_controll;
-    }
-
-    if (!enable_parachute_open) {
-        // 弾道で落ちるまで
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, time_end, time_step, std::ref(fdr));
-    } else {
-        // パラシュート開傘
-        if (enable_apogee_parachute_open) {
-            // 頂点時刻確定のためにコピー品で回す
-            Rocket rocket_apogee_estimate = rocket;
-            SequenceClock clock_apogee_estimate = *master_clock; // copy
-            DynamicsBase::state x0_apogee_estimate = x0_in_stage;
-            FlightDataRecorder fdr_apogee_estimate(&rocket_apogee_estimate);
-            if (rocket.enable_program_attitude) {
-                p_dynamics = new Dynamics6dofProgramRate(&rocket_apogee_estimate, &clock_apogee_estimate, wind);
-            } else {
-                p_dynamics = new Dynamics6dofAero(&rocket_apogee_estimate, &clock_apogee_estimate, wind);
-            }
-            odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_apogee_estimate, start, time_end, time_step, std::ref(fdr_apogee_estimate));
-            double max_alt = 0.0;
-            for (int i=0; i < fdr_apogee_estimate.position.size(); ++i) {
-                double alt = fdr_apogee_estimate.position[i].LLH(2);
-                if (max_alt < alt) {
-                    max_alt = alt;
-                } else {
-                    end = fdr_apogee_estimate.countup_time[i];
-                    break;
+        // 4-2. ランチクリア検出（条件型）
+        if (dynamics.regime() == FlightDynamics::kOnLauncher) {
+            double altitude_change = rocket.position.LLH(2) - altitude_init;
+            double sin_elv = std::sin(rocket.attitude.euler_angle(1));
+            if (sin_elv > 1.0e-6) {
+                double distance = altitude_change / sin_elv;
+                if (distance >= length_launcher_rail) {
+                    dynamics.SetRegime(FlightDynamics::kInAir);
+                    rocket.time_launch_clear = t_curr;
+                    stepper.initialize(x_curr, t_curr, time_step);
                 }
             }
-        } else {
-            end = time_open_parachute;
         }
-        // 開傘までの慣性飛行本ちゃん
-        SwitchDynamics(start, &p_dynamics, master_clock, wind);
-        #ifdef CONTROLLED_STEPPER
-        stepper.initialize(std::ref(*p_dynamics), x0_in_stage, start);
-        #endif
-        odeint::integrate_const(stepper, std::ref(*p_dynamics), x0_in_stage, start, end, time_step, std::ref(fdr));
-        start = end;
 
-        // ここまでで頂点もしくは開傘時刻まで実行されている
-        odeint::runge_kutta4<forrocket::DynamicsBase::state> stepper;
-        rocket.OpenParachute();
-        Dynamics3dofParachute dynamics_3dof_parachute(&rocket, master_clock, wind);
+        // 4-3. 頂点パラシュート開傘検出（条件型）
+        if (apogee_pending && dynamics.regime() == FlightDynamics::kInAir) {
+            double curr_velocity_NED_down = rocket.velocity.NED(2);
+            // NED の z 成分は下向き正なので、上昇中(<0)から下降(>=0)へ反転で頂点
+            if (!std::isnan(prev_velocity_NED_down)
+                    && prev_velocity_NED_down < 0.0
+                    && curr_velocity_NED_down >= 0.0) {
+                double t_apogee;
+                double dv = curr_velocity_NED_down - prev_velocity_NED_down;
+                if (std::abs(dv) > 1.0e-12) {
+                    double frac = -prev_velocity_NED_down / dv;
+                    t_apogee = t_prev + frac * (t_curr - t_prev);
+                } else {
+                    t_apogee = t_curr;
+                }
+                state_t x_apogee;
+                stepper.calc_state(t_apogee, x_apogee);
+                ParachuteOpenEvent apogee_event(t_apogee);
+                apogee_event.Apply(rocket, x_apogee);
+                dynamics.SetRegime(FlightDynamics::kParachute);
+                apogee_pending = false;
 
-        if (exist_second_parachute) {
-            odeint::integrate_const(stepper, dynamics_3dof_parachute, x0_in_stage, start, time_open_second_parachute, time_step_decent_parachute, std::ref(fdr));
-            rocket.OpenParachute();
-            odeint::integrate_const(stepper, dynamics_3dof_parachute, x0_in_stage, time_open_second_parachute, time_end, time_step_decent_parachute, std::ref(fdr));
-        } else {
-            odeint::integrate_const(stepper, dynamics_3dof_parachute, x0_in_stage, start, time_end, time_step_decent_parachute, std::ref(fdr));
+                stepper.initialize(x_apogee, t_apogee, time_step);
+                t_curr = stepper.current_time();
+                x_curr = stepper.current_state();
+                state_t dx_dummy;
+                dynamics(x_curr, dx_dummy, t_curr);
+            }
+            prev_velocity_NED_down = curr_velocity_NED_down;
         }
+
+        // 4-4. 地面衝突終了
+        if (rocket.position.LLH(2) < 0.0) {
+            break;
+        }
+
+        // 4-5. ロギング
+        fdr(x_curr, t_curr);
     }
 
-    // fdr.dump_csv("flight_log_stage"+std::to_string(stage_number)+".csv");
-};
+    // ------------------------------------------------------------------
+    // 5. 段間引き継ぎ
+    // ------------------------------------------------------------------
+    if (separated) {
+        x0 = state_at_separation;
+    }
+}

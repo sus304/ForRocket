@@ -58,11 +58,16 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroForceMoment(Rocket* p_rocket) {
 Eigen::Vector3d forrocket::DynamicsBase::AeroDampingMoment(Rocket* p_rocket) {
     Eigen::Vector3d moment_aero_dumping;
 
+    const double airspeed = p_rocket->velocity.air_body.norm();
+    if (airspeed <= 0.0) {
+        moment_aero_dumping << 0.0, 0.0, 0.0;
+        return moment_aero_dumping;
+    }
+
     Eigen::Vector3d coefficient_aero_dumping(p_rocket->Clp, p_rocket->Cmq, p_rocket->Cnr);
-    
     moment_aero_dumping = p_rocket->dynamic_pressure * coefficient_aero_dumping.array() * p_rocket->area * std::pow(p_rocket->length, 2)
-                            / (2.0 * p_rocket->velocity.air_body.norm()) * p_rocket->angular_velocity.array();
-    
+                            / (2.0 * airspeed) * p_rocket->angular_velocity.array();
+
     return moment_aero_dumping;
 };
 
@@ -73,6 +78,17 @@ Eigen::Vector3d forrocket::DynamicsBase::JetDampingMoment(Rocket* p_rocket) {
     moment_jet_dumping << 0.0, 0.0, 0.0;
 
     return moment_jet_dumping;
+};
+
+
+Eigen::Vector3d forrocket::DynamicsBase::GasJetMoment(Rocket* p_rocket, double t) {
+    Eigen::Vector3d moment = Eigen::Vector3d::Zero();
+    if (!p_rocket->gas_jet_config.enable) return moment;
+    double elapsed = t - p_rocket->time_launch_clear;
+    if (elapsed >= 0.0 && elapsed <= p_rocket->gas_jet_config.duration) {
+        moment[0] = p_rocket->gas_jet_config.rolling_moment;
+    }
+    return moment;
 };
 
 

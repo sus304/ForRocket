@@ -19,7 +19,7 @@ namespace forrocket {
             Eigen::Vector3d gravity;
 
             Force();
-            Eigen::Vector3d Sum();
+            Eigen::Vector3d Sum() const;
     };
 }
 

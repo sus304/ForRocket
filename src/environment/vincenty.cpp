@@ -13,7 +13,7 @@
 #include "degrad.hpp"
 #include "environment/wgs84.hpp"
 
-std::pair<double, double> forrocket::vdownrange(Eigen::Vector3d& observer_LLH, Eigen::Vector3d& target_LLH) {
+std::pair<double, double> forrocket::vdownrange(const Eigen::Vector3d& observer_LLH, const Eigen::Vector3d& target_LLH) {
     // Input: [lat, lon, alt], [lat, lon, alt] ([deg, m])
     // Output: downrange [m], Azimuth start->end [deg]
 

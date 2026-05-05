@@ -56,14 +56,11 @@ set(srcs
 	src/rocket/flight_data_recorder.cpp
 	src/rocket/rocket.cpp
 	src/dynamics/dynamics_base.cpp
-	src/dynamics/dynamics_3dof_onlauncher.cpp
-	src/dynamics/dynamics_3dof_parachute.cpp
-	src/dynamics/dynamics_6dof_aero.cpp
-	src/dynamics/dynamics_6dof_programrate.cpp
-	# src/dynamics/noniterative_iip.cpp
+	src/dynamics/flight_dynamics.cpp
 	src/factory/engine_factory.cpp
 	src/factory/rocket_factory.cpp
 	src/factory/rocket_stage_factory.cpp
+	src/solver/flight_event.cpp
 	src/solver/rocket_stage.cpp
 	src/solver/trajectory_solver.cpp
 )

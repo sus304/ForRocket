@@ -16,7 +16,7 @@ namespace forrocket {
             double inert;
             double propellant;
 
-            double Sum();
+            double Sum() const;
     };
 
 }

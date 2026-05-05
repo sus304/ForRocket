@@ -14,7 +14,7 @@ void forrocket::DisplayHelp() {
     std::cout << "Usage: ForRocket [option] config.json" << std::endl;
     std::cout << "Option:" << std::endl;
     std::cout << "  -m                 Decrease column of trajectory log" << std::endl;
-    std::cout << "  -q or --quite      Disable announce message." << std::endl;
+    std::cout << "  -q or --quiet      Disable announce message." << std::endl;
     std::cout << "  -h or --help       Display this information and exit." << std::endl;
     std::cout << "  -v or --version    Display solver version and exit." << std::endl;
 };

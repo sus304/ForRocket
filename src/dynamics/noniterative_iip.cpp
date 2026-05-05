@@ -68,7 +68,7 @@ std::pair<double, Eigen::Vector3d> forrocket::IIP(Eigen::Vector3d& pos_ECI, Eige
         const double eps = 1e-6;
         const double relaxation = 0.1;
         rp_init = (wgs84.a + wgs84.b) * 0.5;
-        // rp_init = wgs84.b;
+        rp = rp_init;
         unsigned int counter = 0;
         while (std::abs(rp - rp_init) > eps) {
             rp = rp_init;
@@ -83,7 +83,7 @@ std::pair<double, Eigen::Vector3d> forrocket::IIP(Eigen::Vector3d& pos_ECI, Eige
             sin_phi = (c[0] * c[2]
                     + std::sqrt(c_squr[0] * c_squr[2] - (c_squr[0] + c_squr[1]) * (c_squr[2] - c_squr[1])))
                     / (c_squr[0] + c_squr[1]);
-            cos_phi = std::sqrt(1.0 - sin_phi);
+            cos_phi = std::sqrt(1.0 - sin_phi * sin_phi);
             phi = std::asin(sin_phi);  // [rad]
 
             k[0] = std::cos(gamma0 + phi) / std::cos(gamma0);

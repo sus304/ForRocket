@@ -18,6 +18,7 @@ namespace forrocket {
 namespace interpolate {
 class Polator1D {
     public:
+        virtual ~Polator1D() = default;
         virtual double polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) = 0;
 
 };
@@ -50,7 +51,8 @@ class CubicSpline1D : public Polator1D {
 
 class Interp1d {
     public:
-        Interp1d() {};
+        Interp1d() : polator(nullptr) {};
+        ~Interp1d() { delete polator; }
         Interp1d(const std::vector<double> x, const std::vector<double> y, const std::string kind, const std::string fill_value);
         Interp1d(const Interp1d& from);
         Interp1d& operator=(const Interp1d& from);

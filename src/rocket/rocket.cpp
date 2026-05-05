@@ -91,6 +91,12 @@ void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, c
     this->roll_program_src = roll;
 };
 
+void forrocket::Rocket::setAttitudeProgramRate(const InterpolateParameter azimuth_rate, const InterpolateParameter elevation_rate, const InterpolateParameter roll_rate) {
+    this->azimuth_rate_program_src = azimuth_rate;
+    this->elevation_rate_program_src = elevation_rate;
+    this->roll_rate_program_src = roll_rate;
+};
+
 void forrocket::Rocket::setCdSParachute(const double CdS_first) {
     CdS_parachute_src.push_back(CdS_first);
 };
@@ -167,7 +173,7 @@ Eigen::Vector3d forrocket::Rocket::getThrust(const double air_pressure) {
 
     Eigen::Vector3d thrust;
     if (engine.burning) {
-        Eigen::Vector3d gimbal_angle(std::cos(engine.gimbal_angle_y_axis) * std::cos(engine.gimbal_angle_y_axis),
+        Eigen::Vector3d gimbal_angle(std::cos(engine.gimbal_angle_y_axis) * std::cos(engine.gimbal_angle_z_axis),
                                     std::sin(engine.gimbal_angle_z_axis),
                                     -std::sin(engine.gimbal_angle_y_axis));
         thrust << engine.thrust * gimbal_angle.array();
@@ -195,6 +201,13 @@ Eigen::Vector3d forrocket::Rocket::getAttitude() {
     double t = burn_clock.countup_time;
     attitude << azimuth_program_src(t), elevation_program_src(t), roll_program_src(t);
     return attitude;
+};
+
+Eigen::Vector3d forrocket::Rocket::getAttitudeRate() {
+    Eigen::Vector3d rate;
+    double t = burn_clock.countup_time;
+    rate << azimuth_rate_program_src(t), elevation_rate_program_src(t), roll_rate_program_src(t);
+    return rate;
 };
 
 

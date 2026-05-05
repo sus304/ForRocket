@@ -17,6 +17,9 @@ ForRocket_v*/
 # Claude Code project settings (IDE personal tool)
 .claude/
 
+# Local-only test scripts
+tests/
+
 # Simulation output CSVs in examples/
 examples/*_flight_log.csv
 examples/debug_*.csv

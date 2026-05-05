@@ -38,8 +38,8 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
     // rocket_stage.enable_program_attitude = jc.getBool("Enable Program Attitude");
     // if (rocket_stage.enable_program_attitude) {
     //     auto jc_attitude_control = jc.getSubItem("Attitude Control");
-    //     rocket_stage.time_start_attitude_controll = jc_attitude_control.getDouble("Start Time [s]");
-    //     rocket_stage.time_end_attitude_controll = jc_attitude_control.getDouble("End Time [s]");
+    //     rocket_stage.time_start_attitude_control = jc_attitude_control.getDouble("Start Time [s]");
+    //     rocket_stage.time_end_attitude_control = jc_attitude_control.getDouble("End Time [s]");
     // }
 
     rocket_stage.enable_sepation = jc.getBool("Enable Stage Separation");
@@ -58,7 +58,7 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
     if (rocket_stage.enable_fairing_jettson) {
         auto jc_fairing_jettson = jc.getSubItem("Fairing");
         rocket_stage.time_jettson_fairing = jc_fairing_jettson.getDouble("Jettson Time [s]");
-        rocket_stage.mass_fairing = jc_fairing_jettson.getDouble("Mass [s]");
+        rocket_stage.mass_fairing = jc_fairing_jettson.getDouble("Mass [kg]");
     }
 
     rocket_stage.enable_parachute_open = jc.getBool("Enable Parachute Open");

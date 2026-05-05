@@ -80,7 +80,7 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
 
 void forrocket::TrajectorySolver::Solve() {
     DynamicsBase::state x0;  // ECI pos, ECI vel, quat, angle vel, mass
-    for (int i=0; i < stage_vector.size(); ++i) {
+    for (std::size_t i=0; i < stage_vector.size(); ++i) {
         RocketStage& stage = stage_vector[i];
         Rocket& rocket = stage.rocket;
         x0 = {rocket.position.ECI(0), rocket.position.ECI(1), rocket.position.ECI(2),
@@ -115,7 +115,7 @@ void forrocket::TrajectorySolver::Solve() {
 };
 
 void forrocket::TrajectorySolver::DumpResult(bool minimum_dump) {
-    for (int i=0, size=stage_vector.size(); i < size; ++i) {
+    for (std::size_t i=0; i < stage_vector.size(); ++i) {
         std::string name = model_id + "_stage" + std::to_string(stage_vector[i].stage_number) + "_flight_log";
         stage_vector[i].fdr.DumpCsv(name + ".csv", !minimum_dump);
     }

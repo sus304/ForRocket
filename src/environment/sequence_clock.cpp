@@ -60,7 +60,7 @@ double forrocket::SequenceClock::JulianDate2GreenwichSiderealTime(const double j
     double julian_century = (julian - 2451545.0) / 36525.0;
     double greenwich_sidereal = 67310.54841 + (876600.0 * 3600.0 + 8640184.812866) * julian_century + 0.093104 * std::pow(julian_century, 2) - 6.2e-6 * std::pow(julian_century, 3);
     // double green_sidereal_deg = greenwich_sidereal_time / 240.0;
-    greenwich_sidereal = greenwich_sidereal * std::fmod((2.0 * 3.14159265) / 86400.0, (2.0 * 3.14159265));
+    greenwich_sidereal = std::fmod(greenwich_sidereal * (2.0 * 3.141592653589793) / 86400.0, (2.0 * 3.141592653589793));
     return greenwich_sidereal;
 };
 

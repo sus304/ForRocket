@@ -14,7 +14,7 @@
 #include "Eigen/Core"
 
 namespace forrocket {
-    std::pair<double, double> vdownrange(Eigen::Vector3d& observer_LLH, Eigen::Vector3d& target_LLH);
+    std::pair<double, double> vdownrange(const Eigen::Vector3d& observer_LLH, const Eigen::Vector3d& target_LLH);
 }
 
 #endif

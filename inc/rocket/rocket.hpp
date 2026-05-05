@@ -59,9 +59,25 @@ namespace forrocket {
             Force force;
 
             Attitude attitude;
-            bool enable_program_attitude;
-            double time_start_attitude_controll;
-            double time_end_attitude_controll;
+            bool enable_program_attitude = false;
+            double time_start_attitude_control = 0.0;
+            double time_end_attitude_control = 0.0;
+
+            struct AttitudeProgramConfig {
+                bool mode_rate = false;
+                bool enable_yaw = true;
+                bool enable_pitch = true;
+                bool enable_roll = true;
+            };
+            AttitudeProgramConfig attitude_program_config;
+
+            struct GasJetConfig {
+                bool enable = false;
+                double rolling_moment = 0.0;  // [N·m], body +x direction
+                double duration = 2.5;        // [s] from launch clear
+            };
+            GasJetConfig gas_jet_config;
+            double time_launch_clear = 1.0e10;
 
             Eigen::Vector4d quaternion_dot;
             Eigen::Vector3d angular_velocity;
@@ -86,6 +102,7 @@ namespace forrocket {
 
             void setInertiaTensor(const InterpolateParameter MOI_xx, const InterpolateParameter MOI_yy, const InterpolateParameter MOI_zz);
             void setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll);
+            void setAttitudeProgramRate(const InterpolateParameter azimuth_rate, const InterpolateParameter elevation_rate, const InterpolateParameter roll_rate);
 
             void setCdSParachute(const double CdS_first);
             void setCdSParachute(const double CdS_first, const double CdS_second);
@@ -103,6 +120,7 @@ namespace forrocket {
             Eigen::Vector3d getThrust(const double air_pressure);
             Eigen::Matrix3d getInertiaTensor();
             Eigen::Vector3d getAttitude();
+            Eigen::Vector3d getAttitudeRate();
 
             // SOE Handler
             void IgnitionEngine(DateTime UTC_init, double countup_time_init);
@@ -122,6 +140,10 @@ namespace forrocket {
             InterpolateParameter azimuth_program_src;
             InterpolateParameter elevation_program_src;
             InterpolateParameter roll_program_src;
+
+            InterpolateParameter azimuth_rate_program_src;
+            InterpolateParameter elevation_rate_program_src;
+            InterpolateParameter roll_rate_program_src;
 
             InterpolateParameter length_CG_src;  // from end
             InterpolateParameter length_CP_src;  // from end

@@ -14,8 +14,8 @@
 #include "commandline_option.hpp"
 #include "solver/trajectory_solver.hpp"
 
-const std::string program_ver = "4.1.12";
-const std::string release_date = "2023 July 15";
+const std::string program_ver = "4.2.0";
+const std::string release_date = "2026 April 10";
 
 int main(int argc, char* argv[]) {
     // arg parse
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "ForRocket version:" << program_ver << " (release: " << release_date << ")" << std::endl;
                 return 0;
             }
-            if (str == "--quite") {
+            if (str == "--quiet") {
                 enable_msg = false;
             }
         }
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     if (enable_msg) std::cout << "Solver Terminate." << std::endl;
     if (enable_msg) std::cout << "Export Result ..." << std::endl;
     solver.DumpResult(enable_minimum_damp);
-    if (enable_msg) std::cout << "Export Compleate." << std::endl;
+    if (enable_msg) std::cout << "Export Complete." << std::endl;
 
     // Timer Stop
     auto end = std::chrono::system_clock::now();

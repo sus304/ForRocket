@@ -19,9 +19,10 @@ namespace forrocket {
             Eigen::Vector3d aero_force;
             Eigen::Vector3d aero_dumping;
             Eigen::Vector3d jet_dumping;
+            Eigen::Vector3d gas_jet;
 
             Moment();
-            Eigen::Vector3d Sum();
+            Eigen::Vector3d Sum() const;
     };
 }
 

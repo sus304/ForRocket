@@ -30,15 +30,41 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     rocket.mass.inert = jc.getSubItem("Mass").getDouble("Inert [kg]");
     rocket.mass.propellant = jc.getSubItem("Mass").getDouble("Propellant [kg]");
     
+    rocket.gas_jet_config.enable = jc.getBool("Enable Gas Jet");
+    if (rocket.gas_jet_config.enable) {
+        auto jc_gj = jc.getSubItem("Gas Jet");
+        rocket.gas_jet_config.rolling_moment = jc_gj.getDouble("Rolling Moment [N.m]");
+        rocket.gas_jet_config.duration = jc_gj.getDouble("Duration [s]");
+    }
+
     rocket.enable_program_attitude = jc.getBool("Enable Program Attitude");
     if (rocket.enable_program_attitude) {
-        auto attitude_program = LoadCsvLog(jc.getSubItem("Program Attitude File").getString("Program Attitude File Path"));
-        auto azi = InterpolateParameter(attitude_program[0], attitude_program[1], "same");
-        auto elv = InterpolateParameter(attitude_program[0], attitude_program[2], "same");
-        auto roll = InterpolateParameter(attitude_program[0], attitude_program[3], "same");
-        rocket.setAttitudeProgram(azi, elv, roll);
-        rocket.time_start_attitude_controll = attitude_program[0].front();
-        rocket.time_end_attitude_controll = attitude_program[0].back();
+        auto jc_att = jc.getSubItem("Program Attitude");
+        std::string mode = jc_att.getString("Mode");
+        rocket.attitude_program_config.mode_rate   = (mode == "Rate");
+        rocket.attitude_program_config.enable_yaw   = jc_att.getBool("Enable Yaw");
+        rocket.attitude_program_config.enable_pitch = jc_att.getBool("Enable Pitch");
+        rocket.attitude_program_config.enable_roll  = jc_att.getBool("Enable Roll");
+
+        auto prog = LoadCsvLog(jc_att.getString("File Path"));
+        // CSV values are in degrees (angle) or deg/s (rate); convert to rad or rad/s
+        for (auto& v : prog[1]) v *= pi / 180.0;
+        for (auto& v : prog[2]) v *= pi / 180.0;
+        for (auto& v : prog[3]) v *= pi / 180.0;
+
+        if (rocket.attitude_program_config.mode_rate) {
+            rocket.setAttitudeProgramRate(
+                InterpolateParameter(prog[0], prog[1], "same"),
+                InterpolateParameter(prog[0], prog[2], "same"),
+                InterpolateParameter(prog[0], prog[3], "same"));
+        } else {
+            rocket.setAttitudeProgram(
+                InterpolateParameter(prog[0], prog[1], "same"),
+                InterpolateParameter(prog[0], prog[2], "same"),
+                InterpolateParameter(prog[0], prog[3], "same"));
+        }
+        rocket.time_start_attitude_control = prog[0].front();
+        rocket.time_end_attitude_control = prog[0].back();
     }
 
     if (jc.getBool("Enable X-C.G. File")) {

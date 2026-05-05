@@ -14,7 +14,7 @@ forrocket::Force::Force() {
     gravity << 0.0, 0.0, 0.0;
 };
 
-Eigen::Vector3d forrocket::Force::Sum() {
+Eigen::Vector3d forrocket::Force::Sum() const {
     Eigen::Vector3d sum;
     sum = thrust + aero + gravity;
     return sum;

@@ -33,6 +33,7 @@ class DynamicsBase {
         Eigen::Vector3d AeroForceMoment(Rocket* p_rocket);
         Eigen::Vector3d AeroDampingMoment(Rocket* p_rocket);
         Eigen::Vector3d JetDampingMoment(Rocket* p_rocket);
+        Eigen::Vector3d GasJetMoment(Rocket* p_rocket, double t);
         
         Eigen::Matrix4d QuaternionDiff(Rocket* p_rocket);
 

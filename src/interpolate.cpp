@@ -14,7 +14,7 @@
 
 bool forrocket::interpolate::Interp1d::need_sort(const std::vector<double>& x) {
     double slope;
-    for (int i=1; i < x.size(); ++i) {
+    for (std::size_t i=1; i < x.size(); ++i) {
         slope = x[i] - x[i-1];
         if (slope < 0) return true;
     }
@@ -29,12 +29,11 @@ bool forrocket::interpolate::Interp1d::need_sort(const std::vector<double>& x) {
 
 void forrocket::interpolate::Interp1d::ascending_order_sort(std::vector<double>& x, std::vector<double>& y) {
     std::vector<std::pair<double, double> > v1;
-    for (int i=0; i < x.size(); ++i) {
+    for (std::size_t i=0; i < x.size(); ++i) {
         v1.push_back(std::make_pair(x[i], y[i]));
     }
-    // stable_sort(v1.begin(), v1.end(), less);
     stable_sort(v1.begin(), v1.end());
-    for (int i=0; i < v1.size(); ++i) {
+    for (std::size_t i=0; i < v1.size(); ++i) {
         x[i] = v1[i].first;
         y[i] = v1[i].second;
     }
@@ -85,15 +84,19 @@ forrocket::interpolate::Interp1d::Interp1d(const Interp1d& from) {
 
 forrocket::interpolate::Interp1d& forrocket::interpolate::Interp1d::operator=(const Interp1d& from) {
     if (this != &from) {
+        delete polator;
+        polator = nullptr;
         x_src = from.x_src;
         y_src = from.y_src;
         fill_value = from.fill_value;
 
-        if (typeid(*from.polator) == typeid(Linear1D)) {
-            polator = new Linear1D();
-        } else if (typeid(*from.polator) == typeid(CubicSpline1D)) {
-            polator = new CubicSpline1D(from.x_src, from.y_src);
-        }  
+        if (from.polator != nullptr) {
+            if (typeid(*from.polator) == typeid(Linear1D)) {
+                polator = new Linear1D();
+            } else if (typeid(*from.polator) == typeid(CubicSpline1D)) {
+                polator = new CubicSpline1D(from.x_src, from.y_src);
+            }
+        }
     }
     return *this;
 };
@@ -106,7 +109,7 @@ double forrocket::interpolate::Interp1d::operator()(const double x) {
 
 std::vector<double> forrocket::interpolate::Interp1d::operator()(const std::vector<double> x) {
     std::vector<double> res;
-    for(int i=0; i < x.size(); ++i) {
+    for(std::size_t i=0; i < x.size(); ++i) {
         res.push_back(polator->polate(x[i], x_src, y_src, fill_value));
     }
     return res;
@@ -126,8 +129,7 @@ Eigen::VectorXd forrocket::interpolate::Interp1d::operator()(const Eigen::Vector
 
 double forrocket::interpolate::Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
     if (x >= x_src[0] && x <= x_src.back()) {  // 内挿
-        // TODO: binary search
-        for (int i=0; i < x_src.size(); ++i) {
+        for (std::size_t i=0; i < x_src.size(); ++i) {
             if (x == x_src[i]) {
                 return y_src[i];
             }
@@ -168,6 +170,7 @@ double forrocket::interpolate::Linear1D::polate(const double& x, const std::vect
             break;
         }
     }
+    return 0.0;
 };
 
 
@@ -205,6 +208,10 @@ forrocket::interpolate::CubicSpline1D::CubicSpline1D(const CubicSpline1D& from) 
 
 forrocket::interpolate::CubicSpline1D& forrocket::interpolate::CubicSpline1D::operator=(const CubicSpline1D& from) {
     if (this != &from) {
+        delete[] a_spline;
+        delete[] b_spline;
+        delete[] c_spline;
+        delete[] d_spline;
         array_size = from.array_size;
         a_spline = new double[from.array_size];
         for (int i=0; i < from.array_size; ++i) {
@@ -228,7 +235,7 @@ forrocket::interpolate::CubicSpline1D& forrocket::interpolate::CubicSpline1D::op
 
 void forrocket::interpolate::CubicSpline1D::SolveSplineCoefficient(const std::vector<double>& x, const std::vector<double>& y) {
     // Tri-Diagonal Matrix Algorithm
-    array_size = x.size();
+    array_size = static_cast<int>(x.size());
     double* h_spline = new double[array_size];
     double* P_tdma = new double[array_size];
     double* Q_tdma = new double[array_size];
@@ -238,27 +245,28 @@ void forrocket::interpolate::CubicSpline1D::SolveSplineCoefficient(const std::ve
     c_spline = new double[array_size];
     d_spline = new double[array_size];
 
-    for (int i=1; i < x.size(); ++i) {
-        h_spline[i] = x[i+1] - x[i];
+    // h_spline[i] = x[i+1] - x[i] for i in [0, array_size-2]
+    for (int i = 0; i < array_size - 1; ++i) {
+        h_spline[i] = x[i + 1] - x[i];
         a_spline[i] = y[i];
     }
-    a_spline[array_size-1] = y[array_size-1];
+    a_spline[array_size - 1] = y[array_size - 1];
     c_spline[0] = 0.0;
-    c_spline[array_size-1] = 0.0;
+    c_spline[array_size - 1] = 0.0;
 
     P_tdma[0] = 0.0;
     Q_tdma[0] = 0.0;
-    for (int i=1; i < array_size; ++i) { 
+    for (int i = 1; i < array_size - 1; ++i) {
         P_tdma[i] = h_spline[i] / (2.0 * (h_spline[i] + h_spline[i-1]) + h_spline[i] * P_tdma[i-1]);
         double d_tdma = (3.0 / h_spline[i]) * (a_spline[i+1] - a_spline[i]) - (3.0 / h_spline[i-1]) * (a_spline[i] - a_spline[i-1]);
         Q_tdma[i] = (d_tdma + h_spline[i] * Q_tdma[i-1]) / (2.0 * (h_spline[i] + h_spline[i-1]) + h_spline[i] * Q_tdma[i-1]);
     }
-    for (int i=array_size-2; i > 0; --i) {
+    for (int i = array_size - 2; i > 0; --i) {
         c_spline[i] = P_tdma[i] * c_spline[i+1] + Q_tdma[i];
     }
-    for (int i=0; i < array_size; ++i) {
+    for (int i = 0; i < array_size - 1; ++i) {
         b_spline[i] = (a_spline[i+1] - a_spline[i]) / h_spline[i] - h_spline[i] / 3.0 * (c_spline[i+1] + 2.0 * c_spline[i]);
-        d_spline[i] = (c_spline[i+1] - c_spline[i] / (3.0 * h_spline[i]));
+        d_spline[i] = (c_spline[i+1] - c_spline[i]) / (3.0 * h_spline[i]);
     }
 
     delete[] h_spline;
@@ -268,7 +276,7 @@ void forrocket::interpolate::CubicSpline1D::SolveSplineCoefficient(const std::ve
 
 
 double forrocket::interpolate::CubicSpline1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
-    int index_target;
+    int index_target = 0;
     if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {
         case 0:  // zero
@@ -285,9 +293,9 @@ double forrocket::interpolate::CubicSpline1D::polate(const double& x, const std:
         }
     }
     else if (x >= x_src[0] && x <= x_src[x_src.size()-1]) {  // 内挿
-        for (int i=0; i < x_src.size(); ++i) {
+        for (std::size_t i=1; i < x_src.size(); ++i) {
             if (x <= x_src[i]) {
-                index_target = i - 1;
+                index_target = static_cast<int>(i) - 1;
                 break;
             }
         }

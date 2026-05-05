@@ -1,186 +1,214 @@
 # Input Style
 
 ```sh
-$ ./ForRocket.exe [option] [solver_config.json]
+./ForRocket [option] solver_config.json
 ```
 
 ## コマンドラインオプション
 
-|  option  |  内容  |
-| ---- | ---- |
-|  -m  |  minimum output. 出力csvファイルのパラメータ数を最小限に減らす。  |
-|  -q  |  進行中の案内メッセージを非表示。  |
-|  --quite  |  同上  |
-|  -h  |  display help. オプションを表示。  |
-|  --help  |  同上  |
-|  -v  |  display version. バージョンを表示。  |
-|  --version  |  同上  |
+| オプション | 内容 |
+|---|---|
+| `-m` | 出力 CSV のカラム数を最小限にする（位置・高度・射程のみ） |
+| `-q` / `--quiet` | 進行メッセージを非表示にする |
+| `-h` / `--help` | ヘルプを表示して終了 |
+| `-v` / `--version` | バージョンを表示して終了 |
 
-## 入力ファイル
+## 入力ファイル一覧
 
-| file | 内容 |
-| ---- | ---- |
-| solver_config.json | ロケット全体に関わるパラメータとステージの指定 |
-|  | 以降のファイルはステージ毎に用意される |
-| stage_config_list.json | 下記の3つのjsonのパス |
-| sequence_of_event.json | フライトシーケンスイベントの有無およびタイミング |
-| rocket_config.json | ステージの構造と空力のパラメータ |
-| engine_config.json | ロケットエンジンに関するパラメータ |
-| | 以降のファイルは上記jsonでそれぞれの"File": true とした時に読まれるファイル|
-| wind.csv | 風の高度分布 |
-| thrust_mdotp.csv | 推力と推進剤質量流量の時間履歴 |
-| attitude.csv | 機体姿勢の時間履歴 |
-| Xcg.csv | 全機重心位置の時間履歴 |
-| Xcp.csv | Mach数と圧力中心位置の関係 |
-| MOI.csv | 全機慣性モーメントの時間履歴 |
-| CA.csv | Mach数と軸力係数(燃焼中)の関係 |
-| CAbo.csv | Mach数と軸力係数(燃焼終了後)の関係 |
-| CNa.csv | Mach数と法線力傾斜の関係 |
-| Cld.csv | Mach数とフィンカント角によるロールモーメント係数の関係 |
-| Clp.csv | Mach数とロールダンピングモーメント係数の関係 |
-| Cmq.csv | Mach数とピッチダンピングモーメント係数の関係 |
-| Cnr.csv | Mach数とヨーダンピングモーメント係数の関係 |
+| ファイル | 内容 |
+|---|---|
+| `solver_config.json` | 打上条件・風・ステージ構成（エントリーポイント） |
+| `stage_config_list.json` | 各ステージの 3 ファイルへのパス |
+| `sequence_of_event.json` | フライトシーケンスイベントの有無とタイミング |
+| `rocket_config.json` | 機体の構造・空力・姿勢制御パラメータ |
+| `engine_config.json` | エンジンのパラメータ |
+| `wind.csv` | 風の高度分布（Enable Wind: true の場合） |
+| `thrust.csv` | 推力・質量流量の時間履歴（Enable Thrust File: true の場合） |
+| `attitude.csv` | 姿勢プログラムの時間履歴（Enable Program Attitude: true の場合） |
+| `Xcg.csv` | 全機重心位置の時間履歴（Enable X-C.G. File: true の場合） |
+| `Xcp.csv` | マッハ数と圧力中心位置の関係（Enable X-C.P. File: true の場合） |
+| `MOI.csv` | 全機慣性モーメントの時間履歴（Enable M.I. File: true の場合） |
+| `CA.csv` / `CAbo.csv` | マッハ数と軸力係数（燃焼中/燃焼後）の関係（Enable CA File: true の場合） |
+| `CNa.csv` | マッハ数と法線力傾斜の関係 |
+| `Cld.csv` | マッハ数とフィンカントロールモーメント係数の関係 |
+| `Clp.csv` | マッハ数とロール減衰モーメント係数の関係 |
+| `Cmq.csv` | マッハ数とピッチ減衰モーメント係数の関係 |
+| `Cnr.csv` | マッハ数とヨー減衰モーメント係数の関係 |
 
-なお、すべてのファイルにおいてファイル名に指定はなく、コマンドライン引数またはjsonファイル内のパスに内容が一致したファイルを配置すればよい。
+すべてのファイルはファイル名に制約はなく、JSON 内のパスと一致したファイルを配置すればよい。
+
+---
 
 ## solver_config.json
 
 ```json
 {
-	"Model ID": "sample",  // モデル名。出力csvのプレフィックスになる
+    "Model ID": "sample",
 
-	"Launch DateTime": "2020/08/23 9:00:00.0",  // 打上日時
-	"Launch Condition": {
-		"Latitude [deg]": 40.242865,  // 打上射点の緯度
-		"Longitude [deg]": 140.01045,  //経度
-		"Height for WGS84 [deg]": 20.0,  // WGS84での海面高度
-		
-		"Azimuth [deg]": 270.0,  // 打上方位角（北から時計まわり）
-		"Elevation [deg]": 85.0,  // 打上上下角
-		
-		"North Velocity [m/s]": 0.0,  // 北方向初期速度
-		"East Velocity [m/s]": 0.0,  // 東方向初期速度
-		"Down Velocity [m/s]": 0.0  // 地球中心方向初期速度
-	},
+    "Launch DateTime": "2020/08/23 9:00:00.0",
+    "Launch Condition": {
+        "Latitude [deg]": 40.242865,
+        "Longitude [deg]": 140.01045,
+        "Height for WGS84 [m]": 20.0,
 
-	"Wind Condition": {
-		"Enable Wind": true,  // 風ファイルの有無
-		"Wind File Path": "sample_wind.csv"  // 風ファイルパス
-	},
+        "Azimuth [deg]": 270.0,
+        "Elevation [deg]": 85.0,
 
-	"Number of Stage": 1,  // ステージ数
-	"Stage1 Config File List": "sample_stage_config_list.json",  // 1段目のstage_config_list.json
-	"Stage2 Config File List": "stage_config_list.json",  // 2段目
-	"Stage3 Config File List": "stage_config_list.json"  // 3段目
+        "North Velocity [m/s]": 0.0,
+        "East Velocity [m/s]": 0.0,
+        "Down Velocity [m/s]": 0.0,
+
+        "Yaw Angular Velocity [deg/s]": 0.0,
+        "Pitch Angular Velocity [deg/s]": 0.0,
+        "Roll Angular Velocity [deg/s]": 0.0
+    },
+
+    "Wind Condition": {
+        "Enable Wind": true,
+        "Wind File Path": "sample_wind.csv"
+    },
+
+    "Number of Stage": 1,
+    "Stage1 Config File List": "sample_config_list_stage1.json",
+    "Stage2 Config File List": "stage_config_list.json",
+    "Stage3 Config File List": "stage_config_list.json"
 }
 ```
+
+| フィールド | 説明 |
+|---|---|
+| `Model ID` | 出力 CSV のファイル名プレフィックス |
+| `Launch DateTime` | 打上日時（UTC）。`"YYYY/MM/DD HH:MM:SS.s"` 形式 |
+| `Height for WGS84 [m]` | WGS84 楕円体基準の射点海抜高度 |
+| `Azimuth [deg]` | 打上方位角（真北から時計回り、deg） |
+| `Elevation [deg]` | 打上上下角（水平が 0°、直上が 90°、deg） |
+| `*Velocity [m/s]` | NED 系での初期速度（通常は 0） |
+| `*Angular Velocity [deg/s]` | 初期機体角速度（ヨー・ピッチ・ロール軸、deg/s） |
+| `Number of Stage` | ステージ数（1〜3） |
+| `Stage{N} Config File List` | 各ステージの設定ファイルリストへのパス |
+
+---
 
 ## stage_config_list.json
 
 ```json
 {
-	"Rocket Configuration File Path": "sample_rocket_config.json",
-	"Engine Configuration File Path": "sample_engine_config.json",
-	"Sequence of Event File Path": "sample_sequence_of_event.json"
+    "Rocket Configuration File Path": "sample_param_rocket.json",
+    "Engine Configuration File Path": "sample_param_engine.json",
+    "Sequence of Event File Path": "sample_sequence_of_event.json"
 }
 ```
+
+---
 
 ## sequence_of_event.json
 
+時刻はすべて **打上時刻（X+0s）を基準とした X+n 秒**。
+
 ```json
-// 時刻は打上げ時をX+0secとした時のX+nの"打上"相対時刻
 {
-  "Flight Start Time [s]": 0.0,  // ステージの飛行開始時刻
-  // 2段目以降は下段の分離時刻に自動修正される
+    "Flight Start Time [s]": 0.0,
 
-  "Engine Ignittion Time [s]": 0.0,  // エンジンスタート時刻
-  // Flight Start Timeよりあとの場合は慣性飛行が続く
-	
-	"Enable Rail-Launcher Launch": true,  // レールランチャからの打上げON/OFF
-	"Rail Launcher": {
-		"Length [m]": 5.0  // ランチャの有効レール長さ
-	},
+    "Engine Ignittion Time [s]": 0.0,
 
-	"Enable Engine Cutoff": false,  // エンジンカットオフのON/OFF
-	"Cutoff": {
-    "Cutoff Time [s]": 0.0  //　カットオフ時刻
-    // この時刻で推力ゼロおよび質量減少が停止
-	},
+    "Enable Rail-Launcher Launch": true,
+    "Rail Launcher": {
+        "Length [m]": 5.0
+    },
 
-	"Enable Program Attitude": false,  // 姿勢制御飛行ON/OFF
-	"Attitude Control": {
-		"Start Time [s]": 0.0,  // 姿勢制御の開始時刻
-		"End Time [s]": 100.0  // 終了時刻
-	},
+    "Enable Engine Cutoff": false,
+    "Cutoff": {
+        "Cutoff Time [s]": 0.0
+    },
 
-	"Enable Stage Separation": false,  // 段間分離ON/OFF
-	"Upper Stage": {
-		"Stage Separation Time [s]": 0.0,  // 分離時刻
-    "Upper Stage Mass [kg]": 100.0  // 上段質量
-    // この質量を下段から減じて下段の落下までを計算する
-	},
+    "Enable Stage Separation": false,
+    "Upper Stage": {
+        "Stage Separation Time [s]": 0.0,
+        "Upper Stage Mass [kg]": 100.0
+    },
 
-	"Enable Despin Control": false,  // デスピン制御ON/OFF
-	"Despin": {
-    "Time [s]": 20.0  // デスピン時刻
-    // この時刻で瞬間的にスピンゼロおよびスピンレートゼロ
-    // ヨーヨーデスピナを想定
-	},
+    "Enable Despin Control": false,
+    "Despin": {
+        "Time [s]": 20.0
+    },
 
-	"Enable Fairing Jettson": false,  // フェアリング投棄ON/OFF
-	"Fairing": {
-		"Jettson Time [s]": 0.0,  // 投棄時刻
-    "Mass [s]": 1.0  // フェアリング質量
-    // この質量を減じて本体の計算を続行する
-	},
+    "Enable Fairing Jettson": false,
+    "Fairing": {
+        "Jettson Time [s]": 0.0,
+        "Mass [kg]": 1.0
+    },
 
-	"Enable Parachute Open": false,  // パラシュート開傘ON/OFF
-	"Parachute": {
-		"Open Time [s]": 30.0,  // 開傘時刻
-		"Enable Forced Apogee Open": false  // 飛行頂点開傘ON/OFF
-	},
+    "Enable Parachute Open": false,
+    "Parachute": {
+        "Open Time [s]": 30.0,
+        "Drag Factor Cd*S [m2]": 0.3,
+        "Enable Forced Apogee Open": false
+    },
 
-	"Enable Secondary Parachute Open": false,  // 第2パラシュート開傘ON/OFF
-	"Secondary Parachute": {
-    "Open Time [s]": 60.0  // 開傘時刻
-    // ドローグシュートに対するメインシュートを想定
-	},
+    "Enable Secondary Parachute Open": false,
+    "Secondary Parachute": {
+        "Open Time [s]": 60.0,
+        "Drag Factor Cd*S [m2]": 1.3
+    },
 
-  "Flight End Time [s]": 100.0,  // 飛行終了時刻
-  // この時刻まで飛行計算が行われる
-	"Time Step [s]": 0.1,  // 出力csvの時間刻み
-  "Enable Auto Terminate SubOrbital Flight": true  // 飛行終了時刻の自動決定ON/OFF
-  // 全力積から着地までのおおよその時間を決定する
-  // ONの場合はFlight End Time [s]は上書きされる
+    "Flight End Time [s]": 100.0,
+    "Time Step [s]": 0.1,
+    "Enable Auto Terminate SubOrbital Flight": true
 }
 ```
+
+| フィールド | 説明 |
+|---|---|
+| `Flight Start Time [s]` | このステージの飛行開始時刻（2 段目以降は前段分離時刻に自動上書き） |
+| `Engine Ignittion Time [s]` | エンジン点火時刻（Flight Start Time より後なら惰性飛行が続く） |
+| `Rail Launcher.Length [m]` | ランチャの有効レール長（レールクリア距離の判定に使用） |
+| `Cutoff Time [s]` | エンジン強制カットオフ時刻 |
+| `Stage Separation Time [s]` | 段間分離時刻 |
+| `Upper Stage Mass [kg]` | 上段質量（この質量を下段から減じて計算継続） |
+| `Despin.Time [s]` | デスピン時刻（瞬時にロール角速度をゼロにする） |
+| `Fairing.Mass [kg]` | フェアリング質量（投棄時にこの質量を減じる） |
+| `Parachute.Drag Factor Cd*S [m2]` | 第 1 パラシュートの CdS 値 |
+| `Enable Forced Apogee Open` | true のとき頂点（鉛直速度符号反転）で自動開傘 |
+| `Secondary Parachute.Drag Factor Cd*S [m2]` | 第 2 パラシュートの CdS 値（ドローグ→メイン想定） |
+| `Time Step [s]` | 出力 CSV の時間刻み |
+| `Enable Auto Terminate SubOrbital Flight` | true のとき全力積から着地予想時刻を自動計算して Flight End Time を上書き |
+
+---
 
 ## rocket_config.json
 
 ```json
 {
-    "Diameter [mm]": 180.0,  // 機体代表直径
-    "Length [mm]": 3900.0,  // 機体代表長さ
+    "Diameter [mm]": 180.0,
+    "Length [mm]": 3900.0,
     "Mass": {
-        "Inert [kg]": 52.5,  // イナート質量
-        "Propellant [kg]": 41.0  // 推進剤質量
+        "Inert [kg]": 52.5,
+        "Propellant [kg]": 41.0
     },
 
-	"Enable Program Attitude": false,  // 姿勢制御ON/OFF
-	// sequence_of_event.jsonでもONである必要がある
-    "Program Attitude File": {
-        "Program Attitude File Path": "attitude.csv"  // 姿勢履歴ファイルパス
+    "Enable Gas Jet": false,
+    "Gas Jet": {
+        "Rolling Moment [N.m]": 5.0,
+        "Duration [s]": 2.5
     },
 
-    "Enable X-C.G. File": false,  // 全機重心位置履歴ファイル有無
+    "Enable Program Attitude": false,
+    "Program Attitude": {
+        "Mode": "Angle",
+        "Enable Yaw":   true,
+        "Enable Pitch": true,
+        "Enable Roll":  true,
+        "File Path": "attitude.csv"
+    },
+
+    "Enable X-C.G. File": false,
     "X-C.G. File": {
-        "X-C.G. File Path": "Xcg.csv"  // 重心位置履歴ファイルパス
+        "X-C.G. File Path": "Xcg.csv"
     },
     "Constant X-C.G.": {
-		"Constant X-C.G. from BodyTail [mm]": 1100.0  // 飛行中一定の全機重心位置(機体後端基準)
-		// ファイル無しの時のみこちらが使われる
+        "Constant X-C.G. from BodyTail [mm]": 1100.0
     },
-    
+
     "Comment M.I.": "Moment of Inertia",
     "Enable M.I. File": false,
     "M.I. File": {
@@ -197,18 +225,16 @@ $ ./ForRocket.exe [option] [solver_config.json]
         "X-C.P. File Path": "Xcp.csv"
     },
     "Constant X-C.P.": {
-		"Constant X-C.P. from BodyTail [mm]": 835.0  // 飛行中一定の圧力中心位置(機体後端基準)
+        "Constant X-C.P. from BodyTail [mm]": 835.0
     },
 
-	"X-ThrustLoadingPoint from BodyTail [mm]": 300.0,  // 推力印加位置(機体後端基準)
-	// 推力ミスアライメントの計算に使用する
+    "X-ThrustLoadingPoint from BodyTail [mm]": 300.0,
 
     "Comment CA": "Axial Force Coefficient",
     "Enable CA File": true,
     "CA File": {
         "CA File Path": "sample_CA.csv",
-		"BurnOut CA File Path": "sample_CA.csv"
-		// 燃焼終了前後で軸力係数を変える場合は別ファイルを指定する
+        "BurnOut CA File Path": "sample_CA.csv"
     },
     "Constant CA": {
         "Constant CA [-]": 0.4,
@@ -225,11 +251,10 @@ $ ./ForRocket.exe [option] [solver_config.json]
     },
 
     "Comment Cld": "Roll Force div FinCantAngle Coefficient",
-	"Fin Cant Angle [deg]": 0.0,  // フィン1枚あたりのフィンカント角
-	// ロール回転が正となる角度が正のカント角
+    "Fin Cant Angle [deg]": 0.0,
     "Enable Cld File": false,
     "Cld File": {
-        "CldFile Path": "Cld.csv"
+        "Cld File Path": "Cld.csv"
     },
     "Constant Cld": {
         "Constant Cld [1/rad]": 0.0
@@ -261,193 +286,149 @@ $ ./ForRocket.exe [option] [solver_config.json]
     "Constant Cnr": {
         "Constant Cnr [-]": 7.0
     }
-
 }
 ```
+
+### Gas Jet（ガスジェット）
+
+スピン安定用コールドガスジェットの設定。ランチクリア直後から `Duration [s]` 秒間、機体 +X 軸方向のロールモーメントを印加する。
+
+| フィールド | 説明 |
+|---|---|
+| `Rolling Moment [N.m]` | ロールモーメント [N·m]。正値でスピンアップ方向 |
+| `Duration [s]` | ランチクリアからの作動時間 [s] |
+
+### Program Attitude（姿勢制御プログラム）
+
+CSV ファイルで与えた姿勢（または角速度）に機体を追従させる。軸ごとに制御の有効/無効を設定可能。
+
+| フィールド | 説明 |
+|---|---|
+| `Mode` | `"Angle"`: 角度追従 / `"Rate"`: 角速度追従 |
+| `Enable Yaw` | ヨー軸制御の有効/無効（false の場合、ヨーは空力に従い自由に変化） |
+| `Enable Pitch` | ピッチ軸制御の有効/無効 |
+| `Enable Roll` | ロール軸制御の有効/無効 |
+| `File Path` | 姿勢プログラム CSV ファイルのパス |
+
+> **例**: ロール制御システムのみ搭載し、ピッチ・ヨーを無制御とする場合は `Enable Roll: true`、`Enable Yaw: false`、`Enable Pitch: false` と設定する。これは小型ロケットでよくある構成。
+
+### 空力係数の入力パターン
+
+各係数は「定数」または「マッハ数の関数（CSV）」として与えられる。CSVの場合、範囲外は先頭/末尾の値を外挿する（step-hold）。
+
+| 係数 | 説明 |
+|---|---|
+| `CA` | 軸力係数（燃焼中・燃焼後で別指定可） |
+| `CNa` | 法線力傾斜 [1/rad] |
+| `Cld` | フィンカント角によるロールモーメント係数 [1/rad] |
+| `Fin Cant Angle [deg]` | フィン 1 枚あたりのカント角（ロール正方向が正） |
+| `Clp` | ロール減衰モーメント係数 [-] |
+| `Cmq` | ピッチ減衰モーメント係数 [-] |
+| `Cnr` | ヨー減衰モーメント係数 [-] |
+
+重心位置・圧力中心位置・慣性モーメントも同様に定数/時間変化 CSV で指定。
+
+---
 
 ## engine_config.json
 
 ```json
 {
-    "Nozzle Exit Diameter [mm]": 100.0,  // ノズル出口直径
+    "Nozzle Exit Diameter [mm]": 100.0,
 
-    "Enable Thrust File": true,  // 推力履歴ファイル有無
+    "Enable Thrust File": true,
     "Thrust File": {
-		"Thrust at vacuum File Path": "sample_thrust.csv"  // 推力履歴ファイルパス
-		// 推力は真空中推力を[N]の単位
+        "Thrust at vacuum File Path": "sample_thrust.csv"
     },
     "Constant Thrust": {
-		// ファイル無しの時のみ使用する矩形推力パラメータ
-        "Thrust at vacuum [N]": 5780.0,  // 真空中推力
-        "Propellant Mass Flow Rate [kg/s]": 3.0,  // 推進剤質量流量
-        "Burn Duration [sec]": 13.7  // 燃焼時間
+        "Thrust at vacuum [N]": 5780.0,
+        "Propellant Mass Flow Rate [kg/s]": 3.0,
+        "Burn Duration [sec]": 13.7
     },
 
-    "Enable Engine Miss Alignment": false,  // 推力ミスアライメントON/OFF
+    "Enable Engine Miss Alignment": false,
     "Engine Miss-Alignment": {
-		// 機体座標での角度と同じ定義で推力軸を傾ける
-        "y-Axis Angle [deg]": 0.0,  // ピッチ方向に推力軸を傾ける(ピッチモーメント)
-        "z-Axis Angle [deg]": 0.0  // ヨー方向に推力軸を傾ける(ヨーモーメント)
+        "y-Axis Angle [deg]": 0.0,
+        "z-Axis Angle [deg]": 0.0
     }
 }
 ```
 
-## wind.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は無風として扱われる。
-データ点間は線形で補間される。
+| フィールド | 説明 |
+|---|---|
+| `Nozzle Exit Diameter [mm]` | ノズル出口直径（圧力推力補正に使用） |
+| `Enable Thrust File` | true: thrust.csv を使用 / false: 矩形推力（Constant Thrust を使用） |
+| `Thrust at vacuum` | 真空中推力 [N]（実効推力 = 真空推力 − 大気圧 × 出口面積） |
+| `Propellant Mass Flow Rate [kg/s]` | 定常質量流量（Constant Thrust モード時） |
+| `Burn Duration [sec]` | 燃焼時間（Constant Thrust モード時） |
+| `Engine Miss-Alignment` | 推力軸ミスアライメント角（ピッチ・ヨー方向、deg） |
 
-|  海面高度 [m]  |  東西方向風速(東への風が正) [m/s]  |  南北方向風速(北への風が正) [m/s]  |
-| ---- | ---- | ---- |
-|  0.0  |  2.0  | -3.0 |
-|  300.0  | 3.2 | -4.1 |
-| ... | ... | ... |
-| 12000 | 30.0 | -50.0 |
+---
 
-## thrust_mdotp.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は推力および質量流量ゼロとして扱われる。
-データ点間は線形で補間される。
+## CSV ファイル仕様
 
-|  点火からの時間 [s]  |  真空中推力 [N]  |  推進剤質量流量 [kg/s]  |
-| ---- | ---- | ---- |
-|  0.0  |  0.0  | 0.0 |
-|  0.1  | 3000.0 | 1.5 |
-|  0.2  | 6000.0 | 3.0 |
-| ... | ... | ... |
-| 30.0 | 0.0 | 0.0 |
+すべての CSV ファイルは**1行目をヘッダとして読み飛ばす**。データ点間は線形補間。
 
-## attitude.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+### wind.csv
 
-|  打ち上げからの時刻 X+ [s]  |  方位角(北から時計回り) [deg]  | 上下角 [deg] | ロール角 [deg] |
-| ---- | ---- | ---- | ---- |
-|  0.0  | 172.0 | 88.0 | 0.0 |
-|  1.0  | 175.5 | 87.0 | 0.0 |
-| ... | ... | ... |
-| 30.0 | 186.2 | 62.9 | 0.0 |
+| 列 1 | 列 2 | 列 3 |
+|---|---|---|
+| 海面高度 [m] | 東西方向風速（東が正）[m/s] | 南北方向風速（北が正）[m/s] |
 
-## Xcg.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+ファイル範囲外は無風（0）として扱う。
 
-|  打ち上げからの時刻 X+ [s]  |  全機重心位置(機体後端基準) [m]  |
-| ---- | ---- |
-|  0.0  | 1.53 |
-|  1.0  | 1.62 |
-| ... | ... | ... |
-| 30.0 | 2.19 |
+### thrust.csv（推力ファイル）
 
+| 列 1 | 列 2 | 列 3 |
+|---|---|---|
+| 点火からの時間 [s] | 真空中推力 [N] | 推進剤質量流量 [kg/s] |
 
-## Xcp.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+ファイル範囲外は推力・質量流量ともにゼロ。
 
-|  Mach数 [-]  |  圧力中心位置(機体後端基準) [m]  |
-| ---- | ---- |
-|  0.0  | 1.3 |
-|  0.4  | 1.15 |
-| ... | ... | ... |
-| 3.0 | 2.02 |
+### attitude.csv（姿勢プログラム）
 
+**角度モード** (`"Mode": "Angle"`):
 
-## MOI.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+| 列 1 | 列 2 | 列 3 | 列 4 |
+|---|---|---|---|
+| 打上からの時刻 [s] | 方位角（北から時計回り）[deg] | 上下角 [deg] | ロール角 [deg] |
 
-|  打ち上げからの時刻 X+ [s]  |  ヨー回転慣性モーメント [kg-m2]  | ピッチ回転慣性モーメント [kg-m2] | ロール回転慣性モーメント [kg-m2] |
-| ---- | ---- | ---- | ---- |
-|  0.0  | 300.0 | 300.0 | 15.0 |
-|  1.0  | 299.3 | 299.3 | 14.3 |
-| ... | ... | ... |
-| 30.0 | 186.2 | 186.2 | 9.8 |
+**レートモード** (`"Mode": "Rate"`):
 
-## CA.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+| 列 1 | 列 2 | 列 3 | 列 4 |
+|---|---|---|---|
+| 打上からの時刻 [s] | ヨー角速度 [deg/s] | ピッチ角速度 [deg/s] | ロール角速度 [deg/s] |
 
-|  Mach数 [-]  |  軸力係数(燃焼中) [-]  |
-| ---- | ---- |
-|  0.0  | 0.4 |
-|  0.4  | 0.41 |
-| ... | ... | ... |
-| 3.0 | 0.5 |
+ファイル範囲外は先頭/末尾の値を外挿（step-hold）。
 
-## CAbo.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+### Xcg.csv（重心位置）
 
-|  Mach数 [-]  |  軸力係数(燃焼終了後) [-]  |
-| ---- | ---- |
-|  0.0  | 0.42 |
-|  0.4  | 0.45 |
-| ... | ... | ... |
-| 3.0 | 0.59 |
+| 列 1 | 列 2 |
+|---|---|
+| 打上からの時刻 [s] | 重心位置（機体後端基準）[m] |
 
-## CNa.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+### Xcp.csv（圧力中心位置）
 
-|  Mach数 [-]  |  法線力傾斜 [1/rad]  |
-| ---- | ---- |
-|  0.0  | 8.2 |
-|  0.4  | 8.2 |
-| ... | ... | ... |
-| 3.0 | 6.2 |
+| 列 1 | 列 2 |
+|---|---|
+| マッハ数 [-] | 圧力中心位置（機体後端基準）[m] |
 
-## Cld.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+### MOI.csv（慣性モーメント）
 
-|  Mach数 [-]  |  ロールモーメント係数 [1/rad]  |
-| ---- | ---- |
-|  0.0  | 0.5 |
-|  0.4  | 0.51 |
-| ... | ... | ... |
-| 3.0 | 0.43 |
+| 列 1 | 列 2 | 列 3 | 列 4 |
+|---|---|---|---|
+| 打上からの時刻 [s] | ヨー軸慣性モーメント [kg·m²] | ピッチ軸慣性モーメント [kg·m²] | ロール軸慣性モーメント [kg·m²] |
 
-## Clp.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+### CA.csv / CAbo.csv（軸力係数）
 
-|  Mach数 [-]  |  ロール減衰モーメント係数 [-]  |
-| ---- | ---- |
-|  0.0  | 0.03 |
-|  0.4  | 0.033 |
-| ... | ... | ... |
-| 3.0 | 0.027 |
+| 列 1 | 列 2 |
+|---|---|
+| マッハ数 [-] | 軸力係数 [-] |
 
-## Cmq.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
+燃焼中と燃焼後で別ファイルを指定可能。
 
-|  Mach数 [-]  |  ピッチ減衰モーメント係数 [-]  |
-| ---- | ---- |
-|  0.0  | 0.6 |
-|  0.4  | 0.61 |
-| ... | ... | ... |
-| 3.0 | 0.58 |
+### CNa / Cld / Clp / Cmq / Cnr .csv（各空力係数）
 
-## Cnr.csv
-1行目はヘッダ行として読み込まれない。
-ファイル範囲外は先頭および後尾の値が適用される。
-データ点間は線形で補間される。
-
-|  Mach数 [-]  |  ヨー減衰モーメント係数 [-]  |
-| ---- | ---- |
-|  0.0  | 0.6 |
-|  0.4  | 0.61 |
-| ... | ... | ... |
-| 3.0 | 0.58 |
-
+| 列 1 | 列 2 |
+|---|---|
+| マッハ数 [-] | 係数値 |

@@ -8,6 +8,6 @@
 
 #include "mass.hpp"
 
-double forrocket::Mass::Sum() {
+double forrocket::Mass::Sum() const {
     return inert + propellant;
 };

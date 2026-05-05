@@ -14,10 +14,11 @@ forrocket::Moment::Moment() {
     aero_force << 0.0, 0.0, 0.0;
     aero_dumping << 0.0, 0.0, 0.0;
     jet_dumping << 0.0, 0.0, 0.0;
+    gas_jet << 0.0, 0.0, 0.0;
 };
 
-Eigen::Vector3d forrocket::Moment::Sum() {
+Eigen::Vector3d forrocket::Moment::Sum() const {
     Eigen::Vector3d sum;
-    sum = gyro + thrust + aero_force + aero_dumping + jet_dumping;
+    sum = gyro + thrust + aero_force + aero_dumping + jet_dumping + gas_jet;
     return sum;
 };

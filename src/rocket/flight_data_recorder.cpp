@@ -184,6 +184,9 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         ofs << "Mx-jetdump [Nm],";
         ofs << "My-jetdump [Nm],";
         ofs << "Mz-jetdump [Nm],";
+        ofs << "Mx-gasjet [Nm],";
+        ofs << "My-gasjet [Nm],";
+        ofs << "Mz-gasjet [Nm],";
         ofs << "Mx-gyroeffect [Nm],";
         ofs << "My-gyroeffect [Nm],";
         ofs << "Mz-gyroeffect [Nm],";
@@ -219,8 +222,7 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
 
     double g0 = gravity(0.0);
     ofs << std::fixed;
-    for (int i=0; i < countup_burn_time.size(); ++i) {
-        double t = countup_burn_time[i];
+    for (std::size_t i=0; i < countup_burn_time.size(); ++i) {
         double alt = position[i].LLH(2);
         EnvironmentAir air(alt);
 
@@ -315,6 +317,9 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(8) << moment[i].jet_dumping(0) << ",";
             ofs << std::setprecision(8) << moment[i].jet_dumping(1) << ",";
             ofs << std::setprecision(8) << moment[i].jet_dumping(2) << ",";
+            ofs << std::setprecision(8) << moment[i].gas_jet(0) << ",";
+            ofs << std::setprecision(8) << moment[i].gas_jet(1) << ",";
+            ofs << std::setprecision(8) << moment[i].gas_jet(2) << ",";
             ofs << std::setprecision(8) << moment[i].gyro(0) << ",";
             ofs << std::setprecision(8) << moment[i].gyro(1) << ",";
             ofs << std::setprecision(8) << moment[i].gyro(2) << ",";
@@ -331,7 +336,7 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(8) << attitude[i].quaternion(1) << ",";
             ofs << std::setprecision(8) << attitude[i].quaternion(2) << ",";
             ofs << std::setprecision(8) << attitude[i].quaternion(3) << ",";
-            ofs << std::setprecision(8) << rad2deg(attitude[i].euler_angle(0)) << ",";  // [deg]
+            ofs << std::setprecision(8) << std::fmod(rad2deg(attitude[i].euler_angle(0)) + 360.0, 360.0) << ",";  // [deg] [0, 360)
             ofs << std::setprecision(8) << rad2deg(attitude[i].euler_angle(1)) << ",";  // [deg]
             ofs << std::setprecision(8) << rad2deg(attitude[i].euler_angle(2)) << ",";  // [deg]
         }

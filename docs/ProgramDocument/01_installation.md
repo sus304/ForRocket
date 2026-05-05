@@ -1,75 +1,102 @@
 # Installation
+
 ## 動作環境
-ForRocketの開発はWindows10Pro(64bit)+Cygwin(v3.1.4 64bit)で行っている。
-上記環境に関わらず、Linuxライクな環境であれば動作するはずである。
-VisualStudioなど純Windows上でのコンパイルは可能なはずだが、検証はしていない。
 
-以下、()内に開発時点で使用しているver.を示している。
+| 環境 | 用途 |
+|---|---|
+| WSL2 (Ubuntu 20.04 以降) | 開発・デバッグ・Linux バイナリのビルド |
+| WSL2 + MinGW-w64 | Windows 用バイナリのクロスコンパイル |
+| Windows (実行のみ) | 生成した `ForRocket.exe` をそのまま実行可能 |
 
-## 必要ライブラリ
-### boost(v1.70.0)
-常微分方程式のソルバとしてboost::odeint(v2.2.0)を使用している。
+Windows ネイティブでのコンパイルは検証していない。
 
-boostのインストール手順は[公式サイト]("https://www.boost.org/")や[こちら]("https://boostjp.github.io/howtobuild.html")などを参照すること。なお、odeintはヘッダオンリーライブラリのためコンパイルは不要である。
+## 必要なツール・ライブラリ
 
-License:Boost Software License
+### ビルドツール
 
-### Eigen(v3.3.7)
-ベクトル・行列計算ライブラリとしてEigenを使用している。
+| ツール | 最低バージョン | 備考 |
+|---|---|---|
+| CMake | 3.13 | ビルドシステム |
+| g++ / GCC | 7 以降 | C++11 対応必須 |
+| MinGW-w64 (オプション) | — | Windows 向けクロスコンパイル用 |
 
-[公式サイト]("http://eigen.tuxfamily.org/")より入手できる。
-Eigenはヘッダオンリーライブラリのためコンパイル不要である。
+### 外部ライブラリ（要インストール）
 
-License:Mozilla Public License v2.0
+| ライブラリ | バージョン | 用途 | ライセンス |
+|---|---|---|---|
+| boost (boost::odeint) | 1.70 以降 | 常微分方程式ソルバ | Boost Software License |
 
-### json(v3.7.3)
-jsonファイルのパースに使用している。
+boost は `apt` 等でインストールする:
+```sh
+sudo apt install libboost-dev
+```
 
-[githubリポジトリ]("https://github.com/nlohmann/json")より取得する。
+### 同梱ライブラリ（`lib/` ディレクトリに含まれる）
 
-License:MIT License
+| ライブラリ | バージョン | 用途 | ライセンス |
+|---|---|---|---|
+| Eigen | 3.3.7 | ベクトル・行列計算 | Mozilla Public License v2.0 |
+| nlohmann/json | 3.7.3 | JSON パース | MIT License |
 
-### gcc(v7.4.0)
-プログラムはC++11で記述されているため、これに対応したコンパイラを用意すること。
-gcc以外のコンパイルは検証していない。
+これらはリポジトリに含まれているため、別途インストール不要。
 
-### make(v4.2.1)
-makefileによる自動コンパイルに対応している。
+## ForRocket のビルド
 
-
-## ForRocketインストール
-githubよりソースファイルを取得しコンパイルする。
-
-デフォルトでは必要ライブラリがlibフォルダに格納されていることとしているので、ライブラリインストール場所に応じてmakefileのINCLUDESを変更すること。
+### ソースの取得
 
 ```sh
-$ git clone https://github.com/sus304/ForRocket.git
-$ cd ForRocket
-$ make release
+git clone https://github.com/sus304/ForRocket.git
+cd ForRocket
+```
+
+### Linux バイナリのビルド
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+# 生成物: build/ForRocket
+```
+
+### Windows バイナリのクロスコンパイル（WSL2 上）
+
+MinGW-w64 のインストール:
+```sh
+sudo apt install mingw-w64
+```
+
+ビルド:
+```sh
+cmake -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win
+# 生成物: build-win/ForRocket.exe（スタティックリンク済み、Windows 側でランタイム DLL 不要）
+```
+
+### Windows 用パッケージの作成
+
+```sh
+bash build_package.sh
+# カレントディレクトリに ForRocket_v{ver}_{datetime}.zip が生成される
+# 内容: ForRocket.exe + examples/ の各サンプルファイル
 ```
 
 ## サンプル計算
-デフォルトではプロジェクト内binフォルダに実行ファイルが生成される。
-生成された実行ファイルに引数でsolver_config.jsonを与えることで軌道計算が行われる。
 
-ここではCygwinでの実行例を示す。環境に応じて拡張子など変更すること。
 ```sh
-$ cd bin
-$ ./ForRocket.exe sample_solver_config.json
+cd examples
+../build/ForRocket sample_config_solver.json
 ```
 
-実行した後、以下の表示とともにsample_stage1_flight_logが生成されればコンパイルが正常に終了している。
+正常に終了すると以下のように表示され、`sample_stage1_flight_log.csv` が生成される:
 
-```sh
-$ ./ForRocket.exe sample_solver_config.json
-ForRocket v4.1.0 Contact.
+```
+ForRocket v4.2.0 Contact.
 Solver Start.
 Solver Terminate.
 Export Result ...
-Export Compleate.
+Export Complete.
 
-Running Time: 2904 msec
+Running Time: 123 msec
 Good Day.
 ```
 
-計算は実行ファイルと入力jsonファイルのみに依存する。binフォルダから任意のディレクトリに移動しても構わない。
+計算は実行バイナリと入力 JSON ファイルのみに依存する。任意のディレクトリから実行可能（出力は実行ディレクトリに生成される）。
