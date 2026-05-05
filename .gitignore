@@ -4,6 +4,23 @@ lib/Eigen/
 lib/boost/
 lib/json.hpp
 build/
+build-win/
+build_release/
+docs/TechnicalDocument/
+docs/ai_io_spec.md
+docs/workbench_handoff.md
+
+# Package outputs
+ForRocket_v*/
+*.zip
+
+# Claude Code project settings (IDE personal tool)
+.claude/
+
+# Simulation output CSVs in examples/
+examples/*_flight_log.csv
+examples/debug_*.csv
+examples/test_*.csv
 
 # Compiled Object files
 *.slo
