@@ -26,8 +26,8 @@ namespace forrocket {
             Eigen::Vector3d getNED(const double altitude);
 
         private:
-            InterpolateParameter wind_from_north;
-            InterpolateParameter wind_from_east;
+            InterpolateParameter wind_northward;
+            InterpolateParameter wind_eastward;
 
     };
 }
