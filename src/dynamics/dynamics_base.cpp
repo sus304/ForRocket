@@ -49,7 +49,7 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroForceMoment(Rocket* p_rocket) {
 
     Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_CP, 0.0, 0.0);
     moment_aero = p_rocket->force.aero.cross(moment_arm);
-    moment_aero[0] = p_rocket->dynamic_pressure * p_rocket->Cld * p_rocket->area * p_rocket->length * p_rocket->cant_angle_fin;
+    moment_aero[0] = p_rocket->dynamic_pressure * p_rocket->Cld * p_rocket->area * p_rocket->diameter * p_rocket->cant_angle_fin;
 
     return moment_aero;
 };
@@ -65,7 +65,7 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroDampingMoment(Rocket* p_rocket) {
     }
 
     Eigen::Vector3d coefficient_aero_dumping(p_rocket->Clp, p_rocket->Cmq, p_rocket->Cnr);
-    moment_aero_dumping = p_rocket->dynamic_pressure * coefficient_aero_dumping.array() * p_rocket->area * std::pow(p_rocket->length, 2)
+    moment_aero_dumping = p_rocket->dynamic_pressure * coefficient_aero_dumping.array() * p_rocket->area * std::pow(p_rocket->diameter, 2)
                             / (2.0 * airspeed) * p_rocket->angular_velocity.array();
 
     return moment_aero_dumping;
