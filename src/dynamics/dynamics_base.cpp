@@ -2,7 +2,7 @@
 // Project Name    : ForRocket
 // File Name       : dynamics_base.cpp
 // Creation Date   : 2019/10/20
- 
+
 // Copyright © 2019 Susumu Tanaka. All rights reserved.
 // ******************************************************
 
@@ -39,7 +39,7 @@ Eigen::Vector3d forrocket::DynamicsBase::ThrustMoment(Rocket* p_rocket) {
 
     Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_thrust, 0.0, 0.0);
     moment_thrust = p_rocket->force.thrust.cross(moment_arm);
-    
+
     return moment_thrust;
 };
 
@@ -49,7 +49,7 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroForceMoment(Rocket* p_rocket) {
 
     Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_CP, 0.0, 0.0);
     moment_aero = p_rocket->force.aero.cross(moment_arm);
-    moment_aero[0] = p_rocket->dynamic_pressure * p_rocket->Cld * p_rocket->area * p_rocket->length * p_rocket->cant_angle_fin * 4;
+    moment_aero[0] = p_rocket->dynamic_pressure * p_rocket->Cld * p_rocket->area * p_rocket->length * p_rocket->cant_angle_fin;
 
     return moment_aero;
 };
