@@ -176,9 +176,27 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock,
             if (sin_elv > 1.0e-6) {
                 double distance = altitude_change / sin_elv;
                 if (distance >= length_launcher_rail) {
+                    // adaptive stepperの大ステップによるオーバーシュートを補正するため
+                    // dense outputの二分法で正確なランチクリア時刻を求める
+                    state_t x_lc;
+                    state_t dx_dummy;
+                    double t_lo = t_prev, t_hi = t_curr;
+                    for (int iter = 0; iter < 20; ++iter) {
+                        double t_mid = 0.5 * (t_lo + t_hi);
+                        stepper.calc_state(t_mid, x_lc);
+                        dynamics(x_lc, dx_dummy, t_mid);
+                        double dist_mid = (rocket.position.LLH(2) - altitude_init) / sin_elv;
+                        if (dist_mid < length_launcher_rail) t_lo = t_mid;
+                        else t_hi = t_mid;
+                    }
+                    double t_lc = 0.5 * (t_lo + t_hi);
+                    stepper.calc_state(t_lc, x_lc);
                     dynamics.SetRegime(FlightDynamics::kInAir);
-                    rocket.time_launch_clear = t_curr;
-                    stepper.initialize(x_curr, t_curr, time_step);
+                    rocket.time_launch_clear = t_lc;
+                    stepper.initialize(x_lc, t_lc, time_step);
+                    t_curr = stepper.current_time();
+                    x_curr = stepper.current_state();
+                    dynamics(x_curr, dx_dummy, t_curr);
                 }
             }
         }
