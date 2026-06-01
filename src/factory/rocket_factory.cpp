@@ -73,6 +73,17 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     } else {
         rocket.setLengthCG(InterpolateParameter(jc.getSubItem("Constant X-C.G.").getDouble("Constant X-C.G. from BodyTail [mm]") / 1e3));
     }
+    // Lateral CG offset (constant only; applies in both file and constant X-CG modes).
+    // Prefer the dedicated "C.G. Offset" block; fall back to legacy nested keys under "Constant X-C.G." for backward compatibility.
+    if (jc.contains("C.G. Offset")) {
+        auto jc_off = jc.getSubItem("C.G. Offset");
+        if (jc_off.contains("y-C.G. Offset [mm]")) rocket.y_CG = jc_off.getDouble("y-C.G. Offset [mm]") / 1e3;
+        if (jc_off.contains("z-C.G. Offset [mm]")) rocket.z_CG = jc_off.getDouble("z-C.G. Offset [mm]") / 1e3;
+    } else {
+        auto jc_cg = jc.getSubItem("Constant X-C.G.");
+        if (jc_cg.contains("y-C.G. Offset [mm]")) rocket.y_CG = jc_cg.getDouble("y-C.G. Offset [mm]") / 1e3;
+        if (jc_cg.contains("z-C.G. Offset [mm]")) rocket.z_CG = jc_cg.getDouble("z-C.G. Offset [mm]") / 1e3;
+    }
 
     if (jc.getBool("Enable M.I. File")) {
         auto MOI_log = LoadCsvLog(jc.getSubItem("M.I. File").getString("M.I. File Path"));
@@ -88,6 +99,26 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
         rocket.setInertiaTensor(roll, pitch, yaw);
     }
 
+    // Product of Inertia (optional; defaults to zero for backward compatibility)
+    {
+        InterpolateParameter Ixy(0.0), Ixz(0.0), Iyz(0.0);
+        if (jc.contains("Enable Product of Inertia File") && jc.getBool("Enable Product of Inertia File")) {
+            auto jc_poi = jc.getSubItem("Product of Inertia File");
+            auto Ixy_log = LoadCsvLog(jc_poi.getString("Ixy File Path"));
+            auto Ixz_log = LoadCsvLog(jc_poi.getString("Ixz File Path"));
+            auto Iyz_log = LoadCsvLog(jc_poi.getString("Iyz File Path"));
+            Ixy = InterpolateParameter(Ixy_log[0], Ixy_log[1], "same");
+            Ixz = InterpolateParameter(Ixz_log[0], Ixz_log[1], "same");
+            Iyz = InterpolateParameter(Iyz_log[0], Iyz_log[1], "same");
+        } else if (jc.contains("Enable Product of Inertia") && jc.getBool("Enable Product of Inertia")) {
+            auto jc_poi = jc.getSubItem("Constant Product of Inertia");
+            Ixy = InterpolateParameter(jc_poi.getDouble("Ixy [kg-m2]"));
+            Ixz = InterpolateParameter(jc_poi.getDouble("Ixz [kg-m2]"));
+            Iyz = InterpolateParameter(jc_poi.getDouble("Iyz [kg-m2]"));
+        }
+        rocket.setInertiaProduct(Ixy, Ixz, Iyz);
+    }
+
     if (jc.getBool("Enable X-C.P. File")) {
         auto Xcp_log = LoadCsvLog(jc.getSubItem("X-C.P. File").getString("X-C.P. File Path"));
         rocket.setLengthCP(InterpolateParameter(Xcp_log[0], Xcp_log[1], "same"));
@@ -96,6 +127,8 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     }
   
     rocket.length_thrust = jc.getDouble("X-ThrustLoadingPoint from BodyTail [mm]") / 1e3;
+    if (jc.contains("y-ThrustLoadingPoint Offset [mm]")) rocket.y_thrust_offset = jc.getDouble("y-ThrustLoadingPoint Offset [mm]") / 1e3;
+    if (jc.contains("z-ThrustLoadingPoint Offset [mm]")) rocket.z_thrust_offset = jc.getDouble("z-ThrustLoadingPoint Offset [mm]") / 1e3;
 
     if (jc.getBool("Enable CA File")) {
         auto CA_log = LoadCsvLog(jc.getSubItem("CA File").getString("CA File Path"));

@@ -26,6 +26,7 @@ class JsonControl {
         int getInt(std::string key);
         double getDouble(std::string key);
         bool getBool(std::string key);
+        bool contains(std::string key);
         JsonControl getSubItem(std::string key);
     
     private:

@@ -28,6 +28,7 @@
 | `Xcg.csv` | 全機重心位置の時間履歴（Enable X-C.G. File: true の場合） |
 | `Xcp.csv` | マッハ数と圧力中心位置の関係（Enable X-C.P. File: true の場合） |
 | `MOI.csv` | 全機慣性モーメントの時間履歴（Enable M.I. File: true の場合） |
+| `Ixy.csv` / `Ixz.csv` / `Iyz.csv` | 慣性乗積の時間履歴（Enable Product of Inertia File: true の場合） |
 | `CA.csv` / `CAbo.csv` | マッハ数と軸力係数（燃焼中/燃焼後）の関係（Enable CA File: true の場合） |
 | `CNa.csv` | マッハ数と法線力傾斜の関係 |
 | `Cld.csv` | マッハ数とフィンカントロールモーメント係数の関係 |
@@ -208,6 +209,10 @@
     "Constant X-C.G.": {
         "Constant X-C.G. from BodyTail [mm]": 1100.0
     },
+    "C.G. Offset": {
+        "y-C.G. Offset [mm]": 0.0,
+        "z-C.G. Offset [mm]": 0.0
+    },
 
     "Comment M.I.": "Moment of Inertia",
     "Enable M.I. File": false,
@@ -220,6 +225,20 @@
         "Roll Axis [kg-m2]": 0.5
     },
 
+    "Comment P.O.I.": "Product of Inertia (for spin stability analysis)",
+    "Enable Product of Inertia": false,
+    "Constant Product of Inertia": {
+        "Ixy [kg-m2]": 0.0,
+        "Ixz [kg-m2]": 0.0,
+        "Iyz [kg-m2]": 0.0
+    },
+    "Enable Product of Inertia File": false,
+    "Product of Inertia File": {
+        "Ixy File Path": "Ixy.csv",
+        "Ixz File Path": "Ixz.csv",
+        "Iyz File Path": "Iyz.csv"
+    },
+
     "Enable X-C.P. File": false,
     "X-C.P. File": {
         "X-C.P. File Path": "Xcp.csv"
@@ -229,6 +248,8 @@
     },
 
     "X-ThrustLoadingPoint from BodyTail [mm]": 300.0,
+    "y-ThrustLoadingPoint Offset [mm]": 0.0,
+    "z-ThrustLoadingPoint Offset [mm]": 0.0,
 
     "Comment CA": "Axial Force Coefficient",
     "Enable CA File": true,
@@ -288,6 +309,27 @@
     }
 }
 ```
+
+### スピン安定解析用パラメータ
+
+スピン中のロケットでは、推力作用点・重心の機軸からの横方向ずれ（CG/推力点オフセット）、推力ベクトルの角度ずれ（ミスアライメント角）、および主軸と機軸の不一致（慣性乗積）が動的不安定（コーニング、動的アンバランス）を引き起こす。これらを再現するため以下のパラメータが用意されている。すべて省略時は 0（従来挙動と一致）。
+
+| フィールド | 説明 |
+|---|---|
+| `C.G. Offset` → `y-C.G. Offset [mm]` / `z-C.G. Offset [mm]` | 重心の機軸（body X 軸）からの横方向オフセット（定数のみ。X 軸のファイル入力モードでも併用される） |
+| `y-ThrustLoadingPoint Offset [mm]` / `z-ThrustLoadingPoint Offset [mm]` | 推力作用点の機軸からの横方向オフセット |
+| `Engine Miss-Alignment` の `y-Axis Angle` / `z-Axis Angle` | 推力ベクトルの機軸に対する角度ずれ（engine_config.json 側、既存） |
+| `Enable Product of Inertia` | true: 定数の慣性乗積 Ixy/Ixz/Iyz を使用 |
+| `Constant Product of Inertia` | Ixy, Ixz, Iyz [kg·m²]（慣性テンソル off-diagonal、主軸不一致を表現） |
+| `Enable Product of Inertia File` | true: 時間履歴 CSV から慣性乗積を読み込む |
+| `Product of Inertia File` | Ixy/Ixz/Iyz の CSV パス（1列目: 時刻 [s], 2列目: 値 [kg·m²]） |
+
+CG・推力点オフセットは定数のみ対応。慣性乗積は定数/時系列の両方に対応する。
+
+スピン付与の手段は以下を任意に組み合わせ可能：
+- フィンカント（既存）: `Fin Cant Angle [deg]` + `Cld`
+- ガスジェット（既存、後述）: ランチクリア後にロールトルクを印加
+- 初期スピンレート: Program Attitude (Rate mode) でロールレートを与える
 
 ### Gas Jet（ガスジェット）
 
@@ -418,6 +460,14 @@ CSV ファイルで与えた姿勢（または角速度）に機体を追従さ�
 | 列 1 | 列 2 | 列 3 | 列 4 |
 |---|---|---|---|
 | 打上からの時刻 [s] | ヨー軸慣性モーメント [kg·m²] | ピッチ軸慣性モーメント [kg·m²] | ロール軸慣性モーメント [kg·m²] |
+
+### Ixy.csv / Ixz.csv / Iyz.csv（慣性乗積）
+
+| 列 1 | 列 2 |
+|---|---|
+| 打上からの時刻 [s] | 慣性乗積 [kg·m²] |
+
+`Enable Product of Inertia File: true` の場合に使用。Ixy / Ixz / Iyz をそれぞれ別ファイルで指定する（`Product of Inertia File` 内の `Ixy File Path` / `Ixz File Path` / `Iyz File Path` で個別にパス指定）。ファイル範囲外は先頭/末尾の値を外挿（step-hold）。サンプル: [`sample_Ixy.csv`](../../examples/sample_Ixy.csv) / [`sample_Ixz.csv`](../../examples/sample_Ixz.csv) / [`sample_Iyz.csv`](../../examples/sample_Iyz.csv)。
 
 ### CA.csv / CAbo.csv（軸力係数）
 

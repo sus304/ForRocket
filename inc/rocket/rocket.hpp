@@ -40,9 +40,13 @@ namespace forrocket {
             double area = 0.0;
             double length = 0.0;
             double length_CG = 0.0;
+            double y_CG = 0.0;  // lateral CG offset from centerline [m], body +y
+            double z_CG = 0.0;  // lateral CG offset from centerline [m], body +z
             double length_CP = 0.0;
             Mass mass;
             Eigen::Matrix3d inertia_tensor;
+            double y_thrust_offset = 0.0;  // thrust application point lateral offset [m], body +y
+            double z_thrust_offset = 0.0;  // thrust application point lateral offset [m], body +z
             
             double CA = 0.0;
             double CNa = 0.0;
@@ -101,6 +105,7 @@ namespace forrocket {
             void setCnr(const InterpolateParameter Cnr);
 
             void setInertiaTensor(const InterpolateParameter MOI_xx, const InterpolateParameter MOI_yy, const InterpolateParameter MOI_zz);
+            void setInertiaProduct(const InterpolateParameter Ixy, const InterpolateParameter Ixz, const InterpolateParameter Iyz);
             void setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll);
             void setAttitudeProgramRate(const InterpolateParameter azimuth_rate, const InterpolateParameter elevation_rate, const InterpolateParameter roll_rate);
 
@@ -136,6 +141,9 @@ namespace forrocket {
             InterpolateParameter inertia_moment_xx_src;
             InterpolateParameter inertia_moment_yy_src;
             InterpolateParameter inertia_moment_zz_src;
+            InterpolateParameter inertia_product_xy_src;
+            InterpolateParameter inertia_product_xz_src;
+            InterpolateParameter inertia_product_yz_src;
 
             InterpolateParameter azimuth_program_src;
             InterpolateParameter elevation_program_src;

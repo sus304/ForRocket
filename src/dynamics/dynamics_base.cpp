@@ -37,7 +37,9 @@ Eigen::Vector3d forrocket::DynamicsBase::GyroEffectMoment(Rocket* p_rocket) {
 Eigen::Vector3d forrocket::DynamicsBase::ThrustMoment(Rocket* p_rocket) {
     Eigen::Vector3d moment_thrust;
 
-    Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_thrust, 0.0, 0.0);
+    Eigen::Vector3d moment_arm(p_rocket->length_CG - p_rocket->length_thrust,
+                                p_rocket->y_CG - p_rocket->y_thrust_offset,
+                                p_rocket->z_CG - p_rocket->z_thrust_offset);
     moment_thrust = p_rocket->force.thrust.cross(moment_arm);
 
     return moment_thrust;

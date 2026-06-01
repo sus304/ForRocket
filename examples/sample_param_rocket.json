@@ -28,16 +28,35 @@
     "Constant X-C.G.": {
         "Constant X-C.G. from BodyTail [mm]": 1100.0
     },
-    
+    "Comment C.G. Offset": "Lateral CG offset from body centerline (constant; applies in both file and constant X-C.G. modes)",
+    "C.G. Offset": {
+        "y-C.G. Offset [mm]": 0.0,
+        "z-C.G. Offset [mm]": 0.0
+    },
+
     "Comment M.I.": "Moment of Inertia",
     "Enable M.I. File": false,
     "M.I. File": {
-        "M.I. File Path": "MOI.csv"
+        "M.I. File Path": "sample_MOI.csv"
     },
     "Constant M.I.": {
         "Yaw Axis [kg-m2]": 45.0,
         "Pitch Axis [kg-m2]": 45.0,
         "Roll Axis [kg-m2]": 0.5
+    },
+
+    "Comment P.O.I.": "Product of Inertia (for spin stability analysis; off-diagonals of inertia tensor)",
+    "Enable Product of Inertia": false,
+    "Constant Product of Inertia": {
+        "Ixy [kg-m2]": 0.0,
+        "Ixz [kg-m2]": 0.0,
+        "Iyz [kg-m2]": 0.0
+    },
+    "Enable Product of Inertia File": false,
+    "Product of Inertia File": {
+        "Ixy File Path": "sample_Ixy.csv",
+        "Ixz File Path": "sample_Ixz.csv",
+        "Iyz File Path": "sample_Iyz.csv"
     },
 
     "Enable X-C.P. File": false,
@@ -49,6 +68,8 @@
     },
 
     "X-ThrustLoadingPoint from BodyTail [mm]": 300.0,
+    "y-ThrustLoadingPoint Offset [mm]": 0.0,
+    "z-ThrustLoadingPoint Offset [mm]": 0.0,
 
     "Comment CA": "Axial Force Coefficient",
     "Enable CA File": true,

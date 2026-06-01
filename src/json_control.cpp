@@ -40,6 +40,10 @@ bool forrocket::JsonControl::getBool(std::string key) {
     return json_obj[key].get<bool>();
 };
 
+bool forrocket::JsonControl::contains(std::string key) {
+    return json_obj.contains(key);
+};
+
 forrocket::JsonControl forrocket::JsonControl::getSubItem(std::string key) {
     JsonControl jc(json_obj[key]);
     return jc;

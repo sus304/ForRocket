@@ -85,6 +85,12 @@ void forrocket::Rocket::setInertiaTensor(const InterpolateParameter MOI_xx, cons
     this->inertia_moment_zz_src = MOI_zz;
 };
 
+void forrocket::Rocket::setInertiaProduct(const InterpolateParameter Ixy, const InterpolateParameter Ixz, const InterpolateParameter Iyz) {
+    this->inertia_product_xy_src = Ixy;
+    this->inertia_product_xz_src = Ixz;
+    this->inertia_product_yz_src = Iyz;
+};
+
 void forrocket::Rocket::setAttitudeProgram(const InterpolateParameter azimuth, const InterpolateParameter elevation, const InterpolateParameter roll) {
     this->azimuth_program_src = azimuth;
     this->elevation_program_src = elevation;
@@ -188,9 +194,12 @@ Eigen::Matrix3d forrocket::Rocket::getInertiaTensor() {
     if (engine.burning) {
         Eigen::Matrix3d tensor;
         double t = burn_clock.countup_time;
-        tensor << inertia_moment_xx_src(t), 0.0, 0.0,
-                0.0, inertia_moment_yy_src(t), 0.0,
-                0.0, 0.0, inertia_moment_zz_src(t);
+        double Ixy = inertia_product_xy_src(t);
+        double Ixz = inertia_product_xz_src(t);
+        double Iyz = inertia_product_yz_src(t);
+        tensor << inertia_moment_xx_src(t), -Ixy, -Ixz,
+                -Ixy, inertia_moment_yy_src(t), -Iyz,
+                -Ixz, -Iyz, inertia_moment_zz_src(t);
         this->inertia_tensor = tensor;
     }
     return this->inertia_tensor;
