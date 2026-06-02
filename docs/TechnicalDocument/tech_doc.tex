@@ -150,6 +150,17 @@ I_{yy} \dot{q} &= (I_{zz}-I_{xx})rp+M_q \\
 I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
 \end{eqnarray}
 
+スピン安定解析を目的として、機体主軸と機軸が一致しない（製造誤差等で慣性主軸が傾いている）場合の動的アンバランスを表現するため、慣性テンソルに慣性乗積 $I_{xy}, I_{xz}, I_{yz}$ も含めて定義する。
+\begin{equation}
+\bm{I} =
+\begin{bmatrix}
+ I_{xx} & -I_{xy} & -I_{xz} \\
+-I_{xy} &  I_{yy} & -I_{yz} \\
+-I_{xz} & -I_{yz} &  I_{zz}
+\end{bmatrix}
+\end{equation}
+慣性乗積はいずれも省略時 0 とし、その場合は主軸のみの対角テンソルとなり従来挙動と一致する。実装上は $\bm{\omega}^B \times (\bm{I} \bm{\omega}^B)$ のジャイロ項計算に直接乗積成分が含まれるため、上記運動方程式のクロスカップリング項に追加の補正を加える必要はない。
+
 \subsection{モーメント}
 運動方程式中に表れる機体座標系のモーメント $M^B$ の詳細について記す。
 
@@ -158,13 +169,12 @@ I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
 \end{equation}
 
 \subsubsection{推力モーメント}
-推力軸のミスアライメントなどによって発生する。
-
-外力として計算されている機体座標系での推力ベクトルと、回転中心となる重心 $X_{CG}$ と推力入力点 $X_T$ の距離をモーメントアームとして計算する。
+推力軸のミスアライメント角、および推力作用点・重心の機軸からの横方向オフセットによって発生する。スピン安定解析を目的として、重心 $\bm{r}_{CG} = [X_{CG}, Y_{CG}, Z_{CG}]^T$ および推力入力点 $\bm{r}_T = [X_T, Y_T, Z_T]^T$ をそれぞれ機体座標系の 3 次元ベクトルとして与え、その差分をモーメントアームとして計算する。
 \begin{eqnarray}
-\bm{r}_T &=& [X_{CG} - X_T, 0, 0]^T \\
-\bm{M}^B_T &=& \bm{F}^B_T \times \bm{r}_T
+\bm{r} &=& \bm{r}_{CG} - \bm{r}_T = [X_{CG} - X_T,\ Y_{CG} - Y_T,\ Z_{CG} - Z_T]^T \\
+\bm{M}^B_T &=& \bm{F}^B_T \times \bm{r}
 \end{eqnarray}
+横方向オフセット $Y_{CG}, Z_{CG}, Y_T, Z_T$ はいずれも省略時 0 で、その場合は従来の機軸上のみの定式化と一致する。推力ベクトル $\bm{F}^B_T$ にはエンジンミスアライメント角（既存）が反映される。
 
 \subsubsection{空気力モーメント}
 外力として計算されている機体座標系での空気力ベクトルと、重心と圧力中心位置 $X_{CP}$ の距離をモーメントアームとして計算する。
@@ -320,6 +330,59 @@ s = 0.9 \biggl(\frac{\varepsilon h}{\begin{vmatrix}t_{k+1} - y_{k+1}\end{vmatrix
 h_o = s \cdot h
 \end{equation}
 なお、$\varepsilon$ は許容誤差限界である。
+
+\subsection{スピン安定・ロールピッチレゾナンス評価}
+スピン安定方式を採用する場合、スピン（ロール）レート $p$ がピッチ／ヨーの空力固有振動数 $\omega_n$ に接近すると、機体固定の構成非対称（質量・空力アンバランス）がピッチ／ヨー運動を共振励起し、迎角が急増する。これをロールピッチ（スピン-ピッチ／ロール-ヨー）レゾナンスと呼ぶ。本節の各量はフライトログに出力される評価指標であり、各時刻の状態量から後処理的に算出される（運動方程式本体には影響しない）。
+
+横慣性 $I_T$、静的マージン距離 $\ell$、ピッチ／ヨー空力復元剛性 $k_\alpha$ を次で定義する。$Q$ は動圧、$S$ は基準面積、$C_{N\alpha}$ は法線力傾斜、$X_{CG}, X_{CP}$ は機体後端からの重心・圧力中心位置である。
+\begin{eqnarray}
+I_T &=& \frac{I_{yy} + I_{zz}}{2} \\
+\ell &=& X_{CG} - X_{CP} \\
+k_\alpha &=& Q\,S\,C_{N\alpha}\,\ell
+\end{eqnarray}
+$\ell>0$（CP が CG より後方）で静安定である。ピッチ／ヨー空力固有角振動数 $\omega_n$、固有振動数 $f_n$、スピン周波数 $f_s$、および共振比 $\Lambda$ は
+\begin{eqnarray}
+\omega_n &=& \sqrt{\frac{k_\alpha}{I_T}} \\
+f_n &=& \frac{\omega_n}{2\pi}, \qquad f_s = \frac{|p|}{2\pi} \\
+\Lambda &=& \frac{|p|}{\omega_n}
+\end{eqnarray}
+で与えられ、$\Lambda \approx 1$ で共振条件となる。$\Lambda$ が設計判定の主指標である。全迎角は迎角 $\alpha$ と横滑り角 $\beta$ から
+\begin{equation}
+\alpha_t = \sqrt{\alpha^2 + \beta^2}
+\end{equation}
+とする。
+
+ピッチ／ヨー振動の減衰は、CP–CG オフセットによる揚力減衰 $c_L$（フィン安定機の支配項）と $C_{mq}$ 減衰モーメント $c_{Cmq}$ の和で評価する。$V=|\bm{v}^B|$ は対気速度、$d$ は機体直径である。
+\begin{eqnarray}
+c_L &=& \frac{Q\,S\,C_{N\alpha}\,\ell^2}{V} \\
+c_{Cmq} &=& -\frac{Q\,S\,d^2\,C_{mq}}{2V} \\
+\zeta &=& \frac{c_L + c_{Cmq}}{2\sqrt{k_\alpha\,I_T}}
+\end{eqnarray}
+共振点近傍での増幅率は $A_{res} = 1/(2\zeta)$ で見積もる。
+
+ジャイロ安定係数 $S_g$ と、動的安定係数 $S_d$ およびその安定境界を次で評価する。動的安定では Magnus モーメント係数 $C_{mp\alpha}$ と $C_{m\dot\alpha}$ が本来関与するが、本モデルでは未実装のため $0$ として扱う。$m$ は全機質量である。
+\begin{eqnarray}
+S_g &=& \frac{(I_{xx}\,p)^2}{4\,I_T\,k_\alpha} \\
+S_d &=& \frac{2\,C_{N\alpha}}{C_{N\alpha} - C_A - \dfrac{m\,d^2}{I_T}\,C_{mq}}
+\end{eqnarray}
+動的安定条件は $1/S_g < S_d(2 - S_d)$ である。$S_g > 1$ でジャイロ安定となるが、フィン静安定主体（$I_{xx} \ll I_T$）の機体では $S_g \ll 1$ となるため、$S_g, S_d$ はスピンを積極的に用いる設計での参考指標と位置づける。
+
+スピンアップ方向のフィンカントロールモーメントとロール減衰モーメントの釣り合いから定まる平衡スピンレート $p_{eq}$ は、フィンカント角 $\delta$ を用いて
+\begin{equation}
+p_{eq} = -\frac{C_{ld}\,\delta\,2V}{C_{lp}\,d}, \qquad f_{s,eq} = \frac{|p_{eq}|}{2\pi}
+\end{equation}
+となる。$f_{s,eq}$ と $f_n$ の近接は、定常スピンレートが共振点に捕捉（ロックイン）する危険性の指標となる。
+
+構成非対称による強制モーメント $M_{asym}$ は、推力作用点・重心の横方向オフセットによる推力モーメントの横成分と、慣性乗積 $I_{xy}, I_{xz}$（主軸ミスアライメント）によるスピン依存強制 $p^2\sqrt{I_{xy}^2 + I_{xz}^2}$ の和で評価する。
+\begin{equation}
+M_{asym} = \sqrt{(M^B_{T,y})^2 + (M^B_{T,z})^2} + p^2\sqrt{I_{xy}^2 + I_{xz}^2}
+\end{equation}
+これを共振応答倍率で増幅したトリム迎角 $\alpha_{trim}$、および横空力荷重の代理量 $N_{lat}$ を
+\begin{eqnarray}
+\alpha_{trim} &=& \frac{M_{asym}}{k_\alpha\,\sqrt{(1 - \Lambda^2)^2 + (2\zeta\Lambda)^2}} \\
+N_{lat} &=& Q\,S\,C_{N\alpha}\,\alpha_t
+\end{eqnarray}
+で出力する。$\alpha_{trim}$ は線形理論による解析推定値であり、$\Lambda \to 1$ で分母が小さくなり急増する。実機挙動の確認には 6-DOF 積分結果の $\alpha_t$ 包絡線と併せて評価すること。
 
 \section{Ref}
 \begin{itemize}

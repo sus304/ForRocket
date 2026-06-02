@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 
 #include "degrad.hpp"
 #include "environment/air.hpp"
@@ -206,6 +207,20 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         ofs << "Azimuth [deg],";
         ofs << "Elvation [deg],";
         ofs << "Roll [deg],";
+        // ---- Roll-pitch (spin-pitch / roll-yaw) resonance diagnostics ----
+        ofs << "PitchYawNaturalFreq [Hz],";
+        ofs << "SpinFreq [Hz],";
+        ofs << "ResonanceRatio [-],";
+        ofs << "TotalAoA [deg],";
+        ofs << "TrimAoA [deg],";
+        ofs << "GyroStabilityFactor Sg [-],";
+        ofs << "PitchDampingRatio [-],";
+        ofs << "DynStabilityFactor Sd [-],";
+        ofs << "DynStabilityBoundary Sd(2-Sd) [-],";
+        ofs << "DynStable [0/1],";
+        ofs << "ResonanceAmplification [-],";
+        ofs << "EquilibriumSpinFreq [Hz],";
+        ofs << "LateralAeroLoad [N],";
     }
     // pitch
     // yaw
@@ -339,6 +354,81 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(8) << std::fmod(rad2deg(attitude[i].euler_angle(0)) + 360.0, 360.0) << ",";  // [deg] [0, 360)
             ofs << std::setprecision(8) << rad2deg(attitude[i].euler_angle(1)) << ",";  // [deg]
             ofs << std::setprecision(8) << rad2deg(attitude[i].euler_angle(2)) << ",";  // [deg]
+
+            // ---- Roll-pitch (spin-pitch / roll-yaw) resonance diagnostics ----
+            const double q_dyn = dynamic_pressure[i];                       // [Pa]
+            const double S_ref = p_rocket->area;                            // [m2]
+            const double D_ref = p_rocket->diameter;                        // [m]
+            const double Vair  = velocity[i].air_body.norm();               // airspeed [m/s]
+            const double Ix    = inertia_tensor[i](0, 0);                   // roll MOI [kg-m2]
+            const double It    = 0.5 * (inertia_tensor[i](1, 1) + inertia_tensor[i](2, 2));  // transverse MOI (avg Iyy,Izz) [kg-m2]
+            const double sm    = length_CG[i] - length_CP[i];               // static margin distance [m] (>0 : statically stable)
+            const double pspin = angular_velocity[i](0);                    // roll(spin) rate [rad/s]
+            const double m_now = mass[i];                                   // total mass [kg]
+
+            // pitch/yaw aerodynamic restoring stiffness  k_alpha = q*S*CNa*(Xcg-Xcp)  [N-m/rad]
+            const double k_alpha = q_dyn * S_ref * CNa[i] * sm;
+            const double omega_n = (k_alpha > 0.0 && It > 0.0) ? std::sqrt(k_alpha / It) : 0.0;  // natural freq [rad/s]
+            const double f_n     = omega_n / (2.0 * pi);                    // [Hz]
+            const double f_spin  = std::abs(pspin) / (2.0 * pi);            // [Hz]
+            const double lambda  = (omega_n > 0.0) ? std::abs(pspin) / omega_n : 0.0;  // resonance ratio (~1 : resonance)
+
+            // total angle of attack [rad]
+            const double aoa_tot = std::sqrt(angle_of_attack[i] * angle_of_attack[i]
+                                           + sideslip_angle[i]  * sideslip_angle[i]);
+
+            // pitch/yaw transverse damping coefficient [N-m/(rad/s)], two contributions:
+            //   (1) lift damping from CP-CG offset (the dominant term for finned bodies):  q*S*CNa*sm^2/V
+            //   (2) aerodynamic pitch-damping moment (Cmq, <0 -> stabilizing):            -q*S*D^2*Cmq/(2V)
+            const double c_lift = (Vair > 0.0) ? q_dyn * S_ref * CNa[i] * sm * sm / Vair : 0.0;
+            const double c_damp = (Vair > 0.0) ? -q_dyn * Cmq[i] * S_ref * D_ref * D_ref / (2.0 * Vair) : 0.0;
+            const double zeta   = (k_alpha > 0.0 && It > 0.0) ? (c_lift + c_damp) / (2.0 * std::sqrt(k_alpha * It)) : 0.0;
+            const double Qamp   = (std::abs(zeta) > 1.0e-9) ? 1.0 / (2.0 * std::abs(zeta)) : 0.0;  // resonance amplification ~1/(2*zeta)
+
+            // gyroscopic stability factor  Sg = (Ix*p)^2 / (4*It*k_alpha)  (>1 : gyroscopically stable)
+            const double Sg = (k_alpha > 0.0 && It > 0.0) ? std::pow(Ix * pspin, 2) / (4.0 * It * k_alpha) : 0.0;
+
+            // dynamic stability factor (McCoy form); Magnus (Cmpa) and Cmadot are NOT modeled -> taken as 0
+            const double inv_ky2  = (It > 0.0) ? m_now * D_ref * D_ref / It : 0.0;  // 1/k_y^2 = m*d^2/It
+            const double sd_denom = CNa[i] - CA[i] - inv_ky2 * Cmq[i];
+            const double Sd       = (std::abs(sd_denom) > 1.0e-12) ? 2.0 * CNa[i] / sd_denom : 0.0;
+            const double sd_bound = Sd * (2.0 - Sd);
+            const int dyn_stable  = (Sg > 0.0 && (1.0 / Sg) < sd_bound) ? 1 : 0;
+
+            // equilibrium spin rate from fin-cant drive vs roll damping balance:  p_eq = -Cld*delta*2V/(Clp*D)
+            const double delta_fin = p_rocket->cant_angle_fin;
+            const double p_eq      = (std::abs(Clp[i]) > 1.0e-12 && Vair > 0.0)
+                                     ? -Cld[i] * delta_fin * 2.0 * Vair / (Clp[i] * D_ref) : 0.0;
+            const double f_spin_eq = std::abs(p_eq) / (2.0 * pi);           // [Hz]
+
+            // lateral aerodynamic load proxy [N]
+            const double lat_load = q_dyn * CNa[i] * S_ref * aoa_tot;
+
+            // trim angle of attack from configurational-asymmetry forcing, with resonance amplification:
+            //   forcing = transverse thrust-offset moment + principal-axis-misalignment (products of inertia) moment
+            const double M_thrust_lat = std::sqrt(moment[i].thrust(1) * moment[i].thrust(1)
+                                                + moment[i].thrust(2) * moment[i].thrust(2));
+            const double I_offdiag    = std::sqrt(inertia_tensor[i](0, 1) * inertia_tensor[i](0, 1)
+                                                + inertia_tensor[i](0, 2) * inertia_tensor[i](0, 2));
+            const double M_poi        = pspin * pspin * I_offdiag;
+            const double M_asym       = M_thrust_lat + M_poi;
+            const double amp_resp     = std::sqrt((1.0 - lambda * lambda) * (1.0 - lambda * lambda)
+                                                + (2.0 * zeta * lambda) * (2.0 * zeta * lambda));
+            const double alpha_trim   = (k_alpha > 0.0 && amp_resp > 1.0e-9) ? (M_asym / (k_alpha * amp_resp)) : 0.0;  // [rad]
+
+            ofs << std::setprecision(8) << f_n << ",";
+            ofs << std::setprecision(8) << f_spin << ",";
+            ofs << std::setprecision(8) << lambda << ",";
+            ofs << std::setprecision(8) << rad2deg(aoa_tot) << ",";    // [deg]
+            ofs << std::setprecision(8) << rad2deg(alpha_trim) << ",";  // [deg]
+            ofs << std::setprecision(8) << Sg << ",";
+            ofs << std::setprecision(8) << zeta << ",";
+            ofs << std::setprecision(8) << Sd << ",";
+            ofs << std::setprecision(8) << sd_bound << ",";
+            ofs << dyn_stable << ",";
+            ofs << std::setprecision(8) << Qamp << ",";
+            ofs << std::setprecision(8) << f_spin_eq << ",";
+            ofs << std::setprecision(8) << lat_load << ",";
         }
         // pitch = omega
         // pitch

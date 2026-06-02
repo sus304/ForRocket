@@ -29,7 +29,7 @@
 
 ### フルダンプ（デフォルト）
 
-以下の順番で出力される。総列数は約 106 列。
+以下の順番で出力される。総列数は約 122 列（うちスピン安定・ロールピッチレゾナンス診断 13 列を含む）。
 
 #### 基本（全出力共通）
 
@@ -173,6 +173,39 @@
 | `Azimuth [deg]` | deg | 方位角 [0, 360) |
 | `Elvation [deg]` | deg | 上下角（**注: ソース上の typo。Elevation の誤記**） |
 | `Roll [deg]` | deg | ロール角 |
+
+#### スピン安定・ロールピッチレゾナンス診断（フルダンプのみ）
+
+スピン安定方式採用時のロールピッチ（スピン-ピッチ／ロール-ヨー）レゾナンス評価用の派生量。各時刻に既存のログ量から後処理的に算出される（物理モデル本体・軌道計算には影響しない）。
+
+記号: `Q`=動圧、`S`=基準面積、`d`=機体直径、`V`=対気速度、`CNa`=法線力傾斜、`ℓ = Xcg − Xcp`（静的マージン距離、正で静安定）、`I_T = (Iyy + Izz)/2`（横慣性）、`Ixx`=ロール慣性、`p`=ロール（スピン）レート、`m`=全機質量。
+ピッチ/ヨー空力復元剛性 `k_α = Q·S·CNa·ℓ`、固有角振動数 `ω_n = sqrt(k_α / I_T)`。
+
+| 列名 | 単位 | 定義 |
+|---|---|---|
+| `PitchYawNaturalFreq [Hz]` | Hz | ピッチ/ヨー空力固有振動数 `f_n = ω_n / (2π)` |
+| `SpinFreq [Hz]` | Hz | スピン周波数 `f_s = \|p\| / (2π)` |
+| `ResonanceRatio [-]` | — | **共振比 `Λ = \|p\| / ω_n`（≈1 で共振）** |
+| `TotalAoA [deg]` | deg | 全迎角 `α_t = sqrt(α² + β²)` |
+| `TrimAoA [deg]` | deg | トリム迎角 `α_trim = M_asym / (k_α · sqrt((1−Λ²)² + (2ζΛ)²))` |
+| `GyroStabilityFactor Sg [-]` | — | ジャイロ安定係数 `Sg = (Ixx·p)² / (4·I_T·k_α)`（>1 でジャイロ安定） |
+| `PitchDampingRatio [-]` | — | ピッチ/ヨー減衰比 `ζ = (c_L + c_Cmq) / (2·sqrt(k_α·I_T))` |
+| `DynStabilityFactor Sd [-]` | — | 動的安定係数 `Sd = 2·CNa / (CNa − CA − (m·d²/I_T)·Cmq)` |
+| `DynStabilityBoundary Sd(2-Sd) [-]` | — | 動的安定境界 `Sd·(2 − Sd)`（`1/Sg` と比較） |
+| `DynStable [0/1]` | — | `1/Sg < Sd·(2 − Sd)` なら 1 |
+| `ResonanceAmplification [-]` | — | 共振増幅率 `A_res = 1 / (2ζ)` |
+| `EquilibriumSpinFreq [Hz]` | Hz | 平衡スピン周波数 `f_s_eq = \|p_eq\| / (2π)`、`p_eq = −Cld·δ·2V / (Clp·d)` |
+| `LateralAeroLoad [N]` | N | 横空力荷重 `N_lat = Q·S·CNa·α_t` |
+
+減衰係数の内訳: `c_L = Q·S·CNa·ℓ²/V`（CP−CG オフセットによる揚力減衰。フィン安定機の支配項）、`c_Cmq = −Q·S·d²·Cmq/(2V)`（Cmq 減衰モーメント）。
+トリム迎角の強制項: `M_asym = sqrt(My_thrust² + Mz_thrust²) + p²·sqrt(Ixy² + Ixz²)`（推力オフセットモーメントの横成分 ＋ 慣性乗積による主軸ミスアライメント強制）。`δ` はフィンカント角。
+
+**解釈の注意**
+
+- 設計判定の主指標は `ResonanceRatio` Λ。飛行を通して Λ が 1 を横切る付近で `TrimAoA` ／ `TotalAoA` ／ `LateralAeroLoad` が増大すれば共振。
+- `Sg` ／ `Sd` ／ `DynStable` はスピン（ジャイロ）安定の枠組み。フィン静安定主体（`Ixx ≪ I_T`）の機体では `Sg ≪ 1` となり参考値。`SpinFreq > 0` かつ `Sg ≳ 1` の設計で意味を持つ。
+- Magnus モーメント係数 `Cmpα` と `Cmα̇` はモデル未実装のため `Sd` では 0 扱い。
+- ζ は高速域で小さく `A_res` は大きくなりがち（＝共振点で大増幅、という物理を示す）。解析値 `TrimAoA` は実 6-DOF 挙動の `TotalAoA` 包絡線と必ず突き合わせること。
 
 ## 注意事項
 
