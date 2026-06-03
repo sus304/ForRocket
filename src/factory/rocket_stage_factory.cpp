@@ -84,7 +84,16 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
     }
     // rocket_stage.time_step = std::pow(10.0, std::floor((int)std::log10((int)rocket_stage.time_end)+1) - 5);
     rocket_stage.time_step = jc.getDouble("Time Step [s]");
-    
+
+    // 適応ステップ積分器の許容誤差（任意指定）。未指定なら RocketStage の既定値を使用。
+    // 緩めるほど刻みが大きくなり高速・低精度。位置誤差 ~= Rel * 6.4e6 [m]（ECI 基準）。
+    if (jc.contains("Solver Tolerance Abs")) {
+        rocket_stage.eps_abs = jc.getDouble("Solver Tolerance Abs");
+    }
+    if (jc.contains("Solver Tolerance Rel")) {
+        rocket_stage.eps_rel = jc.getDouble("Solver Tolerance Rel");
+    }
+
     return rocket_stage;
 }
 

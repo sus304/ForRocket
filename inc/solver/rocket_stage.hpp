@@ -57,6 +57,12 @@ class RocketStage {
     double time_end;
     double time_step;
 
+    // 適応ステップ積分器の許容誤差。値を緩めるほど刻みが大きくなり高速・低精度。
+    // Sequence of Event JSON の "Solver Tolerance Abs"/"Solver Tolerance Rel" で
+    // 上書き可能。未指定時はコンストラクタの既定値を使用。
+    double eps_abs;
+    double eps_rel;
+
     // FlightSequence 実行後にセットされる
     bool separated;
     double time_at_separation;

@@ -31,6 +31,12 @@ forrocket::RocketStage::RocketStage(int stage_number, Rocket rocket) {
     this->separated = false;
     this->time_at_separation = 0.0;
     this->state_at_separation.fill(0.0);
+
+    // 適応ステップ積分器の既定許容誤差（JSON 未指定時に使用）。
+    // 位置は ECI（地心, ~6.4e6 m）のため許容位置誤差 ~= eps_rel * 6.4e6 [m]。
+    // 旧来のハードコード値(1e-9/1e-7)から緩和して既定の計算速度を改善。
+    this->eps_abs = 1.0e-6;
+    this->eps_rel = 1.0e-6;
 }
 
 
@@ -99,8 +105,6 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock,
         dynamics.SetRegime(FlightDynamics::kInAir);
     }
 
-    const double eps_abs = 1.0e-9;
-    const double eps_rel = 1.0e-7;
     auto stepper = odeint::make_dense_output(
             eps_abs, eps_rel,
             odeint::runge_kutta_dopri5<state_t>());

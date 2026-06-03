@@ -45,6 +45,8 @@
 
 	"Flight End Time [s]": 100.0,
 	"Time Step [s]": 0.1,
+	"Solver Tolerance Abs": 1.0e-6,
+	"Solver Tolerance Rel": 1.0e-6,
 	"Enable Auto Terminate SubOrbital Flight": true
 }
 

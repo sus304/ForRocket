@@ -11,7 +11,11 @@ else()
 	set(CMAKE_CXX_FLAGS "-Wall -lpthread")
 endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+# -O3 is equal-or-slightly-faster than -O2 for this workload (small fixed-size
+# Eigen ops + adaptive ODE loop) and matches the shipped v4.3.x binaries.
+# -march=native was measured SLOWER here (AVX overhead on tiny matrices), so it
+# is intentionally not enabled.
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
