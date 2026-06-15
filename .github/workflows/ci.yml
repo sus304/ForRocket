@@ -1,0 +1,76 @@
+name: CI
+
+# C++ unit tests + coverage, and a production build check.
+# NOTE: runs the C++ unit tests under tests/unit/, which must be tracked by git
+# (.gitignore re-includes it via `!tests/unit/`).
+# The Python E2E suite (tests/simulation_test.py) is NOT wired here yet — it has
+# baseline mismatches on the spin-stability changes to analyze first; add an
+# `e2e` job (and track simulation_test.py) once those are resolved.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    name: Unit tests + coverage (GCC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain + gcovr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+          python3 -m pip install --upgrade gcovr
+
+      # GoogleTest: lib/googletest is gitignored and not checked out, so CMake's
+      # FetchContent fallback (tests/unit/CMakeLists.txt) downloads release-1.12.1
+      # at configure time. To vendor it instead, run lib/setup_googletest.sh here.
+      - name: Configure (tests + coverage)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_COVERAGE=ON
+
+      - name: Build unit tests
+        run: cmake --build build --target forrocket_unittests -j$(nproc)
+
+      - name: Run tests (ctest)
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Coverage report (C0 lines + C1 branches, throw-excluded)
+        run: |
+          mkdir -p coverage_html
+          gcovr --root . --filter src/ \
+            --exclude-throw-branches --exclude-unreachable-branches \
+            --print-summary \
+            --xml coverage.xml \
+            --html-details coverage_html/index.html \
+            --fail-under-line 90 \
+            build
+          # To also gate on branch coverage, add e.g. --fail-under-branch 85
+          # (current ~93%). Do NOT use gcovr --decisions for gating: its
+          # experimental analyzer mis-scores single-line `if (c) stmt;` blocks.
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            coverage_html/
+
+  build-release:
+    name: Release build (ForRocket binary)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+      # Default build = production executable only (BUILD_TESTING OFF, no
+      # GoogleTest needed); catches breakage in the shipped build.
+      - name: Configure + build (Release)
+        run: |
+          cmake -S . -B build-rel -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-rel -j$(nproc)

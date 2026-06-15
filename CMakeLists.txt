@@ -69,5 +69,28 @@ set(srcs
 	src/solver/trajectory_solver.cpp
 )
 
-add_executable(ForRocket ${srcs})
+# Build the simulation modules as a library so the executable, the unit tests,
+# and coverage runs all share one compilation of the source.
+set(core_srcs ${srcs})
+list(REMOVE_ITEM core_srcs src/ForRocket.cpp)
+add_library(forrocket_core STATIC ${core_srcs})
+
+add_executable(ForRocket src/ForRocket.cpp)
+target_link_libraries(ForRocket forrocket_core)
+
+# --- Unit tests & coverage (opt-in; production build is unaffected) -------
+option(BUILD_TESTING "Build the C++ unit tests (GoogleTest)" OFF)
+option(ENABLE_COVERAGE "Instrument forrocket_core for gcov/gcovr coverage" OFF)
+
+if(ENABLE_COVERAGE)
+	# PUBLIC so the flags propagate to whatever links forrocket_core (the test
+	# binary), which is what gcov needs to emit .gcda/.gcno for the core sources.
+	target_compile_options(forrocket_core PUBLIC -O0 -g --coverage)
+	target_link_options(forrocket_core PUBLIC --coverage)
+endif()
+
+if(BUILD_TESTING)
+	enable_testing()
+	add_subdirectory(tests/unit)
+endif()
 

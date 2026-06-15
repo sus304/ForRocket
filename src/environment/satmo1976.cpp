@@ -135,7 +135,8 @@ std::vector<double> standardatmosphere1976::UpperAtmosphere(double geometric_alt
                                             -0.029164, -0.024220, -0.021336, -0.017686, -0.016035,
                                             -0.014327, -0.011631, -0.008248, -0.005580, -0.004227};
 
-    if (geometric_altitude > height_array.back()) {
+    if (geometric_altitude >= height_array.back()) {  // >= : at exactly 1000 km the
+        // binary search below would land i=24 and read height_array[i+1] out of bounds.
         std::vector<double> res = {density_ratio_array.back() * density_sealevel, pressure_ratio_array.back() * pressure_sealevel, 1000.0};
         return res;
     }

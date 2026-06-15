@@ -16,7 +16,6 @@
 #include "environment/air.hpp"
 #include "environment/gravity.hpp"
 #include "environment/vincenty.hpp"
-#include "dynamics/noniterative_iip.hpp"
 
 
 forrocket::FlightDataRecorder::FlightDataRecorder(Rocket* rocket) {
