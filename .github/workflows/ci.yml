@@ -19,12 +19,27 @@ jobs:
       - name: Install toolchain + gcovr
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++
+          # Boost (odeint) via apt to avoid vendoring the heavy 1.77 source;
+          # headers land in /usr/include and resolve the "boost/..." includes.
+          sudo apt-get install -y cmake g++ libboost-dev
           python3 -m pip install --upgrade gcovr
 
-      # GoogleTest: lib/googletest is gitignored and not checked out, so CMake's
-      # FetchContent fallback (tests/unit/CMakeLists.txt) downloads release-1.12.1
-      # at configure time. To vendor it instead, run lib/setup_googletest.sh here.
+      # Eigen / json / GoogleTest are gitignored (not checked out), so vendor
+      # them with the repo's setup scripts. Cached so only the first run pays
+      # the download.
+      - name: Cache vendored headers
+        id: vlibs
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib/Eigen
+            lib/json.hpp
+            lib/googletest
+          key: vlibs-utest-${{ runner.os }}-${{ hashFiles('lib/setup_eigen.sh', 'lib/setup_json.sh', 'lib/setup_googletest.sh') }}
+      - name: Vendor headers (Eigen, json, GoogleTest)
+        if: steps.vlibs.outputs.cache-hit != 'true'
+        run: cd lib && ./setup_json.sh && ./setup_eigen.sh && ./setup_googletest.sh
+
       - name: Configure (tests + coverage)
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_COVERAGE=ON
 
@@ -66,7 +81,21 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++
+          sudo apt-get install -y cmake g++ libboost-dev
+
+      # Eigen / json are gitignored; vendor them with the repo's setup scripts
+      # (Boost comes from apt above; GoogleTest isn't needed for the prod build).
+      - name: Cache vendored headers
+        id: vlibs
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib/Eigen
+            lib/json.hpp
+          key: vlibs-e2e-${{ runner.os }}-${{ hashFiles('lib/setup_eigen.sh', 'lib/setup_json.sh') }}
+      - name: Vendor headers (Eigen, json)
+        if: steps.vlibs.outputs.cache-hit != 'true'
+        run: cd lib && ./setup_json.sh && ./setup_eigen.sh
 
       # simulation_test.py runs <repo>/build/ForRocket, so build the production
       # binary into build/ (Release). Also serves as the shipped-build check
