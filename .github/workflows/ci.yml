@@ -1,11 +1,9 @@
 name: CI
 
-# C++ unit tests + coverage, and a production build check.
-# NOTE: runs the C++ unit tests under tests/unit/, which must be tracked by git
-# (.gitignore re-includes it via `!tests/unit/`).
-# The Python E2E suite (tests/simulation_test.py) is NOT wired here yet — it has
-# baseline mismatches on the spin-stability changes to analyze first; add an
-# `e2e` job (and track simulation_test.py) once those are resolved.
+# C++ unit tests + coverage, and the Python end-to-end simulation suite.
+# NOTE: runs tests/unit/ and tests/simulation_test.py, so both must be tracked
+# by git (.gitignore re-includes them via `!tests/unit/` and
+# `!tests/simulation_test.py`); otherwise CI has nothing to run.
 
 on:
   push:
@@ -59,18 +57,29 @@ jobs:
             coverage.xml
             coverage_html/
 
-  build-release:
-    name: Release build (ForRocket binary)
+  e2e:
+    name: End-to-end simulation (Python)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++
-      # Default build = production executable only (BUILD_TESTING OFF, no
-      # GoogleTest needed); catches breakage in the shipped build.
-      - name: Configure + build (Release)
+
+      # simulation_test.py runs <repo>/build/ForRocket, so build the production
+      # binary into build/ (Release). Also serves as the shipped-build check
+      # (BUILD_TESTING is OFF by default, so no GoogleTest needed).
+      - name: Build ForRocket (Release)
         run: |
-          cmake -S . -B build-rel -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-rel -j$(nproc)
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Pure stdlib (no pip deps). Exits non-zero if any scenario fails.
+      - name: Run end-to-end suite
+        run: python3 tests/simulation_test.py

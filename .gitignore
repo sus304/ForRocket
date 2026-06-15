@@ -20,13 +20,13 @@ ForRocket_v*/
 # Claude Code project settings (IDE personal tool)
 .claude/
 
-# Ignore tests/ contents by default, but version-control the C++ unit tests.
-# (The E2E suite tests/simulation_test.py is intentionally left untracked for
-# now — see CI notes — pending baseline analysis.)
-# Use tests/* (not tests/) so tests/unit/ can be re-included: git cannot
-# re-include a path whose parent dir is itself ignored.
+# Ignore tests/ contents by default, but version-control the C++ unit tests,
+# the end-to-end suite, and the test docs. Use tests/* (not tests/) so children
+# can be re-included: git cannot re-include a path whose parent dir is ignored.
 tests/*
 !tests/unit/
+!tests/simulation_test.py
+!tests/README.md
 
 # Simulation output CSVs in examples/
 examples/*_flight_log.csv
