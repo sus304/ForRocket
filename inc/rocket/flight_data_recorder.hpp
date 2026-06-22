@@ -51,6 +51,8 @@ namespace forrocket {
             std::vector<double> mass_prop;
             std::vector<double> mass;
             std::vector<double> length_CG;
+            std::vector<double> y_CG;
+            std::vector<double> z_CG;
             std::vector<double> length_CP;
             std::vector<Eigen::Matrix3d> inertia_tensor;
             std::vector<double> CA;
