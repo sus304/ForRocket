@@ -12,9 +12,9 @@
 // Strategy (aerospace correctness bar): wherever possible the expected value
 // is an independent reference derived by hand from the physics, or an
 // invariant (zero angular velocity -> gyro/damping moments vanish, zero
-// thrust offset -> thrust moment vanishes, QuaternionDiff is skew-symmetric
-// and norm-preserving, aero force scales with q*area*coeff). Every hardcoded
-// number carries its derivation in a comment.
+// thrust offset -> thrust moment vanishes, zero mdot -> jet damping vanishes,
+// QuaternionDiff is skew-symmetric and norm-preserving, aero force scales with
+// q*area*coeff). Every hardcoded number carries its derivation in a comment.
 //
 // Uses the shared Rocket builder in test_fixtures.hpp (read-only).
 // ******************************************************
@@ -349,15 +349,104 @@ TEST(DynamicsBase, AeroDamping_ScalesInverselyWithAirspeed) {
 }
 
 // =====================================================================
-// JetDampingMoment  -- always zero (no inputs, no branch).
+// JetDampingMoment
+//   Exhaust carries off angular momentum as it leaves the nozzle: M = -mdot * l^2 * omega
+//     roll (x):       l^2 = exhaust radius of gyration^2 = r_e^2/2 = area_exit/(2*pi)
+//     pitch/yaw(y,z): l   = CG-to-nozzle-exit axial arm, approximated by length_CG
+//                          (body tail ~ nozzle exit), so l^2 = length_CG^2
+//   Zero when mdot = 0 (burnout) or omega = 0.
 // =====================================================================
 
-TEST(DynamicsBase, JetDamping_IsAlwaysZero) {
+TEST(DynamicsBase, JetDamping_ZeroMdotReturnsZero) {
+    // mdot = 0 (e.g. after burnout): the moment vanishes on every axis even
+    // with nonzero arm, exit area and angular velocity.
     TestDynamics dyn;
     Rocket r = MakeTestRocket();
-    r.angular_velocity << 1.0, 2.0, 3.0;  // should not matter
+    r.engine.mdot_prop = 0.0;
+    r.length_CG = 1.0;
+    r.angular_velocity << 1.0, 2.0, 3.0;
     Eigen::Vector3d m = dyn.JetDampingMoment(&r);
     EXPECT_NEAR(m.norm(), 0.0, 1e-15);
+}
+
+TEST(DynamicsBase, JetDamping_ZeroAngularVelocityReturnsZero) {
+    // omega = 0: each component is multiplied by omega_i = 0 -> zero moment.
+    TestDynamics dyn;
+    Rocket r = MakeTestRocket();
+    r.engine.mdot_prop = 4.0;
+    r.length_CG = 1.0;
+    r.angular_velocity << 0.0, 0.0, 0.0;
+    Eigen::Vector3d m = dyn.JetDampingMoment(&r);
+    EXPECT_NEAR(m.norm(), 0.0, 1e-15);
+}
+
+TEST(DynamicsBase, JetDamping_HandComputedComponents) {
+    // Full nonzero inputs. Independent reference:
+    //   roll : -mdot * (area_exit/(2*pi)) * p
+    //   pitch: -mdot * length_CG^2 * q
+    //   yaw  : -mdot * length_CG^2 * r
+    // Fixture: area_exit = 0.01, length_CG set to 1.0, mdot = 4.0, omega = (1,2,3).
+    TestDynamics dyn;
+    Rocket r = MakeTestRocket();
+    r.engine.mdot_prop = 4.0;
+    r.length_CG = 1.0;
+    r.angular_velocity << 1.0, 2.0, 3.0;  // p, q, r
+
+    const double k_roll_sq = 0.01 / (2.0 * pi);  // 1.5915494309189534e-3
+    const double arm2 = 1.0 * 1.0;
+    Eigen::Vector3d expected;
+    expected << -4.0 * k_roll_sq * 1.0,   // roll:  -6.3661977236758135e-3
+                -4.0 * arm2 * 2.0,        // pitch: -8.0
+                -4.0 * arm2 * 3.0;        // yaw:   -12.0
+
+    Eigen::Vector3d m = dyn.JetDampingMoment(&r);
+    EXPECT_TRUE(m.isApprox(expected, 1e-12))
+        << "got: " << m.transpose() << "  expected: " << expected.transpose();
+}
+
+TEST(DynamicsBase, JetDamping_OpposesAngularVelocity) {
+    // Damping: with mdot > 0 each component has the opposite sign to omega_i.
+    TestDynamics dyn;
+    Rocket r = MakeTestRocket();
+    r.engine.mdot_prop = 4.0;
+    r.length_CG = 1.0;
+    r.angular_velocity << 1.0, -2.0, 3.0;
+    Eigen::Vector3d m = dyn.JetDampingMoment(&r);
+    EXPECT_LT(m[0], 0.0);  // p > 0 -> negative
+    EXPECT_GT(m[1], 0.0);  // q < 0 -> positive
+    EXPECT_LT(m[2], 0.0);  // r > 0 -> negative
+}
+
+TEST(DynamicsBase, JetDamping_ScalesLinearlyWithMdot) {
+    // Invariant: the moment is proportional to mdot; doubling mdot doubles it.
+    TestDynamics dyn;
+    Rocket r = MakeTestRocket();
+    r.length_CG = 1.0;
+    r.angular_velocity << 1.0, 2.0, 3.0;
+
+    r.engine.mdot_prop = 4.0;
+    Eigen::Vector3d m1 = dyn.JetDampingMoment(&r);
+    r.engine.mdot_prop = 8.0;
+    Eigen::Vector3d m2 = dyn.JetDampingMoment(&r);
+    EXPECT_TRUE(m2.isApprox(2.0 * m1, 1e-12));
+}
+
+TEST(DynamicsBase, JetDamping_TransverseScalesQuadraticallyWithLengthCG) {
+    // The transverse (pitch/yaw) arm enters as length_CG^2; doubling length_CG
+    // quadruples pitch/yaw while roll (driven by area_exit) is unchanged.
+    TestDynamics dyn;
+    Rocket r = MakeTestRocket();
+    r.engine.mdot_prop = 4.0;
+    r.angular_velocity << 1.0, 2.0, 3.0;
+
+    r.length_CG = 1.0;
+    Eigen::Vector3d m1 = dyn.JetDampingMoment(&r);
+    r.length_CG = 2.0;
+    Eigen::Vector3d m2 = dyn.JetDampingMoment(&r);
+
+    EXPECT_NEAR(m2[0], m1[0], 1e-12);          // roll unchanged
+    EXPECT_NEAR(m2[1], 4.0 * m1[1], 1e-12);    // pitch x4
+    EXPECT_NEAR(m2[2], 4.0 * m1[2], 1e-12);    // yaw   x4
 }
 
 // =====================================================================

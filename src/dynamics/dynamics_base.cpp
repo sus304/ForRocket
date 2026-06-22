@@ -10,6 +10,8 @@
 
 #include <cmath>
 
+#include "degrad.hpp"
+
 
 Eigen::Vector3d forrocket::DynamicsBase::AeroForce(Rocket* p_rocket) {
     Eigen::Vector3d force_aero;
@@ -77,7 +79,16 @@ Eigen::Vector3d forrocket::DynamicsBase::AeroDampingMoment(Rocket* p_rocket) {
 Eigen::Vector3d forrocket::DynamicsBase::JetDampingMoment(Rocket* p_rocket) {
     Eigen::Vector3d moment_jet_dumping;
 
-    moment_jet_dumping << 0.0, 0.0, 0.0;
+    // ジェットダンピング: 排気がノズル出口で持ち去る角運動量による減衰モーメント M = -mdot * l^2 * omega
+    //   pitch/yaw (横軸): l = CG〜ノズル出口の軸距離。機体後端≒ノズル出口と仮定し length_CG を使用
+    //   roll (機軸):      l^2 = 排気の機軸まわり慣動半径^2 = r_e^2 / 2 = A_exit / (2*pi) (中央単ノズル一様分布)
+    const double mdot = p_rocket->engine.mdot_prop;
+    const double arm_transverse = p_rocket->length_CG;
+    const double k_roll_sq = p_rocket->engine.getAreaExit() / (2.0 * pi);
+
+    moment_jet_dumping[0] = -mdot * k_roll_sq * p_rocket->angular_velocity[0];
+    moment_jet_dumping[1] = -mdot * arm_transverse * arm_transverse * p_rocket->angular_velocity[1];
+    moment_jet_dumping[2] = -mdot * arm_transverse * arm_transverse * p_rocket->angular_velocity[2];
 
     return moment_jet_dumping;
 };

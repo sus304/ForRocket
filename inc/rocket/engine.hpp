@@ -46,6 +46,8 @@ namespace forrocket {
             void Ignittion();
             void Cutoff();
 
+            double getAreaExit() const { return area_exit; };
+
         private:
             void Reset();
             void getTotalImpulse(const double thrust, const double burn_duration);
