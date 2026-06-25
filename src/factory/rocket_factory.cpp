@@ -73,17 +73,21 @@ forrocket::Rocket forrocket::RocketFactory::Create(std::string rocket_config_jso
     } else {
         rocket.setLengthCG(InterpolateParameter(jc.getSubItem("Constant X-C.G.").getDouble("Constant X-C.G. from BodyTail [mm]") / 1e3));
     }
-    // Lateral CG offset (constant only; applies in both file and constant X-CG modes).
+    // Lateral CG offset of the inert (dry) structure; the effective lateral CG is mass-weighted
+    // with the propellant (assumed on centerline) at run time via Rocket::getYCG()/getZCG().
     // Prefer the dedicated "C.G. Offset" block; fall back to legacy nested keys under "Constant X-C.G." for backward compatibility.
     if (jc.contains("C.G. Offset")) {
         auto jc_off = jc.getSubItem("C.G. Offset");
-        if (jc_off.contains("y-C.G. Offset [mm]")) rocket.y_CG = jc_off.getDouble("y-C.G. Offset [mm]") / 1e3;
-        if (jc_off.contains("z-C.G. Offset [mm]")) rocket.z_CG = jc_off.getDouble("z-C.G. Offset [mm]") / 1e3;
+        if (jc_off.contains("y-C.G. Offset [mm]")) rocket.y_CG_inert = jc_off.getDouble("y-C.G. Offset [mm]") / 1e3;
+        if (jc_off.contains("z-C.G. Offset [mm]")) rocket.z_CG_inert = jc_off.getDouble("z-C.G. Offset [mm]") / 1e3;
     } else {
         auto jc_cg = jc.getSubItem("Constant X-C.G.");
-        if (jc_cg.contains("y-C.G. Offset [mm]")) rocket.y_CG = jc_cg.getDouble("y-C.G. Offset [mm]") / 1e3;
-        if (jc_cg.contains("z-C.G. Offset [mm]")) rocket.z_CG = jc_cg.getDouble("z-C.G. Offset [mm]") / 1e3;
+        if (jc_cg.contains("y-C.G. Offset [mm]")) rocket.y_CG_inert = jc_cg.getDouble("y-C.G. Offset [mm]") / 1e3;
+        if (jc_cg.contains("z-C.G. Offset [mm]")) rocket.z_CG_inert = jc_cg.getDouble("z-C.G. Offset [mm]") / 1e3;
     }
+    // Seed the effective offsets so they are sane before the first getYCG()/getZCG() update.
+    rocket.y_CG = rocket.y_CG_inert;
+    rocket.z_CG = rocket.z_CG_inert;
 
     if (jc.getBool("Enable M.I. File")) {
         auto MOI_log = LoadCsvLog(jc.getSubItem("M.I. File").getString("M.I. File Path"));

@@ -34,6 +34,8 @@ void forrocket::FlightDataRecorder::ReserveCapacity(const int capacity) {
     mass_prop.reserve(capacity);
     mass.reserve(capacity);
     length_CG.reserve(capacity);
+    y_CG.reserve(capacity);
+    z_CG.reserve(capacity);
     length_CP.reserve(capacity);
     inertia_tensor.reserve(capacity);
     CA.reserve(capacity);
@@ -68,6 +70,8 @@ void forrocket::FlightDataRecorder::operator()(const DynamicsBase::state& x, con
         mass_prop.push_back(p_rocket->mass.propellant);
         mass.push_back(p_rocket->mass.inert + p_rocket->mass.propellant);
         length_CG.push_back(p_rocket->length_CG);
+        y_CG.push_back(p_rocket->y_CG);
+        z_CG.push_back(p_rocket->z_CG);
         length_CP.push_back(p_rocket->length_CP);
         inertia_tensor.push_back(p_rocket->inertia_tensor);
         CA.push_back(p_rocket->CA);
@@ -104,6 +108,8 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
         ofs << "Propellant Mass [kg],";
         ofs << "Mass [kg],";
         ofs << "X-C.G. [%],";
+        ofs << "y-C.G. Offset [mm],";
+        ofs << "z-C.G. Offset [mm],";
         ofs << "X-C.P. [%],";
         ofs << "StaticMargin [%],";
         ofs << "xx_InertiaTensor [kg-m2],";
@@ -251,6 +257,8 @@ void forrocket::FlightDataRecorder::DumpCsv(const std::string file_name, bool fu
             ofs << std::setprecision(8) << mass_prop[i] << ",";
             ofs << std::setprecision(8) << mass[i] << ",";
             ofs << std::setprecision(2) << length_CG[i] / p_rocket->length * 100.0 << ",";  // [%]
+            ofs << std::setprecision(4) << y_CG[i] * 1e3 << ",";  // [mm], effective lateral CG offset (body +y)
+            ofs << std::setprecision(4) << z_CG[i] * 1e3 << ",";  // [mm], effective lateral CG offset (body +z)
             ofs << std::setprecision(2) << length_CP[i] / p_rocket->length * 100.0 << ",";  // [%]
             ofs << std::setprecision(2) << (length_CG[i] - length_CP[i]) / p_rocket->length * 100.0 << ",";  // Fst [%]
             ofs << std::setprecision(8) << inertia_tensor[i](0, 0) << ",";

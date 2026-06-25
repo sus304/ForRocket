@@ -37,6 +37,30 @@ TEST(Rocket, GetLengthCGBurningBranch) {
     EXPECT_DOUBLE_EQ(r.getLengthCG(), 1.0);  // burning -> reads src (=1.0)
 }
 
+TEST(Rocket, GetLateralCGMassWeighting) {
+    Rocket r = MakeTestRocket();  // inert = 10, propellant = 5
+    r.y_CG_inert = 1.5;
+    r.z_CG_inert = -0.6;
+    // Full propellant load: effective offset is diluted by the centerline propellant.
+    //   y = 1.5 * 10 / (10 + 5) = 1.0 ;  z = -0.6 * 10 / 15 = -0.4
+    EXPECT_DOUBLE_EQ(r.getYCG(), 1.0);
+    EXPECT_DOUBLE_EQ(r.getZCG(), -0.4);
+    EXPECT_DOUBLE_EQ(r.y_CG, 1.0);   // getter caches into the effective member
+    EXPECT_DOUBLE_EQ(r.z_CG, -0.4);
+    // Burned out: effective offset equals the inert (dry) structure offset.
+    r.mass.propellant = 0.0;
+    EXPECT_DOUBLE_EQ(r.getYCG(), 1.5);
+    EXPECT_DOUBLE_EQ(r.getZCG(), -0.6);
+}
+
+TEST(Rocket, GetLateralCGZeroMassFallsBackToInert) {
+    Rocket r = MakeTestRocket();
+    r.y_CG_inert = 2.0;
+    r.mass.inert = 0.0;
+    r.mass.propellant = 0.0;  // degenerate total mass -> fall back to inert offset
+    EXPECT_DOUBLE_EQ(r.getYCG(), 2.0);
+}
+
 TEST(Rocket, GetCNaAndLengthCP) {
     Rocket r = MakeTestRocket();
     EXPECT_DOUBLE_EQ(r.getCNa(0.5), 10.0);

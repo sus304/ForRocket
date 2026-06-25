@@ -125,6 +125,22 @@ double forrocket::Rocket::getLengthCG() {
     return this->length_CG;
 };
 
+// Effective lateral CG offset by mass-weighting the inert (dry structure) offset with the
+// propellant, which is assumed to sit on the centerline (no propellant eccentricity modeled):
+//   y_CG = y_CG_inert * m_inert / (m_inert + m_propellant)
+// As propellant burns off the effective offset grows toward the inert offset.
+double forrocket::Rocket::getYCG() {
+    const double mass_sum = mass.Sum();
+    this->y_CG = (mass_sum > 0.0) ? y_CG_inert * mass.inert / mass_sum : y_CG_inert;
+    return this->y_CG;
+};
+
+double forrocket::Rocket::getZCG() {
+    const double mass_sum = mass.Sum();
+    this->z_CG = (mass_sum > 0.0) ? z_CG_inert * mass.inert / mass_sum : z_CG_inert;
+    return this->z_CG;
+};
+
 double forrocket::Rocket::getLengthCP(const double mach_number) {
     this->length_CP = length_CP_src(mach_number);
     return this->length_CP;
