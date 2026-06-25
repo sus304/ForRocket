@@ -6,7 +6,13 @@ name: CI
 # `!tests/simulation_test.py`); otherwise CI has nothing to run.
 
 on:
+  # Long-lived branches: run CI on direct pushes (post-merge verification).
+  # Feature branches get CI via their PR (pull_request below), so a feature
+  # push with an open PR isn't double-run.
   push:
+    branches: [master, develop, dev_minor-update]
+  # Every PR, regardless of base branch — this is what satisfies the required
+  # status checks on the protected branches. Keep it unconditional.
   pull_request:
 
 jobs:

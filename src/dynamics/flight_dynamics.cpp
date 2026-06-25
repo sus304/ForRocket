@@ -72,6 +72,8 @@ void forrocket::FlightDynamics::UpdateAeroCoefficients(const Coordinate& coord, 
 
     p_rocket_->inertia_tensor = p_rocket_->getInertiaTensor();
     p_rocket_->length_CG = p_rocket_->getLengthCG();
+    p_rocket_->y_CG = p_rocket_->getYCG();
+    p_rocket_->z_CG = p_rocket_->getZCG();
     p_rocket_->length_CP = p_rocket_->getLengthCP(p_rocket_->velocity.mach_number);
     p_rocket_->CA = p_rocket_->getCA(p_rocket_->velocity.mach_number);
     p_rocket_->CNa = p_rocket_->getCNa(p_rocket_->velocity.mach_number);
@@ -152,6 +154,8 @@ void forrocket::FlightDynamics::Compute3dofOnLauncher(const state& x, state& dx,
 
     p_rocket_->inertia_tensor = p_rocket_->getInertiaTensor();
     p_rocket_->length_CG = p_rocket_->getLengthCG();
+    p_rocket_->y_CG = p_rocket_->getYCG();
+    p_rocket_->z_CG = p_rocket_->getZCG();
     p_rocket_->length_CP = p_rocket_->getLengthCP(p_rocket_->velocity.mach_number);
     p_rocket_->CA = p_rocket_->getCA(p_rocket_->velocity.mach_number);
     p_rocket_->CNa = p_rocket_->getCNa(p_rocket_->velocity.mach_number);

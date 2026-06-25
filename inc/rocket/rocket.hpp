@@ -40,8 +40,10 @@ namespace forrocket {
             double area = 0.0;
             double length = 0.0;
             double length_CG = 0.0;
-            double y_CG = 0.0;  // lateral CG offset from centerline [m], body +y
-            double z_CG = 0.0;  // lateral CG offset from centerline [m], body +z
+            double y_CG = 0.0;  // effective lateral CG offset from centerline [m], body +y (mass-weighted)
+            double z_CG = 0.0;  // effective lateral CG offset from centerline [m], body +z (mass-weighted)
+            double y_CG_inert = 0.0;  // inert (dry structure) lateral CG offset from centerline [m], body +y
+            double z_CG_inert = 0.0;  // inert (dry structure) lateral CG offset from centerline [m], body +z
             double length_CP = 0.0;
             Mass mass;
             Eigen::Matrix3d inertia_tensor;
@@ -114,6 +116,8 @@ namespace forrocket {
 
             // Parameter Getter
             double getLengthCG();
+            double getYCG();
+            double getZCG();
             double getLengthCP(const double mach_number);
             double getCA(const double mach_number);
             double getCNa(const double mach_number);
