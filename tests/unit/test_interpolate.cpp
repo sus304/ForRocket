@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>  // EXIT_FAILURE for death tests
+#include <algorithm>  // std::lower_bound (segment-selection reference tests)
 #include <cmath>    // std::isfinite
 #include <vector>
 
@@ -210,4 +211,86 @@ TEST(Interp1dDeathTest, BadKindExits) {
     std::vector<double> y = {0.0, 1.0};
     EXPECT_EXIT(Interp1d(x, y, "nope", "zero"),
                 ::testing::ExitedWithCode(EXIT_FAILURE), "polate kind");
+}
+
+// ---------------------------------------------------------------------------
+// Binary-search segment lookup must reproduce the original linear-scan
+// semantics exactly (same segment, same formula => bit-identical results).
+// Reference implementations below are verbatim copies of the pre-binary-search
+// scan logic.
+// ---------------------------------------------------------------------------
+namespace {
+
+double RefLinearScan(double x, const std::vector<double>& x_src, const std::vector<double>& y_src) {
+    for (std::size_t i = 0; i < x_src.size(); ++i) {
+        if (x == x_src[i]) return y_src[i];
+        if (x < x_src[i]) {
+            double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
+            return y_src[i-1] + slope * (x - x_src[i-1]);
+        }
+    }
+    return 0.0;  // unreachable for interior x
+}
+
+int RefCubicScanIndex(double x, const std::vector<double>& x_src) {
+    for (std::size_t i = 1; i < x_src.size(); ++i) {
+        if (x <= x_src[i]) return static_cast<int>(i) - 1;
+    }
+    return 0;  // unreachable for interior x
+}
+
+}  // namespace
+
+TEST(LinearInterp, BinarySearchMatchesLinearScanDenseSweep) {
+    // Irregular spacing + a duplicated abscissa (step discontinuity).
+    const std::vector<double> x = {0.0, 0.5, 0.5, 1.7, 3.0, 3.1, 10.0};
+    const std::vector<double> y = {1.0, 2.0, -4.0, 0.5, 8.0, -2.0, 3.0};
+    Interp1d f(x, y, "linear", "same");
+    for (int k = 0; k <= 10000; ++k) {
+        double q = x.front() + (x.back() - x.front()) * k / 10000.0;
+        EXPECT_EQ(f(q), RefLinearScan(q, x, y)) << "q=" << q;
+    }
+    // Exact knots, including both entries of the duplicate.
+    for (std::size_t i = 0; i < x.size(); ++i) {
+        EXPECT_EQ(f(x[i]), RefLinearScan(x[i], x, y)) << "knot i=" << i;
+    }
+}
+
+TEST(LinearInterp, BinarySearchOutOfRangeFillsUnchanged) {
+    Interp1d fz(kX, kY, "linear", "zero");
+    Interp1d fs(kX, kY, "linear", "same");
+    Interp1d fe(kX, kY, "linear", "extrapolate");
+    EXPECT_DOUBLE_EQ(fz(-0.5), 0.0);
+    EXPECT_DOUBLE_EQ(fz(3.5), 0.0);
+    EXPECT_DOUBLE_EQ(fs(-0.5), kY.front());
+    EXPECT_DOUBLE_EQ(fs(3.5), kY.back());
+    EXPECT_DOUBLE_EQ(fe(-0.5), 0.0);   // 1 + 2*(-1.5)... = -2.0
+    EXPECT_DOUBLE_EQ(fe(-0.5), 1.0 + 2.0 * (-0.5));
+    EXPECT_DOUBLE_EQ(fe(3.5), 7.0 + 2.0 * 0.5);
+}
+
+TEST(CubicSplineInterp, BinarySearchSegmentSelectionMatchesLinearScan) {
+    // Validates the lower_bound segment selection (with the i<1 clamp) against
+    // the original scan "first i>=1 with x <= x_src[i], take i-1", including a
+    // duplicated abscissa and both edges.
+    const std::vector<double> x = {0.0, 0.4, 1.1, 2.0, 2.0, 5.0, 9.0};
+    for (int k = 0; k <= 10000; ++k) {
+        double q = x.front() + (x.back() - x.front()) * k / 10000.0;
+        std::size_t i = std::lower_bound(x.begin(), x.end(), q) - x.begin();
+        if (i < 1) i = 1;
+        int idx_new = static_cast<int>(i) - 1;
+        EXPECT_EQ(idx_new, RefCubicScanIndex(q, x)) << "q=" << q;
+    }
+    for (std::size_t j = 0; j < x.size(); ++j) {
+        std::size_t i = std::lower_bound(x.begin(), x.end(), x[j]) - x.begin();
+        if (i < 1) i = 1;
+        EXPECT_EQ(static_cast<int>(i) - 1, RefCubicScanIndex(x[j], x)) << "knot j=" << j;
+    }
+    // End-to-end sanity: spline through nodes still passes through nodes.
+    const std::vector<double> xs = {0.0, 1.0, 2.0, 3.0};
+    const std::vector<double> ys = {1.0, 3.0, 5.0, 7.0};
+    Interp1d f(xs, ys, "cubic", "same");
+    for (std::size_t j = 0; j < xs.size(); ++j) {
+        EXPECT_NEAR(f(xs[j]), ys[j], 1e-12);
+    }
 }

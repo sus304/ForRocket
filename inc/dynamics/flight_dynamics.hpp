@@ -45,6 +45,7 @@ class FlightDynamics : public DynamicsBase {
     void Compute6dofProgramRate(const state& x, state& dx, const double t);
     void Compute3dofParachute(const state& x, state& dx, const double t);
 
+    Eigen::Vector3d GravityNED(const double altitude, const Coordinate& coord);
     void SyncNavigation(const state& x, double t, Coordinate& coord);
     void UpdateAeroCoefficients(const Coordinate& coord, const EnvironmentAir& air);
     void ComputeForces(const Coordinate& coord, const EnvironmentAir& air,

@@ -8,6 +8,7 @@
 
 #include "trajectory_solver.hpp"
 
+#include "degrad.hpp"
 #include "Eigen/Core"
 
 #include "json_control.hpp"
@@ -17,9 +18,8 @@
 #include "rocket/rocket.hpp"
 #include "dynamics/dynamics_base.hpp"
 
-#ifdef DEBUG
+#include <cstdlib>
 #include <iostream>
-#endif
 
 forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_file) {
     JsonControl jc_solver_config(solver_config_json_file);
@@ -41,6 +41,22 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
         stage.fdr = FlightDataRecorder(&stage.rocket);
     }
 
+    // 重力モデル（任意指定）
+    //   "legacy"（既定）    : GM/(a+h)^2 を鉛直下向きに与える従来モデル
+    //   "pointmass-j2"      : 質点+J2（地心半径・緯度依存・扁平項）。長時間・高高度飛行で推奨
+    if (jc_solver_config.contains("Gravity Model")) {
+        std::string gravity_model = jc_solver_config.getString("Gravity Model");
+        if (gravity_model == "pointmass-j2") {
+            for (auto& stage : stage_vector) {
+                stage.rocket.gravity_model_j2 = true;
+            }
+        } else if (gravity_model != "legacy") {
+            std::cerr << "Error! Undefined Gravity Model: " << gravity_model << std::endl;
+            std::cerr << "legacy / pointmass-j2" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
     // Prepare Launch - Master Clock
     DateTime launch_date(jc_solver_config.getString("Launch DateTime"));
     master_clock = SequenceClock(launch_date, 0.0);
@@ -60,13 +76,13 @@ forrocket::TrajectorySolver::TrajectorySolver(std::string solver_config_json_fil
 
     Eigen::Vector3d euler;
     euler << jc_launch.getDouble("Azimuth [deg]"), jc_launch.getDouble("Elevation [deg]"), 0.0;
-    euler = euler / 180.0 * 3.14159265;
+    euler = euler / 180.0 * pi;
     rocket_first_stage.attitude.Initialize(euler);
 
     rocket_first_stage.angular_velocity << jc_launch.getDouble("Roll Angular Velocity [deg/s]"),
                                             jc_launch.getDouble("Pitch Angular Velocity [deg/s]"),
                                             jc_launch.getDouble("Yaw Angular Velocity [deg/s]");
-    rocket_first_stage.angular_velocity = rocket_first_stage.angular_velocity / 180.0 * 3.14159265;
+    rocket_first_stage.angular_velocity = rocket_first_stage.angular_velocity / 180.0 * pi;
 
     // Prepare Launch - Wind
     auto jc_wind = jc_solver_config.getSubItem("Wind Condition");

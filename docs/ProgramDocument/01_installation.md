@@ -89,7 +89,7 @@ cd examples
 正常に終了すると以下のように表示され、`sample_stage1_flight_log.csv` が生成される:
 
 ```
-ForRocket v4.2.0 Contact.
+ForRocket v4.4.2 Contact.
 Solver Start.
 Solver Terminate.
 Export Result ...

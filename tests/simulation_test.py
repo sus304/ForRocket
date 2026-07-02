@@ -15,6 +15,7 @@ import argparse
 import csv
 import copy
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -430,7 +431,12 @@ def test_attitude_free_axes(suite: TestSuite, runner: ScenarioRunner):
     )
     suite.check("Roll at t=10s ≈ 0°", t1.at(Col.ROLL, 10), 0.0, 0.5, "°")
     suite.check("Roll at t=30s ≈ 0°", t1.at(Col.ROLL, 30), 0.0, 0.5, "°")
-    suite.check("Roll at t=60s ≈ 0°", t1.at(Col.ROLL, 60), 0.0, 0.5, "°")
+    # NOTE: sample INSIDE the control window (program ends at t=60.0). Angle-mode
+    # control overrides the logged euler angle while the underlying quaternion
+    # drifts (~-0.84° over 60 s), so at exactly t=60.0 the roll snaps to the
+    # drifted quaternion value — checking at 60.0 sits on that discontinuity and
+    # flips with millisecond-level step placement.
+    suite.check("Roll at t=59.9s ≈ 0°", t1.at(Col.ROLL, 59.9), 0.0, 0.5, "°")
     suite.check_near("Elevation at t=30s matches baseline", t1.at(Col.ELEVATION, 30), base_elv_30, 0.5, "°")
     suite.check_near("Elevation at t=60s matches baseline", t1.at(Col.ELEVATION, 60), base_elv_60, 1.5, "°")
     suite.check_angle("Azimuth at t=30s matches baseline", t1.at(Col.AZIMUTH, 30), base_az_30, 1.0)
@@ -616,6 +622,132 @@ def test_parachute_wind_drift(suite: TestSuite, runner: ScenarioRunner):
             )
 
 
+def test_solver_convergence(suite: TestSuite, runner: ScenarioRunner):
+    """
+    Tolerance convergence: the same scenario at Rel 1e-6 / 1e-7 / 1e-9 must
+    converge — the 1e-7 result should be close to the 1e-9 reference, and no
+    farther from it than the 1e-6 result is. Guards against 'apparent physics'
+    that is actually integration drift at loose tolerance.
+    """
+    suite.section("Solver tolerance convergence (Rel 1e-6 → 1e-7 → 1e-9)")
+    apogee = {}
+    for rel, ab in ((1e-6, 1e-6), (1e-7, 1e-9), (1e-9, 1e-9)):
+        seq = make_seq()
+        seq["Solver Tolerance Rel"] = rel
+        seq["Solver Tolerance Abs"] = ab
+        log = runner.run(f"tol rel={rel:g}", make_rocket(), seq=seq)
+        apogee[rel] = max(log.col(Col.ALTITUDE))
+        suite.info(f"Apogee at Rel={rel:g}", f"{apogee[rel]:.2f}", "m")
+    err6 = abs(apogee[1e-6] - apogee[1e-9])
+    err7 = abs(apogee[1e-7] - apogee[1e-9])
+    suite.check_cond("1e-7 apogee within 2 m of 1e-9 reference",
+                     err7 < 2.0, f"|Δ|={err7:.3f}m")
+    suite.check_cond("Tightening tolerance does not diverge (err(1e-7) ≤ err(1e-6)+0.5m)",
+                     err7 <= err6 + 0.5, f"err6={err6:.3f}m err7={err7:.3f}m")
+
+
+def test_launcher_friction(suite: TestSuite, runner: ScenarioRunner):
+    """
+    "Rail Launcher"/"Friction Coefficient [-]" (optional JSON key):
+      - omitting the key must reproduce the legacy hardcoded 0.2 exactly,
+      - more friction must mean a lower speed at rail exit (monotonicity).
+    """
+    suite.section("Launcher rail friction coefficient")
+    T_ON_RAIL = 0.3   # [s] well before the ~5 m rail is cleared
+
+    def run_mu(label, mu):
+        seq = make_seq()
+        if mu is not None:
+            seq["Rail Launcher"]["Friction Coefficient [-]"] = mu
+        return runner.run(label, make_rocket(), seq=seq)
+
+    log_default = run_mu("friction default(omitted)", None)
+    log_02      = run_mu("friction mu=0.2", 0.2)
+    log_00      = run_mu("friction mu=0.0", 0.0)
+    log_50      = run_mu("friction mu=5.0", 5.0)
+
+    suite.check_near("Omitted key == explicit 0.2 (backward compat, apogee)",
+                     max(log_default.col(Col.ALTITUDE)),
+                     max(log_02.col(Col.ALTITUDE)), 0.01, "m")
+    v_00 = log_00.at(Col.VX_BODY, T_ON_RAIL)
+    v_50 = log_50.at(Col.VX_BODY, T_ON_RAIL)
+    suite.info("Vx-body on rail (mu=0.0)", f"{v_00:.3f}", "m/s")
+    suite.info("Vx-body on rail (mu=5.0)", f"{v_50:.3f}", "m/s")
+    suite.check_cond("More friction → slower on rail", v_00 > v_50,
+                     f"{v_00:.3f} > {v_50:.3f} m/s")
+
+
+def test_gravity_model_j2(suite: TestSuite, runner: ScenarioRunner):
+    """
+    "Gravity Model": "pointmass-j2" (optional solver-config key): at ~40 deg N
+    the legacy model (GM/(a+h)^2 straight down) underestimates |g| (it uses the
+    equatorial radius as the geocentric radius and omits J2), so switching to
+    pointmass-j2 must LOWER the apogee by a small, bounded amount.
+    """
+    suite.section("Gravity model: legacy vs pointmass-j2")
+    solver_legacy = make_solver()
+    solver_j2 = make_solver()
+    solver_j2["Gravity Model"] = "pointmass-j2"
+
+    ap_legacy = max(runner.run("gravity legacy", make_rocket(),
+                               solver=solver_legacy).col(Col.ALTITUDE))
+    ap_j2 = max(runner.run("gravity pointmass-j2", make_rocket(),
+                           solver=solver_j2).col(Col.ALTITUDE))
+    diff = ap_legacy - ap_j2
+    suite.info("Apogee legacy", f"{ap_legacy:.2f}", "m")
+    suite.info("Apogee pointmass-j2", f"{ap_j2:.2f}", "m")
+    suite.check_cond("pointmass-j2 lowers apogee at 40N", diff > 0, f"Δ={diff:+.2f}m")
+    suite.check_cond("Apogee shift in plausible band (5–200 m for ~19 km apogee)",
+                     5.0 < diff < 200.0, f"Δ={diff:.2f}m")
+
+
+def test_state_invariants(suite: TestSuite, runner: ScenarioRunner):
+    """
+    Whole-flight state invariants on a plain ballistic run:
+      - propellant mass never goes negative,
+      - total mass never increases,
+      - logged attitude quaternion stays unit-norm.
+    Plus a characterization of a KNOWN quirk: in angle-mode program attitude the
+    logged euler angles are overridden while the underlying quaternion drifts,
+    so at program end the logged roll SNAPS to the drifted value. If this test
+    starts failing after a dynamics change, the quirk was probably fixed —
+    update the expectation rather than the code.
+    """
+    suite.section("State invariants (ballistic run)")
+    log = runner.run("invariants", make_rocket())
+
+    # Known tiny overshoot: burnout is gated by mass_prop > 0, but the last
+    # integration step can carry x[13] a few 1e-8 kg below zero (no clamp in
+    # the RHS). Physically negligible; assert it stays in that regime.
+    prop = log.col(Col.PROP_MASS)
+    suite.check_cond("Propellant mass never below -1e-6 kg (burnout overshoot only)",
+                     min(prop) >= -1e-6, f"min={min(prop):.6g}kg")
+    mass = log.col(Col.MASS)
+    max_increase = max((b - a) for a, b in zip(mass, mass[1:]))
+    suite.check_cond("Total mass never increases",
+                     max_increase <= 1e-9, f"max step increase={max_increase:.3g}kg")
+    qnorm_err = max(abs(math.sqrt(q1*q1 + q2*q2 + q3*q3 + q4*q4) - 1.0)
+                    for q1, q2, q3, q4 in zip(log.col(Col.Q1), log.col(Col.Q2),
+                                              log.col(Col.Q3), log.col(Col.Q4)))
+    suite.check_cond("Quaternion stays unit-norm (|1-|q|| < 1e-6)",
+                     qnorm_err < 1e-6, f"max err={qnorm_err:.3g}")
+
+    suite.section("Characterization: attitude-release snap (known quirk)")
+    att_csv = "time,yaw,pitch,roll\n0.0,270,85,0\n60.0,270,85,0\n"
+    log_t1 = runner.run(
+        "roll-hold release",
+        make_rocket({"mode": "Angle", "enable_yaw": False, "enable_pitch": False,
+                     "enable_roll": True, "file_path": "att_snap.csv"}),
+        attitude_csv=att_csv, attitude_csv_name="att_snap.csv",
+    )
+    roll_before = log_t1.at(Col.ROLL, 59.5)
+    roll_after = log_t1.at(Col.ROLL, 60.3)
+    snap = abs(roll_after - roll_before)
+    suite.check("Roll held at 0 while controlled (t=59.5s)", roll_before, 0.0, 0.1, "°")
+    suite.check_cond("Roll snaps to drifted quaternion at program end (t=60s)",
+                     snap > 0.2, f"snap={snap:.3f}° (drift hidden by angle-mode override)")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
@@ -625,6 +757,10 @@ ALL_TESTS = {
     "attitude_angle_all_axes":  test_attitude_angle_all_axes,
     "parachute_dynamics":       test_parachute_dynamics,
     "parachute_wind_drift":     test_parachute_wind_drift,
+    "solver_convergence":       test_solver_convergence,
+    "launcher_friction":        test_launcher_friction,
+    "gravity_model_j2":         test_gravity_model_j2,
+    "state_invariants":         test_state_invariants,
 }
 
 

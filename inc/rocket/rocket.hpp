@@ -84,6 +84,8 @@ namespace forrocket {
             };
             GasJetConfig gas_jet_config;
             double time_launch_clear = 1.0e10;
+            double friction_coefficient_launcher = 0.2;  // ランチャ・ラグ間摩擦係数 [-]
+            bool gravity_model_j2 = false;  // true: 質点+J2重力（"Gravity Model": "pointmass-j2"） / false: 従来 GM/(a+h)^2 鉛直下向き
 
             Eigen::Vector4d quaternion_dot;
             Eigen::Vector3d angular_velocity;

@@ -151,11 +151,15 @@ void WriteStageList(const std::string& path) {
 
 // Solver config: single stage, wind DISABLED (exercises EnvironmentWind(false)
 // branch -> no wind CSV needed), launch site identical to the bundled sample.
-void WriteSolverJson(const std::string& path) {
+// gravity_model: "" omits the optional "Gravity Model" key entirely.
+void WriteSolverJson(const std::string& path, const std::string& gravity_model = "") {
     std::ofstream ofs(path);
     ofs << "{\n"
-        << "    \"Model ID\": \"smoke\",\n"
-        << "    \"Launch DateTime\": \"2020/08/23 9:00:00.0\",\n"
+        << "    \"Model ID\": \"smoke\",\n";
+    if (!gravity_model.empty()) {
+        ofs << "    \"Gravity Model\": \"" << gravity_model << "\",\n";
+    }
+    ofs << "    \"Launch DateTime\": \"2020/08/23 9:00:00.0\",\n"
         << "    \"Launch Condition\": {\n"
         << "        \"Latitude [deg]\": 40.242865,\n"
         << "        \"Longitude [deg]\": 140.01045,\n"
@@ -234,6 +238,35 @@ TEST_F(TrajectorySolverTest, ConstructSingleStage_Smoke) {
 
     // --- master clock seeded from "Launch DateTime" (countup starts at 0) ---
     EXPECT_DOUBLE_EQ(solver.master_clock.countup_time, 0.0);
+}
+
+// ---------------------------------------------------------------------------
+// "Gravity Model" (optional solver-config key, added with the pointmass-j2
+// gravity option): omitted / "legacy" -> flag false; "pointmass-j2" -> flag
+// true on every stage; unknown value -> exit(EXIT_FAILURE) with a message.
+// ---------------------------------------------------------------------------
+TEST_F(TrajectorySolverTest, GravityModelOmittedDefaultsToLegacy) {
+    TrajectorySolver solver(kSolverJson);  // fixture writes no "Gravity Model" key
+    EXPECT_FALSE(solver.stage_vector[0].rocket.gravity_model_j2);
+}
+
+TEST_F(TrajectorySolverTest, GravityModelLegacyKeepsFlagFalse) {
+    WriteSolverJson(kSolverJson, "legacy");
+    TrajectorySolver solver(kSolverJson);
+    EXPECT_FALSE(solver.stage_vector[0].rocket.gravity_model_j2);
+}
+
+TEST_F(TrajectorySolverTest, GravityModelPointMassJ2SetsFlag) {
+    WriteSolverJson(kSolverJson, "pointmass-j2");
+    TrajectorySolver solver(kSolverJson);
+    EXPECT_TRUE(solver.stage_vector[0].rocket.gravity_model_j2);
+}
+
+TEST_F(TrajectorySolverTest, GravityModelUnknownValueExits) {
+    WriteSolverJson(kSolverJson, "j4-full");
+    EXPECT_EXIT({ TrajectorySolver solver(kSolverJson); },
+                ::testing::ExitedWithCode(EXIT_FAILURE),
+                "Undefined Gravity Model");
 }
 
 }  // namespace forrocket

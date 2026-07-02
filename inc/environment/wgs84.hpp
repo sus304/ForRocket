@@ -18,6 +18,7 @@ namespace forrocket {
             double inv_f = 298.257223563;  // inverse flattening factor
             double omega = 7292115e-11;  // [rad/s]
             double GM = 3.986004418e14;  // [m3/s2] geocentric gravitational constant
+            double J2 = 1.08262668e-3;  // [-] 2nd zonal harmonic coefficient (dynamic form factor)
 
             double f = 1.0 / inv_f;
             double b = a * (1.0 - f);  // [m] semi-minor axis

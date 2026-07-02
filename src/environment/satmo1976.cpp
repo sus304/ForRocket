@@ -10,14 +10,17 @@
 
 #include <array>
 
-double standardatmosphere1976::pi = 3.14159265;
+double standardatmosphere1976::pi = 3.141592653589793;
 
-double standardatmosphere1976::polar_radius = 6356.7523;
+// U.S. Standard Atmosphere 1976 (NOAA/NASA/USAF, 1976) defines the effective
+// earth radius r0 = 6356.766 km for the geometric <-> geopotential height
+// conversion (Part 1, eq. 18).
+double standardatmosphere1976::us76_earth_radius = 6356.766;
 // double standardatmosphere1976::equatorial_radius = 6378.1370;
 // double standardatmosphere1976::lat45deg_radius = 6367.4895;
 // double standardatmosphere1976::authalic_radius = 6371.0012;  // same area earth
 // double standardatmosphere1976::volumetric_radius = 6371.0008;  // same valume earth
-double standardatmosphere1976::earth_radius = polar_radius;
+double standardatmosphere1976::earth_radius = us76_earth_radius;
 
 double standardatmosphere1976::g0 = 9.80665;
 double standardatmosphere1976::mol_weight_sealevel = 28.9644;
@@ -44,26 +47,25 @@ double standardatmosphere1976::soundspeed_sealevel = 340.294;
 // double standardatmosphere1976::free_path_sealevel = Rstar * temp_sealevel / (std::sqrt(2.0) * pi * avogadro * area_air * area_air * pressure_sealevel);
 // double standardatmosphere1976::pressure_scaleheight_sealevel = Rstar * temp_sealevel / (mol_weight_sealevel * g0);
 
-std::vector<double> standardatmosphere1976::Atmosphere(double geometric_altitude) {
+std::array<double, 4> standardatmosphere1976::Atmosphere(double geometric_altitude) {
     // input : geometric altitude [m]
     // output: density, pressure, temeratrue, sound speed
-    std::vector<double> res;
+    std::array<double, 3> res;
     if (geometric_altitude > 86.0e3) {
         res = UpperAtmosphere(geometric_altitude/1e3);
     } else {
         res = LowerAtmosphere(geometric_altitude/1e3);
     }
-    res.push_back(std::sqrt(res[2] / temp_sealevel) * soundspeed_sealevel);
-    return res;
+    return {{res[0], res[1], res[2], std::sqrt(res[2] / temp_sealevel) * soundspeed_sealevel}};
 };
 
-std::vector<double> standardatmosphere1976::LowerAtmosphere(double geometric_altitude) {
+std::array<double, 3> standardatmosphere1976::LowerAtmosphere(double geometric_altitude) {
     using Layer = std::array<double, 8>;
-    Layer height_array = {0.0, 11.0, 20.0, 32.0, 47.0, 51.0, 71.0, 84.852};  // [km] geopotential height
-    Layer temperature_gradient_array = {-6.5, 0.0, 1.0, 2.8, 0.0, -2.8, -2.0, 0.0};  // [K/km] Temperature gradient
-    Layer temperature_array = {288.15, 216.65, 216.65, 228.65, 270.65, 270.65, 214.65, 186.946};  // [K]
+    static const Layer height_array = {0.0, 11.0, 20.0, 32.0, 47.0, 51.0, 71.0, 84.852};  // [km] geopotential height
+    static const Layer temperature_gradient_array = {-6.5, 0.0, 1.0, 2.8, 0.0, -2.8, -2.0, 0.0};  // [K/km] Temperature gradient
+    static const Layer temperature_array = {288.15, 216.65, 216.65, 228.65, 270.65, 270.65, 214.65, 186.946};  // [K]
     // Layer pressure_array = {101325.0, 22632.0, 5474.9, 868.02, 110.91, 66.939, 3.9564, 0.3734};  // [Pa]
-    Layer pressure_gradient_array = {1.0, 2.233611e-1, 5.403295e-2, 8.5666784e-3, 1.0945601e-3, 6.6063531e-4, 3.9046834e-5, 3.68501e-6};
+    static const Layer pressure_gradient_array = {1.0, 2.233611e-1, 5.403295e-2, 8.5666784e-3, 1.0945601e-3, 6.6063531e-4, 3.9046834e-5, 3.68501e-6};
 
     double geopotential_height = geometric_altitude * earth_radius / (geometric_altitude + earth_radius);  // geopotential altitude
 
@@ -95,41 +97,48 @@ std::vector<double> standardatmosphere1976::LowerAtmosphere(double geometric_alt
     }
     double sigma = delta / theta;
 
-    std::vector<double> res = {sigma * density_sealevel, delta * pressure_sealevel, theta * temp_sealevel};
-    return res;
+    return {{sigma * density_sealevel, delta * pressure_sealevel, theta * temp_sealevel}};
 };
 
 
-std::vector<double> standardatmosphere1976::UpperAtmosphere(double geometric_altitude) {
+namespace {
+    std::array<double, 25> LogArray(const std::array<double, 25>& src) {
+        std::array<double, 25> res;
+        for (int i=0; i < 25; ++i) {
+            res[i] = std::log(src[i]);
+        }
+        return res;
+    }
+}
+
+std::array<double, 3> standardatmosphere1976::UpperAtmosphere(double geometric_altitude) {
     using Layer = std::array<double, 25>;
-    Layer height_array = {86.0, 93.0, 100.0, 107.0, 114.0, 121.0, 128.0, 135.0, 142.0, 150.0, 
-                            160.0, 170.0, 180.0, 190.0, 200.0, 220.0, 260.0, 300.0, 400.0, 
+    static const Layer height_array = {86.0, 93.0, 100.0, 107.0, 114.0, 121.0, 128.0, 135.0, 142.0, 150.0,
+                            160.0, 170.0, 180.0, 190.0, 200.0, 220.0, 260.0, 300.0, 400.0,
                             500.0, 600.0, 700.0, 800.0, 900.0, 1000.0};
-    Layer pressure_ratio_array = {3.6850e-6, 1.0660e-6, 3.1593e-7, 1.0611e-7, 4.3892e-8, 
-                                        2.3095e-8, 1.3997e-8, 9.2345e-9, 6.4440e-9, 4.4828e-9, 
-                                        2.9997e-9, 2.0933e-9, 1.5072e-9, 1.1118e-9, 8.3628e-10, 
-                                        4.9494e-10, 1.9634e-10, 8.6557e-11, 1.4328e-11, 2.9840e-12,  
+    static const Layer pressure_ratio_array = {3.6850e-6, 1.0660e-6, 3.1593e-7, 1.0611e-7, 4.3892e-8,
+                                        2.3095e-8, 1.3997e-8, 9.2345e-9, 6.4440e-9, 4.4828e-9,
+                                        2.9997e-9, 2.0933e-9, 1.5072e-9, 1.1118e-9, 8.3628e-10,
+                                        4.9494e-10, 1.9634e-10, 8.6557e-11, 1.4328e-11, 2.9840e-12,
                                         8.1056e-13, 3.1491e-13, 1.6813e-13, 1.0731e-13, 7.4155e-14};
-    Layer density_ratio_array = {5.680E-6, 1.632E-6, 4.575E-7, 1.341E-7, 4.061E-8,
+    static const Layer density_ratio_array = {5.680E-6, 1.632E-6, 4.575E-7, 1.341E-7, 4.061E-8,
                                     1.614e-8, 7.932e-9, 4.461e-9, 2.741e-9, 1.694e-9,
                                     1.007e-9, 6.380e-10, 4.240e-10, 2.923e-10, 2.074e-10,
                                     1.116e-10, 3.871e-11, 1.564e-11, 2.288e-12, 4.257e-13,
                                     9.279e-14, 2.506e-14, 9.272e-15, 4.701e-15, 2.907e-15};
 
-    Layer log_pressure_ratio_array;
-    Layer log_density_ratio_array;
-    for (int i=0; i < 25; ++i) {
-        log_pressure_ratio_array[i] = std::log(pressure_ratio_array[i]);
-        log_density_ratio_array[i] = std::log(density_ratio_array[i]);
-    }
+    // Computed once: 50 std::log calls per evaluation would otherwise dominate
+    // the >86 km regime.
+    static const Layer log_pressure_ratio_array = LogArray(pressure_ratio_array);
+    static const Layer log_density_ratio_array = LogArray(density_ratio_array);
 
-    Layer delta_log_pressure_ratio_array = {-0.174061, -0.177924, -0.167029, -0.142755, -0.107859,
+    static const Layer delta_log_pressure_ratio_array = {-0.174061, -0.177924, -0.167029, -0.142755, -0.107859,
                                             -0.079322, -0.064664, -0.054879, -0.048260, -0.042767,
                                             -0.037854, -0.034270, -0.031543, -0.029384, -0.027632,
                                             -0.024980, -0.021559, -0.019557, -0.016735, -0.014530,
                                             -0.011314, -0.007677, -0.005169, -0.003944, -0.003612};
 
-    Layer delta_log_density_ratio_array = {-0.172421, -0.182258, -0.178090, -0.176372, -0.154322,
+    static const Layer delta_log_density_ratio_array = {-0.172421, -0.182258, -0.178090, -0.176372, -0.154322,
                                             -0.113750, -0.090582, -0.075033, -0.064679, -0.056067,
                                             -0.048461, -0.043042, -0.038869, -0.035648, -0.033063,
                                             -0.029164, -0.024220, -0.021336, -0.017686, -0.016035,
@@ -137,8 +146,7 @@ std::vector<double> standardatmosphere1976::UpperAtmosphere(double geometric_alt
 
     if (geometric_altitude >= height_array.back()) {  // >= : at exactly 1000 km the
         // binary search below would land i=24 and read height_array[i+1] out of bounds.
-        std::vector<double> res = {density_ratio_array.back() * density_sealevel, pressure_ratio_array.back() * pressure_sealevel, 1000.0};
-        return res;
+        return {{density_ratio_array.back() * density_sealevel, pressure_ratio_array.back() * pressure_sealevel, 1000.0}};
     }
     
     int i = 0;
@@ -160,8 +168,7 @@ std::vector<double> standardatmosphere1976::UpperAtmosphere(double geometric_alt
     double sigma = std::exp(EvaluateCubic(height_array[i], log_density_ratio_array[i], delta_log_density_ratio_array[i],
                                             height_array[i+1], log_density_ratio_array[i+1], delta_log_density_ratio_array[i+1], geometric_altitude));
     double temperatrue = KineticTemperature(geometric_altitude);
-    std::vector<double> res = {sigma * density_sealevel, delta * pressure_sealevel, temperatrue};
-    return res;
+    return {{sigma * density_sealevel, delta * pressure_sealevel, temperatrue}};
 };
 
 

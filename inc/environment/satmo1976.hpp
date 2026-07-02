@@ -9,13 +9,13 @@
 #ifndef SATMO1976_HPP_
 #define SATMO1976_HPP_
 
+#include <array>
 #include <cmath>
-#include <vector>
 
 namespace standardatmosphere1976 {
     extern double pi;
 
-    extern double polar_radius;
+    extern double us76_earth_radius;
     // extern double equatorial_radius;
     // extern double lat45deg_radius;
     // extern double authalic_radius;  // same area earth
@@ -48,9 +48,9 @@ namespace standardatmosphere1976 {
     // extern double pressure_scaleheight_sealevel;
 
     
-    std::vector<double> Atmosphere(double geometric_altitude);
-    std::vector<double> LowerAtmosphere(double geometric_altitude);
-    std::vector<double> UpperAtmosphere(double geometric_altitude);
+    std::array<double, 4> Atmosphere(double geometric_altitude);
+    std::array<double, 3> LowerAtmosphere(double geometric_altitude);
+    std::array<double, 3> UpperAtmosphere(double geometric_altitude);
     double EvaluateCubic(double a, double fa, double fpa, double b, double fb, double fpb, double u);
     double KineticTemperature(double geometric_altitude);
 }

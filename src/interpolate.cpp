@@ -8,6 +8,7 @@
 
 #include "interpolate.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 
@@ -129,15 +130,13 @@ Eigen::VectorXd forrocket::interpolate::Interp1d::operator()(const Eigen::Vector
 
 double forrocket::interpolate::Linear1D::polate(const double& x, const std::vector<double>& x_src, const std::vector<double>& y_src, const int& fill_value) {
     if (x >= x_src[0] && x <= x_src.back()) {  // 内挿
-        for (std::size_t i=0; i < x_src.size(); ++i) {
-            if (x == x_src[i]) {
-                return y_src[i];
-            }
-            if (x < x_src[i]) {
-                double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
-                return y_src[i-1] + slope * (x - x_src[i-1]);
-            }
+        // 最初の x_src[i] >= x を二分探索（線形走査と同じ区間・同じ式で評価する）
+        std::size_t i = std::lower_bound(x_src.begin(), x_src.end(), x) - x_src.begin();
+        if (x == x_src[i]) {
+            return y_src[i];
         }
+        double slope = (y_src[i] - y_src[i-1]) / (x_src[i] - x_src[i-1]);
+        return y_src[i-1] + slope * (x - x_src[i-1]);
     } else if (x < x_src[0]) {  // 左外挿
         switch (fill_value) {
         case 0:  // zero
@@ -293,12 +292,10 @@ double forrocket::interpolate::CubicSpline1D::polate(const double& x, const std:
         }
     }
     else if (x >= x_src[0] && x <= x_src[x_src.size()-1]) {  // 内挿
-        for (std::size_t i=1; i < x_src.size(); ++i) {
-            if (x <= x_src[i]) {
-                index_target = static_cast<int>(i) - 1;
-                break;
-            }
-        }
+        // 最初の x_src[i] >= x (i >= 1) を二分探索（線形走査と同じ区間選択）
+        std::size_t i = std::lower_bound(x_src.begin(), x_src.end(), x) - x_src.begin();
+        if (i < 1) i = 1;
+        index_target = static_cast<int>(i) - 1;
     }
     else if (x > x_src[x_src.size()-1]) {  // 右外挿
         switch (fill_value) {

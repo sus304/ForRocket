@@ -175,6 +175,11 @@ I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
 \bm{M}^B_T &=& \bm{F}^B_T \times \bm{r}
 \end{eqnarray}
 横方向オフセット $Y_{CG}, Z_{CG}, Y_T, Z_T$ はいずれも省略時 0 で、その場合は従来の機軸上のみの定式化と一致する。推力ベクトル $\bm{F}^B_T$ にはエンジンミスアライメント角（既存）が反映される。
+なお入力する横方向重心オフセットは乾燥構造（インート）部のものであり、v4.4.2 より実効的な横方向重心は推進薬（機軸上にあると仮定）との質量重み付けで算出される。乾燥質量を $m_{inert}$、推進薬質量を $m_{prop}$ として
+\begin{equation}
+Y_{CG} = Y_{CG,inert} \cdot \frac{m_{inert}}{m_{inert} + m_{prop}}
+\end{equation}
+（$Z_{CG}$ も同様）であり、推進薬の消費に伴いインート値へ漸近する。
 
 \subsubsection{空気力モーメント}
 外力として計算されている機体座標系での空気力ベクトルと、重心と圧力中心位置 $X_{CP}$ の距離をモーメントアームとして計算する。
@@ -185,25 +190,31 @@ I_{zz} \dot{r} &= (I_{xx}-I_{yy})pq+M_r
 ロール軸の空気力モーメントについては尾翼のカント角 $\delta$ によるモーメントのみを考慮する。
 カント角によるロールモーメント係数 $C_{l\delta}$ を用いて
 \begin{equation}
-M^B_{A,x} = Q \cdot C_{l\delta} \cdot S \cdot L \cdot \delta
+M^B_{A,x} = Q \cdot C_{l\delta} \cdot S \cdot d \cdot \delta
 \end{equation}
 で計算する。
-ここで $L$ は機体全長、$\delta$ は尾翼1枚あたりのカント角である。
-入力する $C_{l\delta}$ の次元に留意すること。
+ここで $d$ は機体直径、$\delta$ は尾翼1枚あたりのカント角である。
+基準長は v4.2.2 より機体全長 $L$ から機体直径 $d$ に変更された。
+また $C_{l\delta}$ は尾翼全体（クロスフィン）合計の値を入力する（v4.2.2 より旧版の「1枚あたり係数 $\times 4$」を廃止）。入力する $C_{l\delta}$ の次元に留意すること。
 
 \subsubsection{空気力減衰モーメント}
 空気力減衰モーメントは各軸の減衰モーメント係数を用いて計算する。
 \begin{eqnarray}
 C_{ad} &=& [C_{lp}, C_{mq}, C_{nr}]^T \\
-\bm{M}^B_{AD} &=& Q \cdot C_{ad} \cdot S \cdot \frac{L^2}{2 \bm{v^B}} \cdot \omega^B
+\bm{M}^B_{AD} &=& Q \cdot C_{ad} \cdot S \cdot \frac{d^2}{2 \bm{v^B}} \cdot \omega^B
 \end{eqnarray}
-軸対称のロケットであれば $C_{mq}$ と $C_{nr}$ は同等である。
+ここで基準長は機体直径 $d$ である（v4.2.2 より機体全長 $L$ から変更）。減衰モーメント係数 $C_{lp}, C_{mq}, C_{nr}$ は $d$ で無次元化した値を入力する。軸対称のロケットであれば $C_{mq}$ と $C_{nr}$ は同等である。
 
 \subsubsection{ジェット減衰モーメント}
-ロケットエンジンの排気による慣性モーメントの変化や角運動量の減少、ロケットモータのグレイン形状によって計算されるモーメントであるが、計算中ではゼロにしている。
-\begin{equation}
-\bm{M}^B_{JD} = [0, 0, 0]^T
-\end{equation}
+ロケットエンジンの排気がノズル出口で角運動量を持ち去ることによる減衰モーメントである（v4.4.2 で実装）。
+質量流量を $\dot{m}$、機体角速度を $\bm{\omega}^B = [p, q, r]^T$ として各軸を次式で計算する。
+\begin{eqnarray}
+M^B_{JD,x} &=& -\dot{m} \cdot \frac{A_e}{2\pi} \cdot p \\
+M^B_{JD,y} &=& -\dot{m} \cdot l^2 \cdot q \\
+M^B_{JD,z} &=& -\dot{m} \cdot l^2 \cdot r
+\end{eqnarray}
+ここで $A_e$ はノズル出口面積、$l$ は重心からノズル出口までの軸距離（機体後端 $\approx$ ノズル出口と仮定し $l \approx L_{CG}$）である。
+ロール軸の腕の長さ二乗 $A_e/(2\pi)$ は、排気が機軸まわりに一様分布する中央単ノズルを仮定した慣動半径二乗 $r_e^2/2$ に相当する。
 
 \subsubsection{ガスジェットモーメント}
 スピン安定化を目的としたコールドガスジェットによるロールモーメントを表す。

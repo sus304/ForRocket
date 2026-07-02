@@ -20,6 +20,10 @@ ForRocket_v*/
 # Claude Code project settings (IDE personal tool)
 .claude/
 
+# Private overlay (a separate git repository cloned here; not part of this
+# public project). Holds organization-specific test scenarios and docs.
+local/
+
 # Ignore tests/ contents by default, but version-control the C++ unit tests,
 # the end-to-end suite, and the test docs. Use tests/* (not tests/) so children
 # can be re-included: git cannot re-include a path whose parent dir is ignored.
