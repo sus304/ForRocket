@@ -28,7 +28,7 @@
     "Constant X-C.G.": {
         "Constant X-C.G. from BodyTail [mm]": 1100.0
     },
-    "Comment C.G. Offset": "Lateral CG offset from body centerline (constant; applies in both file and constant X-C.G. modes)",
+    "Comment C.G. Offset": "Lateral CG offset of the inert (dry) structure from body centerline (constant; applies in both file and constant X-C.G. modes). Effective lateral CG is mass-weighted with propellant (assumed on centerline).",
     "C.G. Offset": {
         "y-C.G. Offset [mm]": 0.0,
         "z-C.G. Offset [mm]": 0.0
@@ -91,7 +91,7 @@
         "Constant CNa [1/rad]": 10.0
     },
 
-    "Comment Cld": "Roll Force div FinCantAngle Coefficient",
+    "Comment Cld": "Roll moment div FinCantAngle coefficient (total cross-fin value; reference length = body diameter). Roll moment = Q*Cld*S*d*delta",
     "Fin Cant Angle [deg]": 0.0,
     "Enable Cld File": false,
     "Cld File": {
@@ -101,7 +101,7 @@
         "Constant Cld [1/rad]": 0.0
     },
 
-    "Comment Clp": "Roll Damping Moment Coefficient",
+    "Comment Clp": "Roll Damping Moment Coefficient (Clp/Cmq/Cnr non-dimensionalized by body diameter d; damping moment = Q*Cd*S*d^2/(2V)*omega)",
     "Enable Clp File": false,
     "Clp File": {
         "Clp File Path": "Clp.csv"

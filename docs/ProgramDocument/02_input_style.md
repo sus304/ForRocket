@@ -69,6 +69,8 @@
         "Wind File Path": "sample_wind.csv"
     },
 
+    "Gravity Model": "legacy",
+
     "Number of Stage": 1,
     "Stage1 Config File List": "sample_config_list_stage1.json",
     "Stage2 Config File List": "stage_config_list.json",
@@ -85,6 +87,7 @@
 | `Elevation [deg]` | 打上上下角（水平が 0°、直上が 90°、deg） |
 | `*Velocity [m/s]` | NED 系での初期速度（通常は 0） |
 | `*Angular Velocity [deg/s]` | 初期機体角速度（ヨー・ピッチ・ロール軸、deg/s） |
+| `Gravity Model` | （任意）重力モデル。`"legacy"`（既定）: GM/(a+h)² を鉛直下向きに与える従来モデル / `"pointmass-j2"`: 質点＋J2 帯状調和項（地心半径・緯度依存・扁平性を考慮）。legacy は緯度 45° で重力の大きさを最大 ~0.35% 過小評価し方向誤差最大 0.19° を持つため、長時間・高高度飛行（ロックーン、軌道投入検討）では `"pointmass-j2"` を推奨（参考: 高度 19 km サンプルでもアポジ −37 m / 着地点 156 m の差） |
 | `Number of Stage` | ステージ数（1〜3） |
 | `Stage{N} Config File List` | 各ステージの設定ファイルリストへのパス |
 
@@ -114,7 +117,8 @@
 
     "Enable Rail-Launcher Launch": true,
     "Rail Launcher": {
-        "Length [m]": 5.0
+        "Length [m]": 5.0,
+        "Friction Coefficient [-]": 0.2
     },
 
     "Enable Engine Cutoff": false,
@@ -154,6 +158,8 @@
 
     "Flight End Time [s]": 100.0,
     "Time Step [s]": 0.1,
+    "Solver Tolerance Abs": 1.0e-6,
+    "Solver Tolerance Rel": 1.0e-6,
     "Enable Auto Terminate SubOrbital Flight": true
 }
 ```
@@ -163,6 +169,7 @@
 | `Flight Start Time [s]` | このステージの飛行開始時刻（2 段目以降は前段分離時刻に自動上書き） |
 | `Engine Ignittion Time [s]` | エンジン点火時刻（Flight Start Time より後なら惰性飛行が続く） |
 | `Rail Launcher.Length [m]` | ランチャの有効レール長（レールクリア距離の判定に使用） |
+| `Rail Launcher.Friction Coefficient [-]` | （任意）ランチャ・ラグ間の摩擦係数。未指定時は 0.2（従来のハードコード値と同じ） |
 | `Cutoff Time [s]` | エンジン強制カットオフ時刻 |
 | `Stage Separation Time [s]` | 段間分離時刻 |
 | `Upper Stage Mass [kg]` | 上段質量（この質量を下段から減じて計算継続） |
@@ -171,7 +178,11 @@
 | `Parachute.Drag Factor Cd*S [m2]` | 第 1 パラシュートの CdS 値 |
 | `Enable Forced Apogee Open` | true のとき頂点（鉛直速度符号反転）で自動開傘 |
 | `Secondary Parachute.Drag Factor Cd*S [m2]` | 第 2 パラシュートの CdS 値（ドローグ→メイン想定） |
-| `Time Step [s]` | 出力 CSV の時間刻み |
+| `Time Step [s]` | 出力 CSV の時間刻み。積分器（適応ステップ dopri5）の初期刻みヒントにもなるが、実際の刻みは下の許容誤差で自動調整される |
+| `Solver Tolerance Abs` | （任意）適応ステップ積分器の絶対許容誤差。未指定時は内部既定値（1.0e-6）を使用 |
+| `Solver Tolerance Rel` | （任意）適応ステップ積分器の相対許容誤差。未指定時は内部既定値（1.0e-6）。緩めるほど刻みが大きくなり高速・低精度（位置誤差 ≈ Rel × 6.4e6 [m]、ECI 基準）。計算精度の実質的な制御パラメータ |
+
+**許容誤差の推奨設定**: 既定の `1.0e-6` は ECI 位置（~6.4e6 m）換算で数 m 程度の許容誤差に相当し、サブオービタルの検討には十分。姿勢履歴の精密評価や軌道投入・長距離飛行の検討では `"Solver Tolerance Rel": 1.0e-7 〜 1.0e-9`、`"Solver Tolerance Abs": 1.0e-9` 程度まで締めること（刻み数が増えるため実行時間は数倍になる）。参考: 既定 1e-6 ではロール角 ~0.8°/60s 程度のドリフトが観測されている。
 | `Enable Auto Terminate SubOrbital Flight` | true のとき全力積から着地予想時刻を自動計算して Flight End Time を上書き |
 
 ---
@@ -316,7 +327,7 @@
 
 | フィールド | 説明 |
 |---|---|
-| `C.G. Offset` → `y-C.G. Offset [mm]` / `z-C.G. Offset [mm]` | 重心の機軸（body X 軸）からの横方向オフセット（定数のみ。X 軸のファイル入力モードでも併用される） |
+| `C.G. Offset` → `y-C.G. Offset [mm]` / `z-C.G. Offset [mm]` | **乾燥構造（インート）重心**の機軸（body X 軸）からの横方向オフセット（定数のみ。X 軸のファイル入力モードでも併用される）。**v4.4.2 以降**、実効的な横方向重心は推進薬（機軸上にあると仮定）との質量重み付け `y_CG = y_CG_inert · m_inert / (m_inert + m_prop)` で算出され、推進薬の消費に伴いインート値へ漸近する |
 | `y-ThrustLoadingPoint Offset [mm]` / `z-ThrustLoadingPoint Offset [mm]` | 推力作用点の機軸からの横方向オフセット |
 | `Engine Miss-Alignment` の `y-Axis Angle` / `z-Axis Angle` | 推力ベクトルの機軸に対する角度ずれ（engine_config.json 側、既存） |
 | `Enable Product of Inertia` | true: 定数の慣性乗積 Ixy/Ixz/Iyz を使用 |
@@ -362,11 +373,13 @@ CSV ファイルで与えた姿勢（または角速度）に機体を追従さ�
 |---|---|
 | `CA` | 軸力係数（燃焼中・燃焼後で別指定可） |
 | `CNa` | 法線力傾斜 [1/rad] |
-| `Cld` | フィンカント角によるロールモーメント係数 [1/rad] |
+| `Cld` | フィンカント角によるロールモーメント係数 [1/rad]。**v4.2.2 以降、フィン全体（クロスフィン）合計の値を与える**（旧版の「1 枚あたり係数 ×4」ではない）。ロールモーメント `= Q·Cld·S·d·δ`（`d`=機体直径、`δ`=カント角） |
 | `Fin Cant Angle [deg]` | フィン 1 枚あたりのカント角（ロール正方向が正） |
 | `Clp` | ロール減衰モーメント係数 [-] |
 | `Cmq` | ピッチ減衰モーメント係数 [-] |
 | `Cnr` | ヨー減衰モーメント係数 [-] |
+
+> **基準長の変更（v4.2.2 以降）**: 空力モーメントの基準長は機体全長 `length` から**機体直径 `d`** に変更された。減衰モーメントは `M = Q · (Clp,Cmq,Cnr) · S · d² / (2V) · ω` で計算されるため、`Clp`/`Cmq`/`Cnr` は**直径 `d` で無次元化**した値を与えること（旧版の機体全長基準の値とは一致しない）。
 
 重心位置・圧力中心位置・慣性モーメントも同様に定数/時間変化 CSV で指定。
 
@@ -398,7 +411,7 @@ CSV ファイルで与えた姿勢（または角速度）に機体を追従さ�
 
 | フィールド | 説明 |
 |---|---|
-| `Nozzle Exit Diameter [mm]` | ノズル出口直径（圧力推力補正に使用） |
+| `Nozzle Exit Diameter [mm]` | ノズル出口直径。圧力推力補正に加え、**v4.4.2 以降はジェットダンピングモーメント**（排気がノズル出口で持ち去る角運動量による減衰）のロール軸成分 `k² = A_exit/(2π)` の算出にも使用 |
 | `Enable Thrust File` | true: thrust.csv を使用 / false: 矩形推力（Constant Thrust を使用） |
 | `Thrust at vacuum` | 真空中推力 [N]（実効推力 = 真空推力 − 大気圧 × 出口面積） |
 | `Propellant Mass Flow Rate [kg/s]` | 定常質量流量（Constant Thrust モード時） |

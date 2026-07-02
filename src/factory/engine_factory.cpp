@@ -26,8 +26,8 @@ forrocket::Engine forrocket::EngineFactory::Create(std::string engine_config_jso
         JsonControl jc_file = jc.getSubItem("Thrust File");
         auto thrust_log = LoadCsvLog(jc_file.getString("Thrust at vacuum File Path"));
         if (enable_mis_alignment) {
-            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * 3.14159265;
-            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * 3.14159265;
+            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * pi;
+            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * pi;
             return Engine(thrust_log[0], thrust_log[1], thrust_log[2], area_exit, mis_alignment_y, mis_alignment_z);
         } else {
             return Engine(thrust_log[0], thrust_log[1], thrust_log[2], area_exit);
@@ -38,8 +38,8 @@ forrocket::Engine forrocket::EngineFactory::Create(std::string engine_config_jso
         double mdot_p = jc_const.getDouble("Propellant Mass Flow Rate [kg/s]");
         double burn_duration = jc_const.getDouble("Burn Duration [sec]");
         if (enable_mis_alignment) {
-            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * 3.14159265;
-            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * 3.14159265;
+            double mis_alignment_y = jc.getSubItem("Engine Miss-Alignment").getDouble("y-Axis Angle [deg]") / 180.0 * pi;
+            double mis_alignment_z = jc.getSubItem("Engine Miss-Alignment").getDouble("z-Axis Angle [deg]") / 180.0 * pi;
             return Engine(burn_duration, thrust, mdot_p, area_exit, mis_alignment_y, mis_alignment_z);
         } else {
             return Engine(burn_duration, thrust, mdot_p, area_exit);

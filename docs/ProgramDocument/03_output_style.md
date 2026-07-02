@@ -148,9 +148,9 @@
 | `Mx-aerodump [Nm]` | N·m | 空力減衰モーメント X |
 | `My-aerodump [Nm]` | N·m | 空力減衰モーメント Y |
 | `Mz-aerodump [Nm]` | N·m | 空力減衰モーメント Z |
-| `Mx-jetdump [Nm]` | N·m | ジェット減衰モーメント X（現在は常に 0） |
-| `My-jetdump [Nm]` | N·m | ジェット減衰モーメント Y |
-| `Mz-jetdump [Nm]` | N·m | ジェット減衰モーメント Z |
+| `Mx-jetdump [Nm]` | N·m | ジェット減衰モーメント X（ロール）。`= −mdot · (A_exit/2π) · p`（v4.4.2 で実装。ノズル出口面積から算出） |
+| `My-jetdump [Nm]` | N·m | ジェット減衰モーメント Y（ピッチ）。`= −mdot · l² · q`（`l` = CG〜ノズル出口の軸距離 ≈ `length_CG`） |
+| `Mz-jetdump [Nm]` | N·m | ジェット減衰モーメント Z（ヨー）。`= −mdot · l² · r` |
 | `Mx-gasjet [Nm]` | N·m | ガスジェットモーメント X（ロール） |
 | `My-gasjet [Nm]` | N·m | ガスジェットモーメント Y（通常 0） |
 | `Mz-gasjet [Nm]` | N·m | ガスジェットモーメント Z（通常 0） |

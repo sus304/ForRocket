@@ -9,7 +9,7 @@
 #include "environment/air.hpp"
 
 #include <cmath>
-#include <vector>
+#include <array>
 
 #include "environment/satmo1976.hpp"
 

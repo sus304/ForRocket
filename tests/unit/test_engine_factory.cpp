@@ -36,9 +36,9 @@ namespace {
 // --- shared numeric constants -----------------------------------------------
 // degrad.hpp defines pi = 3.141592653589793; engine_factory uses it for area.
 const double kPi = 3.141592653589793;
-// The factory's deg->rad conversion uses the TRUNCATED literal 3.14159265,
-// not the full pi, so expected gimbal angles must use the same literal.
-const double kPiTrunc = 3.14159265;
+// The factory's deg->rad conversion now uses degrad.hpp's full-precision pi
+// (the truncated 3.14159265 literal was fixed in the accuracy batch).
+const double kPiTrunc = kPi;
 
 const double kDiameterMm = 100.0;                  // "Nozzle Exit Diameter [mm]"
 const double kDiameterM = kDiameterMm / 1e3;       // 0.1 m

@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
+#include "degrad.hpp"
 #include "environment/gravity.hpp"
 #include "environment/wgs84.hpp"
 
@@ -86,4 +87,74 @@ TEST(Gravity, InverseSquareScaling) {
     double g0 = gravity(0.0);
     double g_at_2a = gravity(wgs.a);  // geocentric_height = 2a
     EXPECT_NEAR(g_at_2a, g0 / 4.0, 1e-12);
+}
+
+// ---------------------------------------------------------------------------
+// gravityECEF(): point-mass + J2 zonal harmonic (attraction only, ECEF frame).
+// Validated against WGS84 Somigliana normal gravity, which includes the
+// centrifugal acceleration — so the test adds it back before comparing.
+// Point-mass+J2 truncates J4 and higher; the residual peaks at the pole at
+// ~1.2e-4 m/s^2 (~1.2e-5 g), hence the 2e-4 m/s^2 gate (measured: equator
+// 2e-5, 45deg 5e-5, pole 1.18e-4).
+// ---------------------------------------------------------------------------
+#include "Eigen/Core"
+
+namespace {
+
+// WGS84 Somigliana normal gravity on the ellipsoid surface [m/s2].
+double SomiglianaGravity(double lat_rad) {
+    const double gamma_e = 9.7803253359;
+    const double k = 0.00193185265241;
+    const double e_sq = 0.00669437999014;
+    double s2 = std::sin(lat_rad) * std::sin(lat_rad);
+    return gamma_e * (1.0 + k * s2) / std::sqrt(1.0 - e_sq * s2);
+}
+
+// Geodetic latitude (h=0, lon=0) -> ECEF surface position.
+Eigen::Vector3d SurfaceECEF(double lat_rad) {
+    const double a = 6378137.0;
+    const double e_sq = 0.00669437999014;
+    double N = a / std::sqrt(1.0 - e_sq * std::sin(lat_rad) * std::sin(lat_rad));
+    return Eigen::Vector3d(N * std::cos(lat_rad), 0.0, N * (1.0 - e_sq) * std::sin(lat_rad));
+}
+
+}  // namespace
+
+TEST(GravityECEF, MatchesSomiglianaNormalGravityAt0_45_90deg) {
+    const double omega = 7.292115e-5;
+    const double lats_deg[] = {0.0, 45.0, 90.0};
+    for (double lat_deg : lats_deg) {
+        double lat = lat_deg * forrocket::pi / 180.0;
+        Eigen::Vector3d r = SurfaceECEF(lat);
+        Eigen::Vector3d g_attraction = forrocket::gravityECEF(r);
+        // Normal gravity = attraction + centrifugal (centrifugal points outward
+        // from the spin axis; as apparent "gravity" contribution it reduces g).
+        Eigen::Vector3d centrifugal(omega * omega * r(0), omega * omega * r(1), 0.0);
+        double g_apparent = (g_attraction + centrifugal).norm();
+        EXPECT_NEAR(g_apparent, SomiglianaGravity(lat), 2e-4)
+                << "latitude " << lat_deg << " deg";
+    }
+}
+
+TEST(GravityECEF, EquatorIsExactlyPointMassTimesJ2Factor) {
+    // At the equator sin(geocentric lat) = 0, so the x-component reduces to
+    // GM/r^2 * (1 + 1.5*J2*(a/r)^2) with r = a.
+    forrocket::WGS84 wgs84;
+    Eigen::Vector3d r(wgs84.a, 0.0, 0.0);
+    Eigen::Vector3d g = forrocket::gravityECEF(r);
+    EXPECT_NEAR(g(0), -wgs84.GM / (wgs84.a * wgs84.a) * (1.0 + 1.5 * wgs84.J2), 1e-12);
+    EXPECT_DOUBLE_EQ(g(1), 0.0);
+    EXPECT_DOUBLE_EQ(g(2), 0.0);
+}
+
+TEST(GravityECEF, PointsInwardAndDecaysWithAltitude) {
+    forrocket::WGS84 wgs84;
+    Eigen::Vector3d r_low = SurfaceECEF(45.0 * forrocket::pi / 180.0);
+    Eigen::Vector3d r_high = r_low * ((r_low.norm() + 500.0e3) / r_low.norm());
+    Eigen::Vector3d g_low = forrocket::gravityECEF(r_low);
+    Eigen::Vector3d g_high = forrocket::gravityECEF(r_high);
+    EXPECT_LT(g_low.dot(r_low), 0.0);   // inward
+    EXPECT_LT(g_high.norm(), g_low.norm());  // decays
+    // 500 km up the J2-relative contribution shrinks (a/r)^2-fold.
+    EXPECT_NEAR(g_high.norm(), wgs84.GM / std::pow(r_high.norm(), 2), 2e-2);
 }

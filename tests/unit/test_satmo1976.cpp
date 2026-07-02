@@ -3,11 +3,11 @@
 //   US Standard Atmosphere 1976 model (namespace standardatmosphere1976).
 //
 // Public API exercised:
-//   std::vector<double> Atmosphere(double geometric_altitude)   // [m] in
+//   std::array<double, 4> Atmosphere(double geometric_altitude)   // [m] in
 //        returns {density, pressure, temperature, sound_speed}
-//   std::vector<double> LowerAtmosphere(double geometric_altitude_km)
+//   std::array<double, 3> LowerAtmosphere(double geometric_altitude_km)
 //        returns {density, pressure, temperature}
-//   std::vector<double> UpperAtmosphere(double geometric_altitude_km)
+//   std::array<double, 3> UpperAtmosphere(double geometric_altitude_km)
 //        returns {density, pressure, temperature}
 //   double EvaluateCubic(a,fa,fpa, b,fb,fpb, u)  // Hermite-style interpolant
 //   double KineticTemperature(double geometric_altitude_km)
@@ -33,7 +33,7 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
-#include <vector>
+#include <array>
 
 #include "environment/satmo1976.hpp"
 
@@ -61,8 +61,8 @@ TEST(Satmo1976, ModuleConstantsMatchUSSA1976) {
     EXPECT_DOUBLE_EQ(sa::Rstar, 8314.32);
     // gmr = 1000 * g0 * M / R* = 1000*9.80665*28.9644/8314.32 = 34.16319...
     EXPECT_NEAR(sa::gmr, 34.163194736310366, 1e-9);
-    // earth_radius aliases the polar radius (6356.7523 km) in this model.
-    EXPECT_DOUBLE_EQ(sa::earth_radius, 6356.7523);
+    // earth_radius is the US76-defined effective radius r0 (6356.766 km).
+    EXPECT_DOUBLE_EQ(sa::earth_radius, 6356.766);
 }
 
 // ===========================================================================
@@ -71,7 +71,7 @@ TEST(Satmo1976, ModuleConstantsMatchUSSA1976) {
 
 // Atmosphere() returns 4 elements; res[3] = sqrt(T/Tsl)*csl.
 TEST(Satmo1976, AtmosphereReturnsFourElementsWithSoundSpeed) {
-    std::vector<double> r = sa::Atmosphere(0.0);
+    auto r = sa::Atmosphere(0.0);
     ASSERT_EQ(r.size(), 4u);
     // res[2] is temperature; res[3] must equal sqrt(res[2]/Tsl)*csl.
     EXPECT_NEAR(r[3], std::sqrt(r[2] / kTsl) * kCsl, 1e-9);
@@ -81,7 +81,7 @@ TEST(Satmo1976, AtmosphereReturnsFourElementsWithSoundSpeed) {
 // model reproduces its own defining sea-level constants exactly (theta=1,
 // delta=1, sigma=1).
 TEST(Satmo1976, AtmosphereSeaLevelIsLowerBranch) {
-    std::vector<double> r = sa::Atmosphere(0.0);
+    auto r = sa::Atmosphere(0.0);
     EXPECT_NEAR(r[0], kRhosl, 1e-9);   // density
     EXPECT_NEAR(r[1], kPsl,   1e-3);   // pressure
     EXPECT_NEAR(r[2], kTsl,   1e-9);   // temperature
@@ -92,7 +92,7 @@ TEST(Satmo1976, AtmosphereSeaLevelIsLowerBranch) {
 // just above the boundary; temperature is still T7 = 186.8673 K (KineticT
 // z<=91 branch) and pressure is ~ the 86 km node value.
 TEST(Satmo1976, AtmosphereAbove86kmIsUpperBranch) {
-    std::vector<double> r = sa::Atmosphere(86001.0);  // 86.001 km
+    auto r = sa::Atmosphere(86001.0);  // 86.001 km
     EXPECT_NEAR(r[2], 186.8673, 1e-3);  // KineticTemperature(86.001) == T7
     EXPECT_GT(r[1], 0.0);
     EXPECT_GT(r[0], 0.0);
@@ -103,7 +103,7 @@ TEST(Satmo1976, AtmosphereAbove86kmIsUpperBranch) {
 // strictly ">". Lower at 86 km geometric (geopotential 84.852 km) hits the top
 // layer (i=6 region) and is finite/positive.
 TEST(Satmo1976, AtmosphereAt86kmUsesLowerBranch) {
-    std::vector<double> r = sa::Atmosphere(86000.0);
+    auto r = sa::Atmosphere(86000.0);
     // T at 86 km ~ 186.9 K (geopotential 84.852 km, layer with gradient -2 K/km
     // evaluated up to its top). Independent calc gives ~186.946 K.
     EXPECT_NEAR(r[2], 186.946, 0.2);
@@ -119,7 +119,7 @@ TEST(Satmo1976, AtmosphereAt86kmUsesLowerBranch) {
 // Layer 0 (0..11 km, gradient -6.5 K/km, NON-zero gradient branch).
 // Reference at sea level (geopotential 0): theta=delta=sigma=1.
 TEST(Satmo1976, LowerLayer0SeaLevel) {
-    std::vector<double> r = sa::LowerAtmosphere(0.0);
+    auto r = sa::LowerAtmosphere(0.0);
     EXPECT_NEAR(r[0], kRhosl, 1e-12);
     EXPECT_NEAR(r[1], kPsl,   1e-6);
     EXPECT_NEAR(r[2], kTsl,   1e-12);
@@ -129,7 +129,7 @@ TEST(Satmo1976, LowerLayer0SeaLevel) {
 // height. At geometric 5 km the geopotential height is ~4.9961 km, so
 // T = 288.15 - 6.5*4.9961 = 255.675 K. (Cross-checked vs USSA-76 table ~255.7.)
 TEST(Satmo1976, LowerLayer0LapseRate) {
-    std::vector<double> r = sa::LowerAtmosphere(5.0);
+    auto r = sa::LowerAtmosphere(5.0);
     EXPECT_NEAR(r[2], 255.6755, 1e-2);   // K
     EXPECT_NEAR(r[1], 54048.3,  1.0);    // Pa
     EXPECT_NEAR(r[0], 0.736429, 1e-4);   // kg/m^3
@@ -138,8 +138,8 @@ TEST(Satmo1976, LowerLayer0LapseRate) {
 // Layer 1 (11..20 km, gradient 0 -> ISOTHERMAL branch: exp form).
 // Tropopause temperature is the famous 216.65 K, constant across the layer.
 TEST(Satmo1976, LowerLayer1IsothermalTropopause) {
-    std::vector<double> r15 = sa::LowerAtmosphere(15.0);
-    std::vector<double> r20 = sa::LowerAtmosphere(20.0);
+    auto r15 = sa::LowerAtmosphere(15.0);
+    auto r20 = sa::LowerAtmosphere(20.0);
     EXPECT_NEAR(r15[2], 216.65, 1e-2);   // K, isothermal
     EXPECT_NEAR(r20[2], 216.65, 1e-2);   // K, isothermal
     // Pressure still decreases with altitude in the isothermal layer.
@@ -152,32 +152,32 @@ TEST(Satmo1976, LowerLayer1IsothermalTropopause) {
 // Layer 2 (20..32 km, gradient +1 K/km -> temperature INCREASES, non-zero
 // branch). At geometric 25 km, geopotential ~24.90 km, T ~221.55 K.
 TEST(Satmo1976, LowerLayer2PositiveGradient) {
-    std::vector<double> r = sa::LowerAtmosphere(25.0);
+    auto r = sa::LowerAtmosphere(25.0);
     EXPECT_NEAR(r[2], 221.5521, 1e-2);
     EXPECT_GT(r[2], 216.65);  // warmer than the isothermal layer below
 }
 
 // Layer 3 (32..47 km, gradient +2.8 K/km). At geometric 40 km, T ~250.35 K.
 TEST(Satmo1976, LowerLayer3) {
-    std::vector<double> r = sa::LowerAtmosphere(40.0);
+    auto r = sa::LowerAtmosphere(40.0);
     EXPECT_NEAR(r[2], 250.3496, 1e-2);
 }
 
 // Layer 4 (47..51 km, gradient 0 -> ISOTHERMAL again, T = 270.65 K).
 TEST(Satmo1976, LowerLayer4IsothermalStratopause) {
-    std::vector<double> r = sa::LowerAtmosphere(49.0);
+    auto r = sa::LowerAtmosphere(49.0);
     EXPECT_NEAR(r[2], 270.65, 1e-2);  // K (stratopause isothermal)
 }
 
 // Layer 5 (51..71 km, gradient -2.8 K/km, temperature decreasing).
 TEST(Satmo1976, LowerLayer5NegativeGradient) {
-    std::vector<double> r = sa::LowerAtmosphere(60.0);
+    auto r = sa::LowerAtmosphere(60.0);
     EXPECT_NEAR(r[2], 247.0209, 1e-2);
 }
 
 // Layer 6 (71..84.852 km, gradient -2.0 K/km). At geometric 80 km, T ~198.64 K.
 TEST(Satmo1976, LowerLayer6) {
-    std::vector<double> r = sa::LowerAtmosphere(80.0);
+    auto r = sa::LowerAtmosphere(80.0);
     EXPECT_NEAR(r[2], 198.6386, 1e-2);
 }
 
@@ -201,7 +201,7 @@ TEST(Satmo1976, LowerPressureMonotonicDecrease) {
 // a flat temperature of 1000 K. Use 1100 km so the strict ">" is satisfied.
 // Last node density ratio = 2.907e-15, pressure ratio = 7.4155e-14.
 TEST(Satmo1976, UpperClampAbove1000km) {
-    std::vector<double> r = sa::UpperAtmosphere(1100.0);
+    auto r = sa::UpperAtmosphere(1100.0);
     EXPECT_NEAR(r[2], 1000.0, 1e-9);                 // flat top temperature
     EXPECT_NEAR(r[0], 2.907e-15 * kRhosl, 1e-25);    // density = dr_last*rhosl
     EXPECT_NEAR(r[1], 7.4155e-14 * kPsl,  1e-20);    // pressure = pr_last*Psl
@@ -213,7 +213,7 @@ TEST(Satmo1976, UpperClampAbove1000km) {
 //   pressure ratio = 8.3628e-10, density ratio = 2.074e-10.
 // Temperature at 200 km comes from KineticTemperature (z>=120 branch).
 TEST(Satmo1976, UpperNodeReproductionAt200km) {
-    std::vector<double> r = sa::UpperAtmosphere(200.0);
+    auto r = sa::UpperAtmosphere(200.0);
     EXPECT_NEAR(r[1], 8.3628e-10 * kPsl,  1e-15);  // pressure
     EXPECT_NEAR(r[0], 2.074e-10  * kRhosl, 1e-16); // density
     // KineticTemperature(200) ~ 854.56 K (independent calc).
@@ -224,7 +224,7 @@ TEST(Satmo1976, UpperNodeReproductionAt200km) {
 // 2 (the search picks i with height[i] <= z). 100 km is itself a node
 // (index 2), so ratios reproduce the table: pr=3.1593e-7, dr=4.575e-7.
 TEST(Satmo1976, UpperNodeReproductionAt100km) {
-    std::vector<double> r = sa::UpperAtmosphere(100.0);
+    auto r = sa::UpperAtmosphere(100.0);
     EXPECT_NEAR(r[1], 3.1593e-7 * kPsl,  1e-7);
     EXPECT_NEAR(r[0], 4.575e-7  * kRhosl, 1e-10);
 }
@@ -271,8 +271,8 @@ TEST(Satmo1976, KineticTempBranch3LinearAndZ9Boundary) {
 // exactly T10 = 360 K.
 TEST(Satmo1976, KineticTempBranch4ExponentialAndZ10Boundary) {
     EXPECT_NEAR(sa::KineticTemperature(120.0), 360.0, 1e-9);  // boundary z==Z10
-    // z = 200: independent calc gives 854.559... K.
-    EXPECT_NEAR(sa::KineticTemperature(200.0), 854.5590852363246, 1e-6);
+    // z = 200: independent calc (with US76 r0 = 6356.766 km) gives 854.559... K.
+    EXPECT_NEAR(sa::KineticTemperature(200.0), 854.559090798055, 1e-6);
     // As z grows the temperature asymptotically approaches T12 = 1000 K and
     // stays below it.
     double t_high = sa::KineticTemperature(900.0);

@@ -93,6 +93,15 @@ void forrocket::FlightDynamics::UpdateAeroCoefficients(const Coordinate& coord, 
 }
 
 
+Eigen::Vector3d forrocket::FlightDynamics::GravityNED(const double altitude, const Coordinate& coord) {
+    if (p_rocket_->gravity_model_j2) {
+        // 質点+J2 重力（地心半径・緯度依存・扁平項）を ECEF で評価して NED へ変換
+        return coord.dcm.ECEF2NED * gravityECEF(p_rocket_->position.ECEF);
+    }
+    return Eigen::Vector3d(0.0, 0.0, gravity(altitude));
+}
+
+
 void forrocket::FlightDynamics::ComputeForces(const Coordinate& coord, const EnvironmentAir& air,
                                               const Eigen::Vector3d& gravity_NED) {
     p_rocket_->force.thrust = p_rocket_->getThrust(air.pressure);
@@ -145,7 +154,7 @@ void forrocket::FlightDynamics::Compute3dofOnLauncher(const state& x, state& dx,
 
     double altitude = p_rocket_->position.LLH[2];
     EnvironmentAir air(altitude);
-    Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
+    Eigen::Vector3d gravity_NED = GravityNED(altitude, coordinate);
 
     // ランチャ上は風の影響を受けない
     p_rocket_->velocity.air_body = coordinate.dcm.NED2body * p_rocket_->velocity.NED;
@@ -180,7 +189,7 @@ void forrocket::FlightDynamics::Compute3dofOnLauncher(const state& x, state& dx,
     p_rocket_->force.gravity(2) = 0.0;
 
     // ランチャ・ラグ間の摩擦
-    const double friction_coefficient = 0.2;
+    const double friction_coefficient = p_rocket_->friction_coefficient_launcher;
     double friction_force = p_rocket_->mass.Sum() * gravity_NED[2]
             * std::cos(p_rocket_->attitude.euler_angle(1)) * friction_coefficient;
     p_rocket_->force.thrust(0) -= friction_force;
@@ -223,7 +232,7 @@ void forrocket::FlightDynamics::Compute6dofAero(const state& x, state& dx, const
 
     const double altitude = p_rocket_->position.LLH[2];
     const EnvironmentAir air(altitude);
-    const Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
+    const Eigen::Vector3d gravity_NED = GravityNED(altitude, coordinate);
 
     UpdateAeroCoefficients(coordinate, air);
     ComputeForces(coordinate, air, gravity_NED);
@@ -305,7 +314,7 @@ void forrocket::FlightDynamics::Compute6dofProgramRate(const state& x, state& dx
 
     const double altitude = p_rocket_->position.LLH[2];
     const EnvironmentAir air(altitude);
-    const Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
+    const Eigen::Vector3d gravity_NED = GravityNED(altitude, coordinate);
 
     UpdateAeroCoefficients(coordinate, air);
     ComputeForces(coordinate, air, gravity_NED);
@@ -354,7 +363,7 @@ void forrocket::FlightDynamics::Compute3dofParachute(const state& x, state& dx, 
 
     double altitude = p_rocket_->position.LLH[2];
     EnvironmentAir air(altitude);
-    Eigen::Vector3d gravity_NED(0.0, 0.0, gravity(altitude));
+    Eigen::Vector3d gravity_NED = GravityNED(altitude, coordinate);
 
     Eigen::Vector3d wind_NED = p_wind_->getNED(altitude);
     Eigen::Vector3d v_air_NED = p_rocket_->velocity.NED - wind_NED;

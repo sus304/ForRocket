@@ -26,7 +26,12 @@ forrocket::RocketStage forrocket::RocketStageFactory::Create(const int stage_num
 
     rocket_stage.enable_launcher = jc.getBool("Enable Rail-Launcher Launch");
     if (rocket_stage.enable_launcher) {
-        rocket_stage.length_launcher_rail = jc.getSubItem("Rail Launcher").getDouble("Length [m]");
+        auto jc_launcher = jc.getSubItem("Rail Launcher");
+        rocket_stage.length_launcher_rail = jc_launcher.getDouble("Length [m]");
+        // ランチャ・ラグ間摩擦係数（任意指定）。未指定なら従来のハードコード値 0.2。
+        if (jc_launcher.contains("Friction Coefficient [-]")) {
+            rocket_stage.rocket.friction_coefficient_launcher = jc_launcher.getDouble("Friction Coefficient [-]");
+        }
     }
     
     rocket_stage.enable_cutoff = jc.getBool("Enable Engine Cutoff");

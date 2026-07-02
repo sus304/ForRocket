@@ -4,12 +4,12 @@
 //
 // EnvironmentAir is a thin wrapper around
 // standardatmosphere1976::Atmosphere(). It has no internal branches itself; the
-// only thing to verify here is that it (a) correctly maps the result vector
+// only thing to verify here is that it (a) correctly maps the result array
 // fields onto its members and (b) reproduces the US Standard Atmosphere 1976
 // reference values at the surface. The branching of the atmosphere model is
 // exercised in test_satmo1976.cpp.
 //
-// Result-vector layout (satmo1976::Atmosphere):
+// Result-array layout (satmo1976::Atmosphere):
 //   res[0] = density, res[1] = pressure, res[2] = temperature, res[3] = sound speed
 // EnvironmentAir maps:
 //   density        <- res[0]
@@ -43,11 +43,11 @@ TEST(EnvironmentAir, SeaLevelMatchesUSSA1976) {
 
 // Verify the field mapping is exactly the one the satmo model produces, i.e.
 // the wrapper does not transpose density<->pressure etc. We recompute the
-// underlying vector and compare member-by-member.
+// underlying array and compare member-by-member.
 TEST(EnvironmentAir, MapsResultVectorFieldsCorrectly) {
     const double h = 5000.0;  // troposphere, layer 0
     EnvironmentAir air(h);
-    std::vector<double> res = standardatmosphere1976::Atmosphere(h);
+    std::array<double, 4> res = standardatmosphere1976::Atmosphere(h);
     ASSERT_EQ(res.size(), 4u);
     EXPECT_DOUBLE_EQ(air.density,        res[0]);
     EXPECT_DOUBLE_EQ(air.pressure,       res[1]);

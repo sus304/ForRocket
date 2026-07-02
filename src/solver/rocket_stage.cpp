@@ -220,6 +220,30 @@ void forrocket::RocketStage::FlightSequence(SequenceClock* master_clock,
                 } else {
                     t_apogee = t_curr;
                 }
+                // 線形補間の推定値を初期値に、dense output 上で v_down を再評価し
+                // 挟み撃ち法（regula falsi）で精密化。v_down はアポジ近傍でほぼ線形
+                // なので少ない反復で収束し、粗い許容誤差設定でも開傘時刻が安定する。
+                {
+                    state_t x_mid;
+                    state_t dx_dummy;
+                    double t_lo = t_prev, v_lo = prev_velocity_NED_down;
+                    double t_hi = t_curr, v_hi = curr_velocity_NED_down;
+                    for (int iter = 0; iter < 3; ++iter) {
+                        stepper.calc_state(t_apogee, x_mid);
+                        dynamics(x_mid, dx_dummy, t_apogee);
+                        double v_mid = rocket.velocity.NED(2);
+                        if (v_mid < 0.0) {
+                            t_lo = t_apogee;
+                            v_lo = v_mid;
+                        } else {
+                            t_hi = t_apogee;
+                            v_hi = v_mid;
+                        }
+                        double dv_bracket = v_hi - v_lo;
+                        if (std::abs(dv_bracket) <= 1.0e-12) break;
+                        t_apogee = t_lo - v_lo * (t_hi - t_lo) / dv_bracket;
+                    }
+                }
                 state_t x_apogee;
                 stepper.calc_state(t_apogee, x_apogee);
                 ParachuteOpenEvent apogee_event(t_apogee);
