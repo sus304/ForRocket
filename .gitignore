@@ -8,7 +8,13 @@ build/
 build-win/
 build_release/
 build_coverage/
+build_test/
 Testing/
+
+# Per-version archived build trees + their configure logs
+build_v*/
+build-win_v*/
+*_cmake.log
 docs/TechnicalDocument/
 docs/ai_io_spec.md
 docs/workbench_handoff.md
